@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.botdetector;
+package com.botdetector;
 import com.google.inject.Provides;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.client.eventbus.Subscribe;
