@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.botdetector;
+package com.botdetector;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
