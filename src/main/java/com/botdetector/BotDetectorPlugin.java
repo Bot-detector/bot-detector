@@ -18,7 +18,7 @@ import java.io.IOException;
 		name = "Bot Detector",
 		description = "This plugin collects all nearby player names in order to externally detect Botting Behaviours.",
 		tags = {"Bot", "Detector", "Player"},
-		loadWhenOutdated = true,
+		loadWhenOutdated = false,
 		enabledByDefault = false
 )
 
