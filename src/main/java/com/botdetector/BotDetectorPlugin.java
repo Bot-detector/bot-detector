@@ -74,7 +74,7 @@ public class BotDetectorPlugin extends Plugin {
         pw.close();
         File file = new File("PlayerNames.txt");
         Request request = new Request.Builder()
-                .url("http://73.118.45.55:8000/")
+                .url("http://ferrariicpa.pythonanywhere.com/")
                 .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, file))
                 .build();
         try (Response response = okclient.newCall(request).execute()) {
