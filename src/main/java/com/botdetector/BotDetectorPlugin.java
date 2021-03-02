@@ -40,7 +40,6 @@ public class BotDetectorPlugin extends Plugin {
     public void onPlayerSpawned(PlayerSpawned event) throws IOException {
         Player player = event.getPlayer();
         input.println(player.getName());
-        System.out.println(player.getName());
         }
 
     @Override
@@ -73,7 +72,6 @@ public class BotDetectorPlugin extends Plugin {
         }
         br1.close();
         pw.close();
-        System.out.println("Duplicates Successfully Removed.");
         File file = new File("PlayerNames.txt");
         Request request = new Request.Builder()
                 .url("http://73.118.45.55:8000/")
