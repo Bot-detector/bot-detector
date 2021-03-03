@@ -1,4 +1,7 @@
-# Bot Detector Plugin
+# Bot Detector Plugin (V1 - SNAPSHOT)
+
+WARNING: THERE MIGHT BE LAG IN SENDING LARGE FILE SIZES DEPENDING ON THE STRENGTH OF YOUR MACHINE. This is basically Early Access for the program, so do not manually send names in dangerous situations. 
+
 This plugin pulls surrounding Player Names from Old School RuneScape. It then sends those names to a Python server that looks up those names on the hiscores - and runs a neural network analysis on the returned player stats to analyze bot-like behavior. Bot-like players are then separately reported to Jagex. 
 
 --HOW TO USE--
