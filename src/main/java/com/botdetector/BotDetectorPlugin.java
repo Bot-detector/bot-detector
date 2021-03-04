@@ -1,6 +1,7 @@
 package com.botdetector;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.PlayerSpawned;
+import net.runelite.client.Notifier;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -37,13 +38,26 @@ public class BotDetectorPlugin extends Plugin {
                 .url("http://ferrariicpa.pythonanywhere.com/")
                 .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, h.toString()))
                 .build();
-        h.clear();
+
         try (Response response = okclient.newCall(request).execute()) {
+            if(response.isSuccessful()) {
+                h.clear();
+                notifier.notify("Bot Detector: Player Name List Uploaded Successfully!");
+            }
+            else
+            {
+                notifier.notify("Bot Detector: Player Name List Upload Failed.");
+            }
+        }
+        catch(Exception e) {
+            notifier.notify("Bot Detector: Player Name List Upload Failed.");
         }
     }
 
     @Inject
     private Client client;
+
+    @Inject Notifier notifier;
 
     @Inject
     private BotDetectorConfig config;
