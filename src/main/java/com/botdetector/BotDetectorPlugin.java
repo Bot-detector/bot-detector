@@ -45,27 +45,21 @@ public class BotDetectorPlugin extends Plugin {
                 .build();
 
         Call call = okclient.newCall(request);
-        call.enqueue(new Callback()
-        {
+        call.enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e)
-            {
+            public void onFailure(Call call, IOException e) {
                 notifier.notify("Bot Detector: Player Name List Upload Failed.");
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException
-            {
-                if(response.isSuccessful())
-                {
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
                     notifier.notify("Bot Detector: " +
                             submissionSet.size() +
                             " Player Names Uploaded Successfully!");
 
                     submissionSet.clear();
-                }
-                else
-                {
+                } else {
                     notifier.notify("Bot Detector: Player Name List Upload Failed.");
                 }
             }
@@ -82,24 +76,15 @@ public class BotDetectorPlugin extends Plugin {
     private BotDetectorConfig config;
 
     @Provides
-    BotDetectorConfig provideConfig(ConfigManager configManager)
-    {
+    BotDetectorConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(BotDetectorConfig.class);
     }
+
     @Subscribe
     public void onPlayerSpawned(PlayerSpawned event) throws IOException {
         Player player = event.getPlayer();
-        String playerName = player.getName();
-
-        if(h.contains(playerName))
-        {
-            assert true;
-        }
-        else
-        {
-            h.add(playerName);
-            System.out.println(player.getName());
-        }
+        h.add(player.getName());
+        System.out.println(player.getName());
     }
 
     @Subscribe
