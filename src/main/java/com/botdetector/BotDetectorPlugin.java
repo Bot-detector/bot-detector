@@ -24,6 +24,8 @@ import java.util.HashSet;
 public class BotDetectorPlugin extends Plugin {
 
     HashSet<String> h = new HashSet<String>();
+    HashSet<String> submissionSet = new HashSet<String>();
+
     int x = 0;
 
     public static final MediaType MEDIA_TYPE_MARKDOWN = MediaType.parse("text/x-markdown; charset=utf-8");
@@ -34,24 +36,33 @@ public class BotDetectorPlugin extends Plugin {
 
     public void sendToServer() throws IOException {
 
+        submissionSet.addAll(h);
+        h.clear();
+
         Request request = new Request.Builder()
                 .url("http://ferrariicpa.pythonanywhere.com/")
-                .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, h.toString()))
+                .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, submissionSet.toString()))
                 .build();
 
-        try (Response response = okclient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                h.clear();
-                notifier.notify("Bot Detector: Player Name List Uploaded Successfully!");
-            }
-            else
-            {
+        Call call = okclient.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
                 notifier.notify("Bot Detector: Player Name List Upload Failed.");
             }
-        }
-        catch(Exception e) {
-            notifier.notify("Bot Detector: Player Name List Upload Failed.");
-        }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if(response.isSuccessful()) {
+                    submissionSet.clear();
+                    notifier.notify("Bot Detector: Player Name List Uploaded Successfully!");
+                }
+                else
+                {
+                    notifier.notify("Bot Detector: Player Name List Upload Failed.");
+                }
+            }
+        });
     }
 
     @Inject
