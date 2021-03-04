@@ -89,8 +89,17 @@ public class BotDetectorPlugin extends Plugin {
     @Subscribe
     public void onPlayerSpawned(PlayerSpawned event) throws IOException {
         Player player = event.getPlayer();
-        h.add(player.getName());
-        System.out.println(player.getName());
+        String playerName = player.getName();
+
+        if(h.contains(playerName))
+        {
+            assert true;
+        }
+        else
+        {
+            h.add(playerName);
+            System.out.println(player.getName());
+        }
     }
 
     @Subscribe
