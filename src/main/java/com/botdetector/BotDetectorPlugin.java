@@ -45,17 +45,24 @@ public class BotDetectorPlugin extends Plugin {
                 .build();
 
         Call call = okclient.newCall(request);
-        call.enqueue(new Callback() {
+        call.enqueue(new Callback()
+        {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(Call call, IOException e)
+            {
                 notifier.notify("Bot Detector: Player Name List Upload Failed.");
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if(response.isSuccessful()) {
+            public void onResponse(Call call, Response response) throws IOException
+            {
+                if(response.isSuccessful())
+                {
+                    notifier.notify("Bot Detector: " +
+                            submissionSet.size() +
+                            " Player Names Uploaded Successfully!");
+
                     submissionSet.clear();
-                    notifier.notify("Bot Detector: Player Name List Uploaded Successfully!");
                 }
                 else
                 {
@@ -68,7 +75,8 @@ public class BotDetectorPlugin extends Plugin {
     @Inject
     private Client client;
 
-    @Inject Notifier notifier;
+    @Inject
+    private Notifier notifier;
 
     @Inject
     private BotDetectorConfig config;
@@ -83,18 +91,23 @@ public class BotDetectorPlugin extends Plugin {
         Player player = event.getPlayer();
         h.add(player.getName());
         System.out.println(player.getName());
-        }
+    }
 
     @Subscribe
     public void onGameTick(GameTick event) throws IOException{
         if(config.sendAutomatic()){
             int timeSend = 100*(config.intConfig());
+
             if(timeSend < 500){
                 timeSend = 500;
             }
+
             x++;
+
             if(x > timeSend){
-                sendToServer();
+                if(h.size() > 0) {
+                    sendToServer();
+                }
                 x = 0;
             }
         }
@@ -106,6 +119,8 @@ public class BotDetectorPlugin extends Plugin {
 
     @Override
     protected void shutDown() throws Exception {
-        sendToServer();
+        if(h.size() > 0) {
+            sendToServer();
+        }
     }
 }
