@@ -50,7 +50,6 @@ public class BotDetectorPanel extends PluginPanel {
     public void onActivate()
     {
         active = true;
-
     }
 
     @Override
