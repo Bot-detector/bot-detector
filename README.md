@@ -2,6 +2,10 @@
 
 WARNING: THERE MIGHT BE LAG IN SENDING LARGE FILE SIZES DEPENDING ON THE STRENGTH OF YOUR MACHINE. This is basically Early Access for the program, so do not manually send names in dangerous situations. 
 
+NOTICE: WE ARE CURRENTLY IN THE DATA-COLLECTION PHASE IN ORDER TO TRAIN THE FIRST VERSION OF THE KNN NETWORK. CURRENTLY WE'LL NEED 100K UNIQUE NAMES AT LEAST :) Thank you for sending names to the server everyone!
+
+--------------------------------------------------------------------------------------------------------
+
 This plugin pulls surrounding Player Names from Old School RuneScape. It then sends those names to a Python server that looks up those names on the hiscores - and runs a neural network analysis on the returned player stats to analyze bot-like behavior. Bot-like players are then separately reported to Jagex. 
 
 --HOW TO USE--
