@@ -47,8 +47,8 @@ public class BotDetectorPanel extends PluginPanel {
     JLabel uploads = new JLabel(htmlLabel("Names Uploaded: ", "0"));
 
     private JPanel playerInfoPanel = new JPanel();
-    JLabel playerName = new JLabel(htmlLabel("Player Name: ", "None Selected"));
-    JLabel playerGroupID = new JLabel(htmlLabel("Group ID: ", ""));
+    JLabel playerName = new JLabel(htmlLabel("Player Name: ", "---"));
+    JLabel playerGroupID = new JLabel(htmlLabel("Group ID: ", "---"));
 
     @Override
     public void onActivate()
