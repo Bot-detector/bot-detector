@@ -46,6 +46,10 @@ public class BotDetectorPanel extends PluginPanel {
     private JPanel statsPanel = new JPanel();
     JLabel uploads = new JLabel(htmlLabel("Names Uploaded: ", "0"));
 
+    private JPanel playerInfoPanel = new JPanel();
+    JLabel playerName = new JLabel(htmlLabel("Player Name: ", "None Selected"));
+    JLabel playerGroupID = new JLabel(htmlLabel("Group ID: ", ""));
+
     @Override
     public void onActivate()
     {
@@ -69,16 +73,28 @@ public class BotDetectorPanel extends PluginPanel {
         statsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         statsPanel.setLayout(new GridLayout(0, 1));
 
+        playerInfoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        playerInfoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        playerInfoPanel.setLayout(new GridLayout(0, 1));
+
         final Font boldFont = FontManager.getRunescapeBoldFont();
 
-        JLabel title =  new JLabel(htmlLabel("Statistics: ", ""));
-        title.setFont(boldFont);
+        JLabel statsTitle =  new JLabel(htmlLabel("Statistics: ", ""));
+        statsTitle.setFont(boldFont);
 
-        statsPanel.add(title);
+        JLabel dataTitle =  new JLabel(htmlLabel("Player Data: ", ""));
+        dataTitle.setFont((boldFont));
+
+        statsPanel.add(statsTitle);
         statsPanel.add(uploads);
 
+        playerInfoPanel.add(dataTitle);
+        playerInfoPanel.add(playerName);
+        playerInfoPanel.add(playerGroupID);
 
         add(statsPanel, BorderLayout.NORTH);
+        add(playerInfoPanel, BorderLayout.SOUTH);
+
         eventBus.register(this);
 
     }
@@ -104,6 +120,18 @@ public class BotDetectorPanel extends PluginPanel {
         uploads.setText(htmlLabel("Names Uploaded: ",
                 String.valueOf(BotDetectorPlugin.numNamesSubmitted)));
         statsPanel.updateUI();
+    }
+
+    void updatePlayerData(String rsn, int groupID)
+    {
+        playerName.setText(htmlLabel("Player Name: ",  sanitizeText(rsn)));
+        playerGroupID.setText(htmlLabel("Group ID: ", String.valueOf(groupID)));
+        playerInfoPanel.updateUI();
+    }
+
+    private static String sanitizeText(String rsn)
+    {
+        return rsn.replace('\u00A0', ' ');
     }
 
 

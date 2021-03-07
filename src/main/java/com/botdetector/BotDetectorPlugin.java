@@ -1,7 +1,10 @@
 package com.botdetector;
 
-import net.runelite.api.events.GameTick;
-import net.runelite.api.events.PlayerSpawned;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ObjectArrays;
+import net.runelite.api.*;
+import net.runelite.api.events.*;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.Notifier;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -12,17 +15,17 @@ import net.runelite.client.events.ConfigChanged;
 import javax.inject.Inject;
 import javax.swing.*;
 
-import net.runelite.api.Client;
-import net.runelite.api.Player;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.SwingUtil;
+import net.runelite.client.util.Text;
 import okhttp3.*;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.util.HashSet;
 import java.awt.image.BufferedImage;
 import net.runelite.client.util.ImageUtil;
+import org.apache.commons.lang3.ArrayUtils;
 
 @PluginDescriptor(
         name = "Bot Detector",
@@ -33,7 +36,9 @@ import net.runelite.client.util.ImageUtil;
 )
 public class BotDetectorPlugin extends Plugin {
 
-    private static final String QUERY = "Query";
+    private static final String DETECT = "Detect";
+    private static final String KICK_OPTION = "Kick";
+    private static final ImmutableList<String> AFTER_OPTIONS = ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
     public static final MediaType MEDIA_TYPE_MARKDOWN = MediaType.parse("text/x-markdown; charset=utf-8");
     private final OkHttpClient okclient = new OkHttpClient();
 
@@ -98,10 +103,18 @@ public class BotDetectorPlugin extends Plugin {
                             submissionSet.size() +
                             " Player Names Uploaded Successfully!");
 
+
+
                     addNumNamesSubmitted(submissionSet.size());
 
                     submissionSet.clear();
                 } else {
+                    System.out.println("Names list submission failed!");
+                    System.out.println(response.code());
+                    System.out.println(response.body());
+                    System.out.println(response.message());
+                    System.out.println(response.headers());
+
                     notifier.notify("Bot Detector: Player Name List Upload Failed.");
                     call.cancel();
                 }
@@ -154,8 +167,8 @@ public class BotDetectorPlugin extends Plugin {
         clientToolbar.addNavigation(navButton);
 
 
-        if (config.addQueryOption() && client != null) {
-            menuManager.addPlayerMenuItem(QUERY);
+        if (config.addDetectOption() && client != null) {
+            menuManager.addPlayerMenuItem(DETECT);
         }
     }
 
@@ -166,8 +179,8 @@ public class BotDetectorPlugin extends Plugin {
             sendToServer();
         }
 
-        if (config.addQueryOption() && client != null) {
-            menuManager.removePlayerMenuItem(QUERY);
+        if (config.addDetectOption() && client != null) {
+            menuManager.removePlayerMenuItem(DETECT);
         }
 
         clientToolbar.removeNavigation(navButton);
@@ -179,19 +192,147 @@ public class BotDetectorPlugin extends Plugin {
             return;
         }
 
-        if (event.getKey().equals("addQueryOption")) {
+        if (event.getKey().equals("addDetectOption")) {
             if (!Boolean.parseBoolean(event.getOldValue()) && Boolean.parseBoolean(event.getNewValue())) {
-                menuManager.addPlayerMenuItem(QUERY);
+                menuManager.addPlayerMenuItem(DETECT);
             } else if (Boolean.parseBoolean(event.getOldValue()) && !Boolean.parseBoolean(event.getNewValue())) {
-                menuManager.removePlayerMenuItem(QUERY);
+                menuManager.removePlayerMenuItem(DETECT);
             }
         }
     }
+
+    @Subscribe
+    public void onMenuEntryAdded(MenuEntryAdded event) {
+        if (config.addDetectOption() == false) {
+            return;
+        }
+
+        int groupId = WidgetInfo.TO_GROUP(event.getActionParam1());
+        String option = event.getOption();
+
+        if (groupId == WidgetInfo.FRIENDS_LIST.getGroupId() || groupId == WidgetInfo.FRIENDS_CHAT.getGroupId() ||
+                groupId == WidgetInfo.CHATBOX.getGroupId() && !KICK_OPTION.equals(option) ||
+                groupId == WidgetInfo.RAIDING_PARTY.getGroupId() || groupId == WidgetInfo.PRIVATE_CHAT_MESSAGE.getGroupId() ||
+                groupId == WidgetInfo.IGNORE_LIST.getGroupId()) {
+            if (!AFTER_OPTIONS.contains(option) || (option.equals("Delete") && groupId != WidgetInfo.IGNORE_LIST.getGroupId())) {
+                return;
+            }
+
+            final MenuEntry detect = new MenuEntry();
+            detect.setOption(DETECT);
+            detect.setTarget(event.getTarget());
+            detect.setType(MenuAction.RUNELITE.getId());
+            detect.setParam0(event.getActionParam0());
+            detect.setParam1(event.getActionParam1());
+            detect.setIdentifier(event.getIdentifier());
+
+            insertMenuEntry(detect, client.getMenuEntries());
+        }
+    }
+
+    @Subscribe
+    public void onMenuOptionClicked(MenuOptionClicked event) throws IOException {
+        if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
+                && event.getMenuOption().equals(DETECT))
+        {
+            final String target;
+            if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
+            {
+                Player player = client.getCachedPlayers()[event.getId()];
+
+                if (player == null)
+                {
+                    return;
+                }
+
+                target = player.getName();
+
+            }
+            else
+            {
+                target = Text.removeTags(event.getMenuTarget());
+            }
+
+            getPlayerData(target);
+        }
+    }
+
+
+
+    private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
+    {
+        MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
+        int menuEntryCount = newMenu.length;
+        ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
+        client.setMenuEntries(newMenu);
+    }
+
+
 
     public void addNumNamesSubmitted(int n)
     {
         numNamesSubmitted += n;
 
         SwingUtilities.invokeLater(panel::updateUploads);
+    }
+
+    public void getPlayerData(String playerName) throws IOException {
+
+        System.out.println("Attempting to get data on " + playerName);
+
+        String url = "http://ferrariicpa.pythonanywhere.com/user/" +
+                playerName;
+
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        Call call = okclient.newCall(request);
+        call.enqueue(new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                System.out.println("FAIL! Could not locate player data.");
+                notifier.notify("Could not locate player data.");
+
+                call.cancel();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+                if (response.isSuccessful()) {
+
+                    System.out.println(playerName + " " + response.body());
+                    int groupID = 1; //will be taken from the response body
+                    updatePlayerData(playerName, groupID);
+
+
+                } else {
+                    System.out.println("Bad Response. Could not locate player data.");
+                    System.out.println(response.code());
+                    System.out.println(response.body());
+                    System.out.println(response.message());
+                    System.out.println(response.headers());
+                    response.close();
+                    notifier.notify("Could not locate player data.");
+
+                    response.close();
+                    call.cancel();
+                }
+            }
+        });
+    }
+
+    private void updatePlayerData(String playerName, int groupID)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            if (!navButton.isSelected())
+            {
+                navButton.getOnSelect().run();
+            }
+            panel.updatePlayerData(playerName, groupID);
+        });
     }
 }

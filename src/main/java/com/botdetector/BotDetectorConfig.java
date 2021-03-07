@@ -25,9 +25,9 @@ public interface BotDetectorConfig extends Config
 
     @ConfigItem(
             position = 3,
-            keyName = "addQueryOption",
-            name = "Right-Click Player Query:",
-            description = "Adds a menu entry to player menus that allows you to see how bot-like a specific player is. "
+            keyName = "addDetectOption",
+            name = "Right-click detect player:",
+            description = "Adds a menu entry to player menus that allows you to see what a player is classified as."
     )
-    default boolean addQueryOption() { return false; }
+    default boolean addDetectOption() { return false; }
 }
