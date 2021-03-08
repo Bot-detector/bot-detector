@@ -130,13 +130,11 @@ public class BotDetectorPlugin extends Plugin {
     @Subscribe
     public void onGameTick(GameTick event) throws IOException {
         if (config.sendAutomatic()) {
-            //int timeSend = 100 * (config.intConfig());
+            int timeSend = 100 * (config.intConfig());
 
-            //if (timeSend < 500) {
-                //timeSend = 500;
-            //}
-
-            int timeSend = 30;
+            if (timeSend < 500) {
+                timeSend = 500;
+            }
 
             x++;
 
