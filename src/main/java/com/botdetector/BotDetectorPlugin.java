@@ -85,7 +85,7 @@ public class BotDetectorPlugin extends Plugin {
         h.clear();
 
         Request request = new Request.Builder()
-                .url("http://ferrariic.pythonanywhre.com/")
+                .url("http://ferrariicpa.pythonanywhere.com/")
                 .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, submissionSet.toString()))
                 .build();
 
