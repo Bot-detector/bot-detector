@@ -24,6 +24,8 @@ import com.google.inject.Provides;
 import java.io.IOException;
 import java.util.HashSet;
 import java.awt.image.BufferedImage;
+import java.util.List;
+
 import net.runelite.client.util.ImageUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -83,7 +85,7 @@ public class BotDetectorPlugin extends Plugin {
         h.clear();
 
         Request request = new Request.Builder()
-                .url("http://ferrariicpa.pythonanywhere.com/")
+                .url("http://ferrariic.pythonanywhre.com/")
                 .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, submissionSet.toString()))
                 .build();
 
@@ -110,12 +112,8 @@ public class BotDetectorPlugin extends Plugin {
                     submissionSet.clear();
                 } else {
                     System.out.println("Names list submission failed!");
-                    System.out.println(response.code());
-                    System.out.println(response.body());
-                    System.out.println(response.message());
-                    System.out.println(response.headers());
-
                     notifier.notify("Bot Detector: Player Name List Upload Failed.");
+                    response.close();
                     call.cancel();
                 }
             }
@@ -132,11 +130,13 @@ public class BotDetectorPlugin extends Plugin {
     @Subscribe
     public void onGameTick(GameTick event) throws IOException {
         if (config.sendAutomatic()) {
-            int timeSend = 100 * (config.intConfig());
+            //int timeSend = 100 * (config.intConfig());
 
-            if (timeSend < 500) {
-                timeSend = 500;
-            }
+            //if (timeSend < 500) {
+                //timeSend = 500;
+            //}
+
+            int timeSend = 30;
 
             x++;
 
@@ -257,8 +257,6 @@ public class BotDetectorPlugin extends Plugin {
         }
     }
 
-
-
     private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
     {
         MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
@@ -266,8 +264,6 @@ public class BotDetectorPlugin extends Plugin {
         ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
         client.setMenuEntries(newMenu);
     }
-
-
 
     public void addNumNamesSubmitted(int n)
     {
@@ -280,8 +276,8 @@ public class BotDetectorPlugin extends Plugin {
 
         System.out.println("Attempting to get data on " + playerName);
 
-        String url = "http://ferrariicpa.pythonanywhere.com/user/" +
-                playerName;
+        String url = "https://tactile-bindery-306408.ue.r.appspot.com/user/" +
+                playerName.replace( " ", "%20");;
 
         Request request = new Request.Builder()
                 .url(url)
@@ -295,6 +291,8 @@ public class BotDetectorPlugin extends Plugin {
                 System.out.println("FAIL! Could not locate player data.");
                 notifier.notify("Could not locate player data.");
 
+                updatePlayerData("Server Error", "---", true);
+
                 call.cancel();
             }
 
@@ -303,19 +301,22 @@ public class BotDetectorPlugin extends Plugin {
 
                 if (response.isSuccessful()) {
 
-                    System.out.println(playerName + " " + response.body());
-                    int groupID = 1; //will be taken from the response body
-                    updatePlayerData(playerName, groupID);
+                    String groupID = response.body().string();
 
+                    if (groupID.equals("-1"))
+                    {
+                        updatePlayerData(playerName, "Indeterminable", true);
+                    }
+                    else
+                    {
+                        updatePlayerData(playerName, groupID, false);
+                    }
 
                 } else {
                     System.out.println("Bad Response. Could not locate player data.");
-                    System.out.println(response.code());
-                    System.out.println(response.body());
-                    System.out.println(response.message());
-                    System.out.println(response.headers());
-                    response.close();
                     notifier.notify("Could not locate player data.");
+
+                    updatePlayerData("Server Error", "---", true);
 
                     response.close();
                     call.cancel();
@@ -324,7 +325,7 @@ public class BotDetectorPlugin extends Plugin {
         });
     }
 
-    private void updatePlayerData(String playerName, int groupID)
+    private void updatePlayerData(String playerName, String groupID, boolean error)
     {
         SwingUtilities.invokeLater(() ->
         {
@@ -332,7 +333,7 @@ public class BotDetectorPlugin extends Plugin {
             {
                 navButton.getOnSelect().run();
             }
-            panel.updatePlayerData(playerName, groupID);
+            panel.updatePlayerData(playerName, groupID, error);
         });
     }
 }

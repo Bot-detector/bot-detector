@@ -44,11 +44,11 @@ public class BotDetectorPanel extends PluginPanel {
     private boolean active;
 
     private JPanel statsPanel = new JPanel();
-    JLabel uploads = new JLabel(htmlLabel("Names Uploaded: ", "0"));
+    JLabel uploads = new JLabel(htmlLabel("Names Uploaded: ", "0", "#a5a5a5", "white"));
 
     private JPanel playerInfoPanel = new JPanel();
-    JLabel playerName = new JLabel(htmlLabel("Player Name: ", "---"));
-    JLabel playerGroupID = new JLabel(htmlLabel("Group ID: ", "---"));
+    JLabel playerName = new JLabel(htmlLabel("Player Name: ", "---", "#a5a5a5", "white"));
+    JLabel playerGroupID = new JLabel(htmlLabel("Group ID: ", "---", "#a5a5a5", "white"));
 
     @Override
     public void onActivate()
@@ -79,10 +79,10 @@ public class BotDetectorPanel extends PluginPanel {
 
         final Font boldFont = FontManager.getRunescapeBoldFont();
 
-        JLabel statsTitle =  new JLabel(htmlLabel("Statistics: ", ""));
+        JLabel statsTitle =  new JLabel(htmlLabel("Statistics: ", "", "#a5a5a5", "white"));
         statsTitle.setFont(boldFont);
 
-        JLabel dataTitle =  new JLabel(htmlLabel("Player Data: ", ""));
+        JLabel dataTitle =  new JLabel(htmlLabel("Player Data: ", "", "#a5a5a5", "white"));
         dataTitle.setFont((boldFont));
 
         statsPanel.add(statsTitle);
@@ -99,9 +99,11 @@ public class BotDetectorPanel extends PluginPanel {
 
     }
 
-    private static String htmlLabel(String key, String value)
+    private static String htmlLabel(String key, String value, String keyColor, String valueColor)
     {
-        return "<html><body style = 'color:#a5a5a5'>" + key + "<span style = 'color:white'>" + value + "</span></body></html>";
+        return "<html><body style = 'color:"+ keyColor + "'>" + key +
+                "<span style = 'color:" + valueColor + "'>" + value +
+                "</span></body></html>";
     }
 
 
@@ -118,14 +120,24 @@ public class BotDetectorPanel extends PluginPanel {
     void updateUploads()
     {
         uploads.setText(htmlLabel("Names Uploaded: ",
-                String.valueOf(BotDetectorPlugin.numNamesSubmitted)));
+                String.valueOf(BotDetectorPlugin.numNamesSubmitted),
+                "#a5a5a5", "white"));
         statsPanel.updateUI();
     }
 
-    void updatePlayerData(String rsn, int groupID)
+    void updatePlayerData(String rsn, String groupID, boolean error)
     {
-        playerName.setText(htmlLabel("Player Name: ",  sanitizeText(rsn)));
-        playerGroupID.setText(htmlLabel("Group ID: ", String.valueOf(groupID)));
+        if(error)
+        {
+            playerName.setText(htmlLabel("Player Name: ", rsn , "#a5a5a5", "red"));
+            playerGroupID.setText(htmlLabel("Group ID: ", groupID, "#a5a5a5", "red"));
+        }
+        else
+        {
+            playerName.setText(htmlLabel("Player Name: ",  sanitizeText(rsn), "#a5a5a5", "white"));
+            playerGroupID.setText(htmlLabel("Group ID: ", groupID, "#a5a5a5", "white"));
+        }
+
         playerInfoPanel.updateUI();
     }
 
