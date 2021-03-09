@@ -15,7 +15,6 @@ import javax.inject.Singleton;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.HyperlinkEvent;
-
 import lombok.SneakyThrows;
 import okhttp3.*;
 import jdk.internal.joptsimple.internal.Strings;
@@ -205,7 +204,6 @@ public class BotDetectorPanel extends PluginPanel {
         uploads.setText(htmlLabel("Names Uploaded: ",
                 String.valueOf(BotDetectorPlugin.numNamesSubmitted),
                 "#a5a5a5", "white"));
-        //statsPanel.updateUI();
     }
 
     void updatePlayerData(String rsn, String groupID, boolean error)
@@ -222,7 +220,6 @@ public class BotDetectorPanel extends PluginPanel {
         {
             playerName.setText(htmlLabel("Player Name: ",  sanitizeText(rsn), "#a5a5a5", "white"));
             playerGroupID.setText(htmlLabel("Group ID: ", groupID, "#a5a5a5", "white"));
-            loading = false;
             searchBar.setEditable(true);
             searchBar.setIcon(IconTextField.Icon.SEARCH);
         }

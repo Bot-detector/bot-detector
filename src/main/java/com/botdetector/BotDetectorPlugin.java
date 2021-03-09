@@ -3,6 +3,7 @@ package com.botdetector;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.Notifier;
@@ -16,6 +17,7 @@ import javax.inject.Inject;
 import javax.swing.*;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.SwingUtil;
 import net.runelite.client.util.Text;
 import okhttp3.*;
@@ -59,6 +61,13 @@ public class BotDetectorPlugin extends Plugin {
     @Inject
     private ClientToolbar clientToolbar;
 
+    @Inject
+    private BotDetectorHeatMapOverlay heatMapOverlay;
+
+    @Inject
+    private OverlayManager overlayManager;
+
+
     @Provides
     BotDetectorConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(BotDetectorConfig.class);
@@ -94,7 +103,7 @@ public class BotDetectorPlugin extends Plugin {
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                notifier.notify("Bot Detector: Player Name List Upload Failed.");
+                pushNotification("Bot Detector: Player Name List Upload Failed.");
                 call.cancel();
             }
 
@@ -102,20 +111,17 @@ public class BotDetectorPlugin extends Plugin {
             public void onResponse(Call call, Response response) throws IOException {
 
                 if (response.isSuccessful()) {
-                    notifier.notify("Bot Detector: " +
+                    pushNotification("Bot Detector: " +
                             submissionSet.size() +
                             " Player Names Uploaded Successfully!");
-
-
 
                     addNumNamesSubmitted(submissionSet.size());
 
                     submissionSet.clear();
                 } else {
                     System.out.println("Names list submission failed!");
-                    notifier.notify("Bot Detector: Player Name List Upload Failed.");
+                    pushNotification("Bot Detector: Player Name List Upload Failed.");
                     System.out.println(response.code());
-                    System.out.println(response.body().toString());
                     response.close();
                     call.cancel();
                 }
@@ -129,13 +135,15 @@ public class BotDetectorPlugin extends Plugin {
         h.add(player.getName());
 
         System.out.println("Found: " + player.getName());
-        System.out.println("LocalLocation: " + player.getLocalLocation());
-        System.out.println("MinimapLocation: " + player.getMinimapLocation());
-        System.out.println("WorldArea2Point: " + player.getWorldArea().toWorldPoint());
-        System.out.println("WorldAreaPlane: " + player.getWorldArea().getPlane());
-        System.out.println("WorldArea2Point: " + player.getWorldArea().toWorldPoint());
-        System.out.println("WorldPoint: " + player.getWorldLocation());
+        List<WorldPoint> wps = player.getWorldArea().toWorldPointList();
 
+        for (WorldPoint wp : wps)
+        {
+            System.out.println("Region Coords");
+            System.out.println("ID:" + wp.getRegionID());
+            System.out.println("X:" + wp.getRegionX());
+            System.out.println("Y:" + wp.getRegionY());
+        }
     }
 
     @Subscribe
@@ -296,5 +304,15 @@ public class BotDetectorPlugin extends Plugin {
                 e.printStackTrace();
             }
         });
+    }
+
+    private void pushNotification(String msg)
+    {
+        if(config.enableNotificatiions())
+        {
+            notifier.notify(msg);
+        }
+
+        return;
     }
 }
