@@ -14,7 +14,6 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.events.ConfigChanged;
 import javax.inject.Inject;
 import javax.swing.*;
-
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.SwingUtil;
@@ -25,7 +24,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.awt.image.BufferedImage;
 import java.util.List;
-
 import net.runelite.client.util.ImageUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -42,7 +40,7 @@ public class BotDetectorPlugin extends Plugin {
     private static final String KICK_OPTION = "Kick";
     private static final ImmutableList<String> AFTER_OPTIONS = ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
     public static final MediaType MEDIA_TYPE_MARKDOWN = MediaType.parse("text/x-markdown; charset=utf-8");
-    private final OkHttpClient okclient = new OkHttpClient();
+    public static final OkHttpClient okClient = new OkHttpClient();
 
     private BotDetectorPanel panel;
 
@@ -89,7 +87,10 @@ public class BotDetectorPlugin extends Plugin {
                 .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, submissionSet.toString()))
                 .build();
 
-        Call call = okclient.newCall(request);
+        System.out.println(request.headers());
+        System.out.println(request.body().toString());
+
+        Call call = okClient.newCall(request);
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -113,6 +114,8 @@ public class BotDetectorPlugin extends Plugin {
                 } else {
                     System.out.println("Names list submission failed!");
                     notifier.notify("Bot Detector: Player Name List Upload Failed.");
+                    System.out.println(response.code());
+                    System.out.println(response.body().toString());
                     response.close();
                     call.cancel();
                 }
@@ -124,7 +127,15 @@ public class BotDetectorPlugin extends Plugin {
     public void onPlayerSpawned(PlayerSpawned event) throws IOException {
         Player player = event.getPlayer();
         h.add(player.getName());
+
         System.out.println("Found: " + player.getName());
+        System.out.println("LocalLocation: " + player.getLocalLocation());
+        System.out.println("MinimapLocation: " + player.getMinimapLocation());
+        System.out.println("WorldArea2Point: " + player.getWorldArea().toWorldPoint());
+        System.out.println("WorldAreaPlane: " + player.getWorldArea().getPlane());
+        System.out.println("WorldArea2Point: " + player.getWorldArea().toWorldPoint());
+        System.out.println("WorldPoint: " + player.getWorldLocation());
+
     }
 
     @Subscribe
@@ -251,7 +262,7 @@ public class BotDetectorPlugin extends Plugin {
                 target = Text.removeTags(event.getMenuTarget());
             }
 
-            getPlayerData(target);
+            updatePlayerData(target);
         }
     }
 
@@ -270,60 +281,8 @@ public class BotDetectorPlugin extends Plugin {
         SwingUtilities.invokeLater(panel::updateUploads);
     }
 
-    public void getPlayerData(String playerName) throws IOException {
 
-        System.out.println("Attempting to get data on " + playerName);
-
-        String url = "https://tactile-bindery-306408.ue.r.appspot.com/user/" +
-                playerName.replace( " ", "%20");;
-
-        Request request = new Request.Builder()
-                .url(url)
-                .build();
-
-        Call call = okclient.newCall(request);
-        call.enqueue(new Callback() {
-
-            @Override
-            public void onFailure(Call call, IOException e) {
-                System.out.println("FAIL! Could not locate player data.");
-                notifier.notify("Could not locate player data.");
-
-                updatePlayerData("Server Error", "---", true);
-
-                call.cancel();
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-
-                if (response.isSuccessful()) {
-
-                    String groupID = response.body().string();
-
-                    if (groupID.equals("-1"))
-                    {
-                        updatePlayerData(playerName, "Indeterminable", true);
-                    }
-                    else
-                    {
-                        updatePlayerData(playerName, groupID, false);
-                    }
-
-                } else {
-                    System.out.println("Bad Response. Could not locate player data.");
-                    notifier.notify("Could not locate player data.");
-
-                    updatePlayerData("Server Error", "---", true);
-
-                    response.close();
-                    call.cancel();
-                }
-            }
-        });
-    }
-
-    private void updatePlayerData(String playerName, String groupID, boolean error)
+    private void updatePlayerData(String playerName)
     {
         SwingUtilities.invokeLater(() ->
         {
@@ -331,7 +290,11 @@ public class BotDetectorPlugin extends Plugin {
             {
                 navButton.getOnSelect().run();
             }
-            panel.updatePlayerData(playerName, groupID, error);
+            try {
+                panel.lookupPlayer(playerName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
     }
 }

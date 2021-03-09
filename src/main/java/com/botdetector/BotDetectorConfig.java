@@ -25,9 +25,25 @@ public interface BotDetectorConfig extends Config
 
     @ConfigItem(
             position = 3,
+            keyName = "lowBandwithMode",
+            name = "Low bandwith mode",
+            description = "Saves all player names to a local file and waits to upload them until you log out."
+    )
+    default boolean lowBandwithMode() { return false; }
+
+    @ConfigItem(
+            position = 4,
             keyName = "addDetectOption",
             name = "Right-click detect player:",
             description = "Adds a menu entry to player menus that allows you to see what a player is classified as."
     )
     default boolean addDetectOption() { return false; }
+
+    @ConfigItem(
+            position = 5,
+            keyName = "enableHeatMap",
+            name = "Enable Heat Map:",
+            description = "Enables a heat map overlay on top of the world map which shows activity intensity of the selected group."
+    )
+    default boolean enableHeatMap() { return false; }
 }
