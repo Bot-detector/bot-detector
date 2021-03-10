@@ -274,7 +274,7 @@ public class BotDetectorPlugin extends Plugin {
 
         System.out.println("Attempting to get data on " + playerName);
 
-        String url = "https://tactile-bindery-306408.ue.r.appspot.com/user/" +
+        String url = "http://45.33.127.106/user/" +
                 playerName.replace( " ", "%20");;
 
         Request request = new Request.Builder()
