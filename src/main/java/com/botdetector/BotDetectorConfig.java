@@ -43,7 +43,7 @@ public interface BotDetectorConfig extends Config
     @ConfigItem(
             position = 5,
             keyName = "addDetectOption",
-            name = "Right-click detect player:",
+            name = "Right-click 'Detect' player:",
             description = "Adds a menu entry to player menus that allows you to see what a player is classified as."
     )
     default boolean addDetectOption() { return false; }

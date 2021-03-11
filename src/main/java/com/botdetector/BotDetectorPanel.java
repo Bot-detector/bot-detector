@@ -231,7 +231,6 @@ public class BotDetectorPanel extends PluginPanel {
     }
 
     private void lookupPlayer() throws IOException {
-        System.out.println("hi");
         String sanitizedRSN = sanitizeText(searchBar.getText());
 
         if(sanitizedRSN.length() <= 0)

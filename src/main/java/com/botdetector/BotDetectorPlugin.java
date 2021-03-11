@@ -2,6 +2,7 @@ package com.botdetector;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
+import com.google.gson.Gson;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
@@ -42,7 +43,9 @@ public class BotDetectorPlugin extends Plugin {
     private static final String KICK_OPTION = "Kick";
     private static final ImmutableList<String> AFTER_OPTIONS = ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
     public static final MediaType MEDIA_TYPE_MARKDOWN = MediaType.parse("text/x-markdown; charset=utf-8");
+    public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
     public static final OkHttpClient okClient = new OkHttpClient();
+    public static final Gson gson = new Gson();
 
     private BotDetectorPanel panel;
 
@@ -93,7 +96,7 @@ public class BotDetectorPlugin extends Plugin {
 
         Request request = new Request.Builder()
                 .url("http://ferrariicpa.pythonanywhere.com/")
-                .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, submissionSet.toString()))
+                .post(RequestBody.create(MEDIA_TYPE_JSON, gson.toJson(submissionSet)))
                 .build();
 
         System.out.println(request.headers());
@@ -129,21 +132,49 @@ public class BotDetectorPlugin extends Plugin {
         });
     }
 
+    public static String buildPlayerJSONString(Player target, String reporter) {
+
+        WorldPoint targetLocation = target.getWorldLocation();
+
+        String playerString = "{";
+
+        playerString += "\"player_reporter\": \""
+                + reporter
+                + "\",";
+
+        playerString += "\"player_reported\": \""
+                + target.getName()
+                + "\",";
+
+        playerString += "\"reported_location\": {"
+                + "\"region_id\": \""
+                    + targetLocation.getRegionID()
+                    + "\","
+                + "\"x\": "
+                    + targetLocation.getX()
+                    + ","
+                + "\"y\": "
+                    + targetLocation.getY()
+                    + ","
+                + "\"z\": "
+                    + targetLocation.getPlane()
+                +"}";
+
+        playerString += "}";
+
+        System.out.println(playerString);
+
+        return playerString;
+    }
+
     @Subscribe
     public void onPlayerSpawned(PlayerSpawned event) throws IOException {
         Player player = event.getPlayer();
-        h.add(player.getName());
 
-        System.out.println("Found: " + player.getName());
-        List<WorldPoint> wps = player.getWorldArea().toWorldPointList();
+        String json = buildPlayerJSONString(player, client.getLocalPlayer().getName());
 
-        for (WorldPoint wp : wps)
-        {
-            System.out.println("Region Coords");
-            System.out.println("ID:" + wp.getRegionID());
-            System.out.println("X:" + wp.getRegionX());
-            System.out.println("Y:" + wp.getRegionY());
-        }
+        h.add(json);
+
     }
 
     @Subscribe
