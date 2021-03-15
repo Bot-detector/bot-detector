@@ -1,31 +1,20 @@
 package com.botdetector;
 
-import com.google.common.base.MoreObjects;
 import com.google.inject.Inject;
-
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.Nullable;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.HyperlinkEvent;
 import lombok.SneakyThrows;
 import okhttp3.*;
-import jdk.internal.joptsimple.internal.Strings;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.client.Notifier;
 import net.runelite.client.events.SessionClose;
 import net.runelite.client.events.SessionOpen;
-import net.runelite.client.RuneLiteProperties;
-import net.runelite.client.account.SessionManager;
-import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.info.JRichTextPane;
