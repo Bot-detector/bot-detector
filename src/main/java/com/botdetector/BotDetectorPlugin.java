@@ -356,7 +356,6 @@ public class BotDetectorPlugin extends Plugin {
         SwingUtilities.invokeLater(panel::updateUploads);
     }
 
-
     private void updatePlayerData(String playerName)
     {
         SwingUtilities.invokeLater(() ->
