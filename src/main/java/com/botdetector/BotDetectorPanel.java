@@ -255,9 +255,7 @@ public class BotDetectorPanel extends PluginPanel {
 
     public void getPlayerData(String rsn, OkHttpClient okClient) throws IOException {
 
-        System.out.println("Attempting to get data on " + rsn);
-
-        String url = "https://tactile-bindery-306408.ue.r.appspot.com/user/" +
+        String url = "http://osrsbot-detector.ddns.net:8080/user/" +
                 rsn.replace( " ", "%20");;
 
         Request request = new Request.Builder()
@@ -269,7 +267,7 @@ public class BotDetectorPanel extends PluginPanel {
 
             @Override
             public void onFailure(Call call, IOException e) {
-                System.out.println("FAIL! Could not locate player data.");
+                System.out.println("FAILURE! Could not locate player data.");
                 notifier.notify("Could not locate player data.");
 
                 updatePlayerData("Server Error", "---", true);

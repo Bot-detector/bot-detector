@@ -47,6 +47,7 @@ public class BotDetectorPlugin extends Plugin {
     public static final OkHttpClient okClient = new OkHttpClient();
     public static final Gson gson = new Gson();
 
+
     private BotDetectorPanel panel;
 
     @Inject
@@ -70,6 +71,8 @@ public class BotDetectorPlugin extends Plugin {
     @Inject
     private OverlayManager overlayManager;
 
+    private NavigationButton navButton;
+
 
     @Provides
     BotDetectorConfig provideConfig(ConfigManager configManager) {
@@ -77,13 +80,12 @@ public class BotDetectorPlugin extends Plugin {
     }
 
     static int numNamesSubmitted = 0;
-
-    private NavigationButton navButton;
-
     HashSet<String> h = new HashSet<String>();
     HashSet<String> submissionSet = new HashSet<String>();
 
-    int x = 0;
+
+    int tickCount  = 0;
+    boolean playerLoggedIn = false;
 
 
     public BotDetectorPlugin() throws IOException {
@@ -95,12 +97,10 @@ public class BotDetectorPlugin extends Plugin {
         h.clear();
 
         Request request = new Request.Builder()
-                .url("http://ferrariicpa.pythonanywhere.com/")
+                .url("http://osrsbot-detector.ddns.net:8080/")
                 .post(RequestBody.create(MEDIA_TYPE_JSON, gson.toJson(submissionSet)))
                 .build();
 
-        System.out.println(request.headers());
-        System.out.println(request.body().toString());
 
         Call call = okClient.newCall(request);
         call.enqueue(new Callback() {
@@ -138,16 +138,16 @@ public class BotDetectorPlugin extends Plugin {
 
         String playerString = "{";
 
-        playerString += "\"player_reporter\": \""
+        playerString += "\"player_reporter\":\""
                 + reporter
                 + "\",";
 
-        playerString += "\"player_reported\": \""
+        playerString += "\"player_reported\":\""
                 + target.getName()
                 + "\",";
 
-        playerString += "\"reported_location\": {"
-                + "\"region_id\": \""
+        playerString += "\"reported_location\":{"
+                + "\"region_id\":\""
                     + targetLocation.getRegionID()
                     + "\","
                 + "\"x\": "
@@ -161,8 +161,6 @@ public class BotDetectorPlugin extends Plugin {
                 +"}";
 
         playerString += "}";
-
-        System.out.println(playerString);
 
         return playerString;
     }
@@ -179,20 +177,46 @@ public class BotDetectorPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick event) throws IOException {
-        if (config.sendAutomatic()) {
+        if (!config.sendAtLogout()) {
+
             int timeSend = 100 * (config.intConfig());
 
             if (timeSend < 500) {
                 timeSend = 500;
             }
 
-            x++;
+            tickCount ++;
 
-            if (x > timeSend) {
+            if (tickCount > timeSend) {
                 if (h.size() > 0) {
                     sendToServer();
                 }
-                x = 0;
+                tickCount  = 0;
+            }
+        }
+    }
+
+    @Subscribe
+    public void onGameStateChanged(GameStateChanged gameStateChanged) throws IOException {
+        GameState gs = gameStateChanged.getGameState();
+
+        if(gs.getState() == 30)
+        {
+            playerLoggedIn = true;
+        }
+        else if (gs.getState() == 10)
+        {
+            //If player was previously logged in and is now back at the login screen
+            //(not hopping, loading, etc..)
+            //then that means they have logged out.
+            if(playerLoggedIn)
+            {
+                playerLoggedIn = false;
+
+                if(h.size() > 0 )
+                {
+                    sendToServer();
+                }
             }
         }
     }
@@ -218,6 +242,8 @@ public class BotDetectorPlugin extends Plugin {
         if (config.addDetectOption() && client != null) {
             menuManager.addPlayerMenuItem(DETECT);
         }
+
+        overlayManager.add(heatMapOverlay);
     }
 
     @Override
@@ -232,6 +258,8 @@ public class BotDetectorPlugin extends Plugin {
         }
 
         clientToolbar.removeNavigation(navButton);
+
+        overlayManager.remove(heatMapOverlay);
     }
 
     @Subscribe
