@@ -19,7 +19,6 @@ import javax.swing.*;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.util.SwingUtil;
 import net.runelite.client.util.Text;
 import okhttp3.*;
 import com.google.inject.Provides;
@@ -27,8 +26,6 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.HashSet;
 import java.awt.image.BufferedImage;
-import java.util.List;
-import java.util.Date;
 import net.runelite.client.util.ImageUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
