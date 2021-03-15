@@ -24,9 +24,11 @@ import net.runelite.client.util.Text;
 import okhttp3.*;
 import com.google.inject.Provides;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.HashSet;
 import java.awt.image.BufferedImage;
 import java.util.List;
+import java.util.Date;
 import net.runelite.client.util.ImageUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -134,20 +136,21 @@ public class BotDetectorPlugin extends Plugin {
 
     public static String buildPlayerJSONString(Player target, String reporter) {
 
+        Timestamp ts = new Timestamp(System.currentTimeMillis());
+
         WorldPoint targetLocation = target.getWorldLocation();
 
         String playerString = "{";
 
-        playerString += "\"player_reporter\":\""
+        playerString += "\"reporter\":\""
                 + reporter
                 + "\",";
 
-        playerString += "\"player_reported\":\""
+        playerString += "\"reported\":\""
                 + target.getName()
                 + "\",";
 
-        playerString += "\"reported_location\":{"
-                + "\"region_id\":\""
+        playerString += "\"region_id\":\""
                     + targetLocation.getRegionID()
                     + "\","
                 + "\"x\": "
@@ -158,9 +161,17 @@ public class BotDetectorPlugin extends Plugin {
                     + ","
                 + "\"z\": "
                     + targetLocation.getPlane()
-                +"}";
+                + ",";
+
+
+        playerString += "\"ts\" :"
+                + "\""
+                + ts
+                + "\"";
 
         playerString += "}";
+
+        System.out.println(playerString);
 
         return playerString;
     }
