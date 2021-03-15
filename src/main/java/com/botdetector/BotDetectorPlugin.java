@@ -2,7 +2,9 @@ package com.botdetector;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
+import com.google.gson.Gson;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.Notifier;
@@ -14,18 +16,19 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.events.ConfigChanged;
 import javax.inject.Inject;
 import javax.swing.*;
-
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.SwingUtil;
 import net.runelite.client.util.Text;
 import okhttp3.*;
 import com.google.inject.Provides;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.HashSet;
 import java.awt.image.BufferedImage;
 import java.util.List;
-
+import java.util.Date;
 import net.runelite.client.util.ImageUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -42,7 +45,10 @@ public class BotDetectorPlugin extends Plugin {
     private static final String KICK_OPTION = "Kick";
     private static final ImmutableList<String> AFTER_OPTIONS = ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
     public static final MediaType MEDIA_TYPE_MARKDOWN = MediaType.parse("text/x-markdown; charset=utf-8");
-    private final OkHttpClient okclient = new OkHttpClient();
+    public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
+    public static final OkHttpClient okClient = new OkHttpClient();
+    public static final Gson gson = new Gson();
+
 
     private BotDetectorPanel panel;
 
@@ -61,19 +67,27 @@ public class BotDetectorPlugin extends Plugin {
     @Inject
     private ClientToolbar clientToolbar;
 
+    @Inject
+    private BotDetectorHeatMapOverlay heatMapOverlay;
+
+    @Inject
+    private OverlayManager overlayManager;
+
+    private NavigationButton navButton;
+
+
     @Provides
     BotDetectorConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(BotDetectorConfig.class);
     }
 
     static int numNamesSubmitted = 0;
-
-    private NavigationButton navButton;
-
     HashSet<String> h = new HashSet<String>();
     HashSet<String> submissionSet = new HashSet<String>();
 
-    int x = 0;
+
+    int tickCount  = 0;
+    boolean playerLoggedIn = false;
 
 
     public BotDetectorPlugin() throws IOException {
@@ -85,15 +99,16 @@ public class BotDetectorPlugin extends Plugin {
         h.clear();
 
         Request request = new Request.Builder()
-                .url("https://ferrariicpa.pythonanywhere.com/")
-                .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, submissionSet.toString()))
+                .url("http://osrsbot-detector.ddns.net:8080/")
+                .post(RequestBody.create(MEDIA_TYPE_JSON, gson.toJson(submissionSet)))
                 .build();
 
-        Call call = okclient.newCall(request);
+
+        Call call = okClient.newCall(request);
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                notifier.notify("Bot Detector: Player Name List Upload Failed.");
+                pushNotification("Bot Detector: Player Name List Upload Failed.");
                 call.cancel();
             }
 
@@ -101,18 +116,17 @@ public class BotDetectorPlugin extends Plugin {
             public void onResponse(Call call, Response response) throws IOException {
 
                 if (response.isSuccessful()) {
-                    notifier.notify("Bot Detector: " +
+                    pushNotification("Bot Detector: " +
                             submissionSet.size() +
                             " Player Names Uploaded Successfully!");
-
-
 
                     addNumNamesSubmitted(submissionSet.size());
 
                     submissionSet.clear();
                 } else {
                     System.out.println("Names list submission failed!");
-                    notifier.notify("Bot Detector: Player Name List Upload Failed.");
+                    pushNotification("Bot Detector: Player Name List Upload Failed.");
+                    System.out.println(response.code());
                     response.close();
                     call.cancel();
                 }
@@ -120,29 +134,100 @@ public class BotDetectorPlugin extends Plugin {
         });
     }
 
+    public static String buildPlayerJSONString(Player target, String reporter) {
+
+        Timestamp ts = new Timestamp(System.currentTimeMillis());
+
+        WorldPoint targetLocation = target.getWorldLocation();
+
+        String playerString = "{";
+
+        playerString += "\"reporter\":\""
+                + reporter
+                + "\",";
+
+        playerString += "\"reported\":\""
+                + target.getName()
+                + "\",";
+
+        playerString += "\"region_id\":\""
+                    + targetLocation.getRegionID()
+                    + "\","
+                + "\"x\": "
+                    + targetLocation.getX()
+                    + ","
+                + "\"y\": "
+                    + targetLocation.getY()
+                    + ","
+                + "\"z\": "
+                    + targetLocation.getPlane()
+                + ",";
+
+
+        playerString += "\"ts\" :"
+                + "\""
+                + ts
+                + "\"";
+
+        playerString += "}";
+
+        System.out.println(playerString);
+
+        return playerString;
+    }
+
     @Subscribe
     public void onPlayerSpawned(PlayerSpawned event) throws IOException {
         Player player = event.getPlayer();
-        h.add(player.getName());
-        System.out.println("Found: " + player.getName());
+
+        String json = buildPlayerJSONString(player, client.getLocalPlayer().getName());
+
+        h.add(json);
+
     }
 
     @Subscribe
     public void onGameTick(GameTick event) throws IOException {
-        if (config.sendAutomatic()) {
+        if (!config.sendAtLogout()) {
+
             int timeSend = 100 * (config.intConfig());
 
             if (timeSend < 500) {
                 timeSend = 500;
             }
 
-            x++;
+            tickCount ++;
 
-            if (x > timeSend) {
+            if (tickCount > timeSend) {
                 if (h.size() > 0) {
                     sendToServer();
                 }
-                x = 0;
+                tickCount  = 0;
+            }
+        }
+    }
+
+    @Subscribe
+    public void onGameStateChanged(GameStateChanged gameStateChanged) throws IOException {
+        GameState gs = gameStateChanged.getGameState();
+
+        if(gs.getState() == 30)
+        {
+            playerLoggedIn = true;
+        }
+        else if (gs.getState() == 10)
+        {
+            //If player was previously logged in and is now back at the login screen
+            //(not hopping, loading, etc..)
+            //then that means they have logged out.
+            if(playerLoggedIn)
+            {
+                playerLoggedIn = false;
+
+                if(h.size() > 0 )
+                {
+                    sendToServer();
+                }
             }
         }
     }
@@ -168,6 +253,8 @@ public class BotDetectorPlugin extends Plugin {
         if (config.addDetectOption() && client != null) {
             menuManager.addPlayerMenuItem(DETECT);
         }
+
+        overlayManager.add(heatMapOverlay);
     }
 
     @Override
@@ -182,6 +269,8 @@ public class BotDetectorPlugin extends Plugin {
         }
 
         clientToolbar.removeNavigation(navButton);
+
+        overlayManager.remove(heatMapOverlay);
     }
 
     @Subscribe
@@ -251,7 +340,7 @@ public class BotDetectorPlugin extends Plugin {
                 target = Text.removeTags(event.getMenuTarget());
             }
 
-            getPlayerData(target);
+            updatePlayerData(target);
         }
     }
 
@@ -270,60 +359,7 @@ public class BotDetectorPlugin extends Plugin {
         SwingUtilities.invokeLater(panel::updateUploads);
     }
 
-    public void getPlayerData(String playerName) throws IOException {
-
-        System.out.println("Attempting to get data on " + playerName);
-
-        String url = "http://45.33.127.106/user/" +
-                playerName.replace( " ", "%20");;
-
-        Request request = new Request.Builder()
-                .url(url)
-                .build();
-
-        Call call = okclient.newCall(request);
-        call.enqueue(new Callback() {
-
-            @Override
-            public void onFailure(Call call, IOException e) {
-                System.out.println("FAIL! Could not locate player data.");
-                notifier.notify("Could not locate player data.");
-
-                updatePlayerData("Server Error", "---", true);
-
-                call.cancel();
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-
-                if (response.isSuccessful()) {
-
-                    String groupID = response.body().string();
-
-                    if (groupID.equals("-1"))
-                    {
-                        updatePlayerData(playerName, "Indeterminable", true);
-                    }
-                    else
-                    {
-                        updatePlayerData(playerName, groupID, false);
-                    }
-
-                } else {
-                    System.out.println("Bad Response. Could not locate player data.");
-                    notifier.notify("Could not locate player data.");
-
-                    updatePlayerData("Server Error", "---", true);
-
-                    response.close();
-                    call.cancel();
-                }
-            }
-        });
-    }
-
-    private void updatePlayerData(String playerName, String groupID, boolean error)
+    private void updatePlayerData(String playerName)
     {
         SwingUtilities.invokeLater(() ->
         {
@@ -331,7 +367,21 @@ public class BotDetectorPlugin extends Plugin {
             {
                 navButton.getOnSelect().run();
             }
-            panel.updatePlayerData(playerName, groupID, error);
+            try {
+                panel.lookupPlayer(playerName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
+    }
+
+    private void pushNotification(String msg)
+    {
+        if(config.enableNotificatiions())
+        {
+            notifier.notify(msg);
+        }
+
+        return;
     }
 }

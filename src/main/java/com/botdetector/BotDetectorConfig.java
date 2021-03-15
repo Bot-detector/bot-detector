@@ -9,11 +9,11 @@ public interface BotDetectorConfig extends Config
 
     @ConfigItem(
             position = 1,
-            keyName = "sendAutomatic",
-            name = "Send names automatically",
-            description = "Toggle automatic name sending"
+            keyName = "sendAtLogout",
+            name = "Send names upon logout:",
+            description = "Waits to uploads names until you've logged out. Use this if you have a poor connection."
     )
-    default boolean sendAutomatic() { return false; }
+    default boolean sendAtLogout() { return false; }
 
     @ConfigItem(
             position = 2,
@@ -25,9 +25,26 @@ public interface BotDetectorConfig extends Config
 
     @ConfigItem(
             position = 3,
+            keyName = "enableNotifications",
+            name = "Enable notifications:",
+            description = "Toggle notifications for when player names are submitted."
+    )
+    default boolean enableNotificatiions() { return false; }
+
+    @ConfigItem(
+            position = 4,
             keyName = "addDetectOption",
-            name = "Right-click detect player:",
+            name = "Right-click 'Detect' player:",
             description = "Adds a menu entry to player menus that allows you to see what a player is classified as."
     )
     default boolean addDetectOption() { return false; }
+
+    @ConfigItem(
+            position = 5,
+            keyName = "enableHeatMap",
+            name = "Enable heat map:",
+            hidden = true,
+            description = "Enables a heat map overlay on top of the world map which shows activity intensity of the selected group."
+    )
+    default boolean enableHeatMap() { return false; }
 }
