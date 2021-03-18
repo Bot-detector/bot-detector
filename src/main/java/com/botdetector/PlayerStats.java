@@ -21,7 +21,12 @@ public class PlayerStats {
     }
 
     public float getAccuracy() {
-        return this.bans / this.reports;
+
+        try {
+            return this.bans / this.reports;
+        }catch(Exception ArithmeticException) {
+            return 0;
+        }
     }
 
 }
