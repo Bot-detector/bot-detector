@@ -49,8 +49,37 @@ public class BotDetectorPanel extends PluginPanel {
     private JPanel playerInfoPanel;
 
     JLabel uploads;
+    JLabel numReports;
+    JLabel numBans;
     JLabel playerName;
     JLabel playerGroupID;
+
+    JButton refreshStatsBtn;
+    JButton reportBtn;
+    JButton denyBtn;
+
+    @Subscribe
+    public void onSessionOpen(SessionOpen sessionOpen)
+    {
+    }
+
+    @Subscribe
+    public void onSessionClose(SessionClose e)
+    {
+    }
+
+    @Override
+    public void onActivate()
+    {
+        super.onActivate();
+        searchBar.requestFocusInWindow();
+    }
+
+    @Override
+    public void onDeactivate()
+    {
+        active = false;
+    }
 
     @Inject
     public BotDetectorPanel(@Nullable Client client)
@@ -60,7 +89,17 @@ public class BotDetectorPanel extends PluginPanel {
         statsPanel = new JPanel();
         playerInfoPanel =  new JPanel();
 
+        reportBtn = new JButton("Report");
+        reportBtn.createToolTip();
+        reportBtn.setToolTipText("Submit account as a probable offender.");
+        denyBtn = new JButton("Don't Report");
+        denyBtn.createToolTip();
+        denyBtn.setToolTipText("Player is real and not a rule-breaker.");
+
         uploads  = new JLabel(htmlLabel("Names Uploaded: ", "0", "#a5a5a5", "white"));
+        uploads.createToolTip();
+        uploads.setToolTipText("Number of names uploaded during this Runelite session.");
+
         playerName = new JLabel(htmlLabel("Player Name: ", "---", "#a5a5a5", "white"));
         playerGroupID = new JLabel(htmlLabel("Group ID: ", "---", "#a5a5a5", "white"));
 
@@ -72,7 +111,7 @@ public class BotDetectorPanel extends PluginPanel {
         searchBar.setMinimumSize(new Dimension(0, 30));
         searchBar.addActionListener(e -> {
             try {
-                lookupPlayer();
+                lookupPlayer(true);
             } catch (IOException ioException) {
                 ioException.printStackTrace();
             }
@@ -96,7 +135,7 @@ public class BotDetectorPanel extends PluginPanel {
 
                 if (localPlayer != null)
                 {
-                    lookupPlayer(localPlayer.getName());
+                    lookupPlayer(localPlayer.getName(), true);
                 }
             }
         });
@@ -109,19 +148,6 @@ public class BotDetectorPanel extends PluginPanel {
 
         add(searchBar);
 
-    }
-
-    @Override
-    public void onActivate()
-    {
-        super.onActivate();
-        searchBar.requestFocusInWindow();
-    }
-
-    @Override
-    public void onDeactivate()
-    {
-        active = false;
     }
 
     void init()
@@ -152,11 +178,13 @@ public class BotDetectorPanel extends PluginPanel {
         JLabel statsTitle =  new JLabel(htmlLabel("Statistics: ", "", "#a5a5a5", "white"));
         statsTitle.setFont(boldFont);
 
+
+
         add(searchBar, constraints);
         constraints.gridy++;
-        add(playerInfoPanel, constraints);
-        constraints.gridy++;
         add(statsPanel, constraints);
+        constraints.gridy++;
+        add(playerInfoPanel, constraints);
         constraints.gridy++;
 
         playerInfoPanel.add(dataTitle);
@@ -175,17 +203,6 @@ public class BotDetectorPanel extends PluginPanel {
         return "<html><body style = 'color:"+ keyColor + "'>" + key +
                 "<span style = 'color:" + valueColor + "'>" + value +
                 "</span></body></html>";
-    }
-
-
-    @Subscribe
-    public void onSessionOpen(SessionOpen sessionOpen)
-    {
-    }
-
-    @Subscribe
-    public void onSessionClose(SessionClose e)
-    {
     }
 
     void updateUploads()
@@ -214,12 +231,24 @@ public class BotDetectorPanel extends PluginPanel {
         }
     }
 
-    public void lookupPlayer(String rsn) throws IOException {
-        searchBar.setText(rsn);
-        lookupPlayer();
+    void addReportButtons() {
+        playerInfoPanel.add(reportBtn);
+        playerInfoPanel.add(denyBtn);
     }
 
-    private void lookupPlayer() throws IOException {
+    void removeReportButtons() {
+        playerInfoPanel.remove(reportBtn);
+        playerInfoPanel.remove(denyBtn);
+    }
+
+    public void lookupPlayer(String rsn, boolean fromSearchBar) throws IOException {
+        searchBar.setText(rsn);
+        lookupPlayer(fromSearchBar);
+    }
+
+    private void lookupPlayer(boolean fromSearchBar) throws IOException {
+        removeReportButtons();
+
         String sanitizedRSN = sanitizeText(searchBar.getText());
 
         if(sanitizedRSN.length() <= 0)
@@ -238,11 +267,11 @@ public class BotDetectorPanel extends PluginPanel {
         searchBar.setEditable(false);
         loading = true;
 
-        getPlayerData(sanitizedRSN, BotDetectorPlugin.okClient);
+        getPlayerData(sanitizedRSN, BotDetectorPlugin.okClient, fromSearchBar);
 
     }
 
-    public void getPlayerData(String rsn, OkHttpClient okClient) throws IOException {
+    public void getPlayerData(String rsn, OkHttpClient okClient, boolean fromSearchBar) throws IOException {
 
         String url = "http://osrsbot-detector.ddns.net:8080/user/" +
                 rsn.replace( " ", "%20");;
@@ -278,6 +307,11 @@ public class BotDetectorPanel extends PluginPanel {
                     else
                     {
                         updatePlayerData(rsn, groupID, false);
+
+                        if(!fromSearchBar)
+                        {
+                            addReportButtons();
+                        }
                     }
 
                 } else {

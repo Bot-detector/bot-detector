@@ -365,7 +365,7 @@ public class BotDetectorPlugin extends Plugin {
                 navButton.getOnSelect().run();
             }
             try {
-                panel.lookupPlayer(playerName);
+                panel.lookupPlayer(playerName, false);
             } catch (IOException e) {
                 e.printStackTrace();
             }
