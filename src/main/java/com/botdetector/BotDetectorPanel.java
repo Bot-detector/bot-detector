@@ -1,5 +1,6 @@
 package com.botdetector;
 
+import com.google.gson.Gson;
 import com.google.inject.Inject;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -8,6 +9,7 @@ import java.io.IOException;
 import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import com.sun.tools.javac.util.List;
 import lombok.SneakyThrows;
 import okhttp3.*;
 import net.runelite.api.Client;
@@ -38,6 +40,8 @@ public class BotDetectorPanel extends PluginPanel {
     @Inject
     private Notifier notifier;
 
+    public static PlayerStats ps;
+
     private final Font boldFont = FontManager.getRunescapeBoldFont();
     private static final int MAX_RSN_LENGTH = 12;
     private boolean active;
@@ -51,6 +55,7 @@ public class BotDetectorPanel extends PluginPanel {
     JLabel uploads;
     JLabel numReports;
     JLabel numBans;
+    JLabel accuracy;
     JLabel playerName;
     JLabel playerGroupID;
 
@@ -61,6 +66,7 @@ public class BotDetectorPanel extends PluginPanel {
     @Subscribe
     public void onSessionOpen(SessionOpen sessionOpen)
     {
+
     }
 
     @Subscribe
@@ -68,11 +74,13 @@ public class BotDetectorPanel extends PluginPanel {
     {
     }
 
+    @SneakyThrows
     @Override
     public void onActivate()
     {
         super.onActivate();
         searchBar.requestFocusInWindow();
+        updatePlayerStats();
     }
 
     @Override
@@ -85,10 +93,13 @@ public class BotDetectorPanel extends PluginPanel {
     public BotDetectorPanel(@Nullable Client client)
     {
         loading = false;
+        ps = new PlayerStats();
 
+        //Panels
         statsPanel = new JPanel();
         playerInfoPanel =  new JPanel();
 
+        //Buttons
         reportBtn = new JButton("Report");
         reportBtn.createToolTip();
         reportBtn.setToolTipText("Submit account as a probable offender.");
@@ -96,13 +107,25 @@ public class BotDetectorPanel extends PluginPanel {
         denyBtn.createToolTip();
         denyBtn.setToolTipText("Player is real and not a rule-breaker.");
 
-        uploads  = new JLabel(htmlLabel("Names Uploaded: ", "0", "#a5a5a5", "white"));
+        //Stats Panel Items
+        uploads = new JLabel(htmlLabel("Names Uploaded: ", "0", "#a5a5a5", "white"));
         uploads.createToolTip();
-        uploads.setToolTipText("Number of names uploaded during this Runelite session.");
+        uploads.setToolTipText("Number of names uploaded during this RuneLite session.");
+        numReports = new JLabel(htmlLabel("Reports Made: ", "", "#a5a5a5", "white"));
+        numReports.createToolTip();
+        numReports.setToolTipText("How many manual reports you have made.");
+        numBans = new JLabel(htmlLabel("Confirmed Bans: ", "", "#a5a5a5", "white"));
+        numBans.createToolTip();
+        numBans.setToolTipText("How many of your reports have resulted in a player ban.");
+        accuracy = new JLabel(htmlLabel("Accuracy: ", "", "#a5a5a5", "white"));
+        accuracy.createToolTip();
+        accuracy.setToolTipText("% of reports that resulted in a ban.");
 
+        //Player Info Panel
         playerName = new JLabel(htmlLabel("Player Name: ", "---", "#a5a5a5", "white"));
         playerGroupID = new JLabel(htmlLabel("Group ID: ", "---", "#a5a5a5", "white"));
 
+        //Search Bar Setup
         searchBar = new IconTextField();
         searchBar.setIcon(IconTextField.Icon.SEARCH);
         searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
@@ -178,8 +201,6 @@ public class BotDetectorPanel extends PluginPanel {
         JLabel statsTitle =  new JLabel(htmlLabel("Statistics: ", "", "#a5a5a5", "white"));
         statsTitle.setFont(boldFont);
 
-
-
         add(searchBar, constraints);
         constraints.gridy++;
         add(statsPanel, constraints);
@@ -187,12 +208,15 @@ public class BotDetectorPanel extends PluginPanel {
         add(playerInfoPanel, constraints);
         constraints.gridy++;
 
+        statsPanel.add(statsTitle);
+        statsPanel.add(uploads);
+        statsPanel.add(numReports);
+        statsPanel.add(numBans);
+
+
         playerInfoPanel.add(dataTitle);
         playerInfoPanel.add(playerName);
         playerInfoPanel.add(playerGroupID);
-
-        statsPanel.add(statsTitle);
-        statsPanel.add(uploads);
 
         eventBus.register(this);
 
@@ -211,6 +235,7 @@ public class BotDetectorPanel extends PluginPanel {
                 String.valueOf(BotDetectorPlugin.numNamesSubmitted),
                 "#a5a5a5", "white"));
     }
+
 
     void updatePlayerData(String rsn, String groupID, boolean error)
     {
@@ -322,6 +347,60 @@ public class BotDetectorPanel extends PluginPanel {
 
                     response.close();
                     call.cancel();
+                }
+            }
+        });
+    }
+
+    public void updatePlayerStats() throws IOException {
+        getPlayerStats(BotDetectorPlugin.okClient);
+
+        numReports.setText("Reports Made: " + ps.getReports());
+        numBans.setText("Confirmed Bans: " + ps.getBans());
+        accuracy.setText("Accuracy: " + ps.getAccuracy());
+
+    }
+
+    public void resetPlayerStats() {
+        numReports.setText("Reports Made: ");
+        numBans.setText("Confirmed Bans: ");
+        accuracy.setText("Accuracy: ");
+    }
+
+    public void getPlayerStats(OkHttpClient okClient) throws IOException {
+
+        try {
+            String rsn = client.getLocalPlayer().getName();
+        }
+        catch (Exception e) {
+            String rsn = "";
+        }
+
+        String url = "http://osrsbot-detector.ddns.net:5000/stats/contributions/" +
+                "Seltzer Bro".replace( " ", "%20");
+
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        Call call = okClient.newCall(request);
+        call.enqueue(new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+                call.cancel();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+                if (response.isSuccessful()) {
+                    ps = BotDetectorPlugin.gson.fromJson(response.body().string(),
+                            new PlayerStats().getClass());
+
+                } else {
+
                 }
             }
         });

@@ -208,9 +208,16 @@ public class BotDetectorPlugin extends Plugin {
     public void onGameStateChanged(GameStateChanged gameStateChanged) throws IOException {
         GameState gs = gameStateChanged.getGameState();
 
-        if(gs.getState() == 30)
-        {
+        if(gs.getState() == 30) {
             playerLoggedIn = true;
+
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    panel.updatePlayerStats();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         }
         else if (gs.getState() == 10)
         {
@@ -220,6 +227,8 @@ public class BotDetectorPlugin extends Plugin {
             if(playerLoggedIn)
             {
                 playerLoggedIn = false;
+
+                SwingUtilities.invokeLater(panel::resetPlayerStats);
 
                 if(h.size() > 0 )
                 {
