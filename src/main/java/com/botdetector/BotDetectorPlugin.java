@@ -2,7 +2,6 @@ package com.botdetector;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
-import com.google.gson.Gson;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
@@ -20,12 +19,13 @@ import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Text;
-import okhttp3.*;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.HashSet;
 import java.awt.image.BufferedImage;
+import java.util.Objects;
+
 import net.runelite.client.util.ImageUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -40,14 +40,10 @@ public class BotDetectorPlugin extends Plugin {
 
     private static final String DETECT = "Detect";
     private static final String KICK_OPTION = "Kick";
-    private static final ImmutableList<String> AFTER_OPTIONS = ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
-    public static final MediaType MEDIA_TYPE_MARKDOWN = MediaType.parse("text/x-markdown; charset=utf-8");
-    public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
-    public static final OkHttpClient okClient = new OkHttpClient();
-    public static final Gson gson = new Gson();
+    private static final ImmutableList<String> AFTER_OPTIONS =
+            ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
 
 
-    private BotDetectorPanel panel;
 
     @Inject
     private Client client;
@@ -70,6 +66,8 @@ public class BotDetectorPlugin extends Plugin {
     @Inject
     private OverlayManager overlayManager;
 
+    public static BotDetectorHTTP http;
+    public BotDetectorPanel panel;
     private NavigationButton navButton;
 
 
@@ -79,9 +77,8 @@ public class BotDetectorPlugin extends Plugin {
     }
 
     static int numNamesSubmitted = 0;
-    HashSet<String> h = new HashSet<String>();
-    HashSet<String> submissionSet = new HashSet<String>();
-
+    static String currPlayer;
+    HashSet<String> detectedPlayers = new HashSet<String>();
 
     int tickCount  = 0;
     boolean playerLoggedIn = false;
@@ -90,159 +87,15 @@ public class BotDetectorPlugin extends Plugin {
     public BotDetectorPlugin() throws IOException {
     }
 
-    public void sendToServer() throws IOException {
-
-        submissionSet.addAll(h);
-        h.clear();
-
-        Request request = new Request.Builder()
-                .url("http://osrsbot-detector.ddns.net:8080/")
-                .post(RequestBody.create(MEDIA_TYPE_JSON, gson.toJson(submissionSet)))
-                .build();
-
-
-        Call call = okClient.newCall(request);
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                pushNotification("Bot Detector: Player Name List Upload Failed.");
-                call.cancel();
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-
-                if (response.isSuccessful()) {
-                    pushNotification("Bot Detector: " +
-                            submissionSet.size() +
-                            " Player Names Uploaded Successfully!");
-
-                    addNumNamesSubmitted(submissionSet.size());
-
-                    submissionSet.clear();
-                } else {
-                    System.out.println("Names list submission failed!");
-                    pushNotification("Bot Detector: Player Name List Upload Failed.");
-                    System.out.println(response.code());
-                    response.close();
-                    call.cancel();
-                }
-            }
-        });
-    }
-
-    public static String buildPlayerJSONString(Player target, String reporter) {
-
-        Timestamp ts = new Timestamp(System.currentTimeMillis());
-
-        WorldPoint targetLocation = target.getWorldLocation();
-
-        String playerString = "{";
-
-        playerString += "\"reporter\":\""
-                + reporter
-                + "\",";
-
-        playerString += "\"reported\":\""
-                + target.getName()
-                + "\",";
-
-        playerString += "\"region_id\":\""
-                    + targetLocation.getRegionID()
-                    + "\","
-                + "\"x\": "
-                    + targetLocation.getX()
-                    + ","
-                + "\"y\": "
-                    + targetLocation.getY()
-                    + ","
-                + "\"z\": "
-                    + targetLocation.getPlane()
-                + ",";
-
-
-        playerString += "\"ts\" :"
-                + "\""
-                + ts
-                + "\"";
-
-        playerString += "}";
-
-        System.out.println(playerString);
-
-        return playerString;
-    }
-
-    @Subscribe
-    public void onPlayerSpawned(PlayerSpawned event) throws IOException {
-        Player player = event.getPlayer();
-
-        String json = buildPlayerJSONString(player, client.getLocalPlayer().getName());
-
-        h.add(json);
-
-    }
-
-    @Subscribe
-    public void onGameTick(GameTick event) throws IOException {
-        if (!config.sendAtLogout()) {
-
-            int timeSend = 100 * (config.intConfig());
-
-            if (timeSend < 500) {
-                timeSend = 500;
-            }
-
-            tickCount ++;
-
-            if (tickCount > timeSend) {
-                if (h.size() > 0) {
-                    sendToServer();
-                }
-                tickCount  = 0;
-            }
-        }
-    }
-
-    @Subscribe
-    public void onGameStateChanged(GameStateChanged gameStateChanged) throws IOException {
-        GameState gs = gameStateChanged.getGameState();
-
-        if(gs.getState() == 30) {
-            playerLoggedIn = true;
-
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    panel.updatePlayerStats();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-        }
-        else if (gs.getState() == 10)
-        {
-            //If player was previously logged in and is now back at the login screen
-            //(not hopping, loading, etc..)
-            //then that means they have logged out.
-            if(playerLoggedIn)
-            {
-                playerLoggedIn = false;
-
-                SwingUtilities.invokeLater(panel::resetPlayerStats);
-
-                if(h.size() > 0 )
-                {
-                    sendToServer();
-                }
-            }
-        }
-    }
-
     @Override
     protected void startUp() throws Exception {
-        panel = injector.getInstance(BotDetectorPanel.class);
+        currPlayer = "";
 
+
+        panel = injector.getInstance(BotDetectorPanel.class);
         panel.init();
+        http = injector.getInstance(BotDetectorHTTP.class);
+
 
         final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
 
@@ -266,8 +119,9 @@ public class BotDetectorPlugin extends Plugin {
     @Override
     protected void shutDown() throws Exception {
 
-        if (h.size() > 0) {
-            sendToServer();
+        if (detectedPlayers.size() > 0) {
+            http.sendToServer(detectedPlayers, 0);
+            detectedPlayers.clear();
         }
 
         if (config.addDetectOption() && client != null) {
@@ -291,6 +145,117 @@ public class BotDetectorPlugin extends Plugin {
             } else if (Boolean.parseBoolean(event.getOldValue()) && !Boolean.parseBoolean(event.getNewValue())) {
                 menuManager.removePlayerMenuItem(DETECT);
             }
+        }
+    }
+
+    @Subscribe
+    public void onGameTick(GameTick event) throws IOException {
+        if (!config.sendAtLogout()) {
+
+            int timeSend = 100 * (config.intConfig());
+
+            if (timeSend < 500) {
+                timeSend = 500;
+            }
+
+            tickCount ++;
+
+            if (tickCount > timeSend) {
+                if (detectedPlayers.size() > 0) {
+                    http.sendToServer(detectedPlayers, 0);
+                    detectedPlayers.clear();
+                }
+                tickCount  = 0;
+            }
+        }
+    }
+
+    @Subscribe
+    public void onGameStateChanged(GameStateChanged gameStateChanged) throws IOException {
+        GameState gs = gameStateChanged.getGameState();
+
+        if(gs.getState() == 30) {
+
+            playerLoggedIn = true;
+
+        }
+        else if (gs.getState() == 10)
+        {
+            //If player was previously logged in and is now back at the login screen
+            //(not hopping, loading, etc..)
+            //then that means they have logged out.
+            if(playerLoggedIn)
+            {
+                currPlayer = "";
+                playerLoggedIn = false;
+
+                SwingUtilities.invokeLater(panel::resetPlayerStats);
+
+                if(detectedPlayers.size() > 0 )
+                {
+                    http.sendToServer(detectedPlayers, 0);
+                    detectedPlayers.clear();
+                }
+            }
+        }
+    }
+
+    public String buildPlayerJSONString(Player target, String reporter) {
+
+        Timestamp ts = new Timestamp(System.currentTimeMillis());
+
+        WorldPoint targetLocation = target.getWorldLocation();
+
+        String playerString = "{";
+
+        playerString += "\"reporter\":\""
+                + reporter
+                + "\",";
+
+        playerString += "\"reported\":\""
+                + target.getName()
+                + "\",";
+
+        playerString += "\"region_id\":\""
+                + targetLocation.getRegionID()
+                + "\","
+                + "\"x\": "
+                + targetLocation.getX()
+                + ","
+                + "\"y\": "
+                + targetLocation.getY()
+                + ","
+                + "\"z\": "
+                + targetLocation.getPlane()
+                + ",";
+
+
+        playerString += "\"ts\" :"
+                + "\""
+                + ts
+                + "\"";
+
+        playerString += "}";
+
+        return playerString;
+    }
+
+    @Subscribe
+    public void onPlayerSpawned(PlayerSpawned event) throws IOException {
+
+        Player player = event.getPlayer();
+
+        currPlayer = client.getLocalPlayer().getName();
+
+        if(player.getName().equals(currPlayer)) {
+
+            http.getPlayerStats(currPlayer);
+        }
+        else {
+
+            String json = buildPlayerJSONString(player, currPlayer);
+
+            detectedPlayers.add(json);
         }
     }
 
@@ -381,13 +346,13 @@ public class BotDetectorPlugin extends Plugin {
         });
     }
 
-    private void pushNotification(String msg)
-    {
-        if(config.enableNotificatiions())
-        {
+    public void pushNotification(String msg) {
+        if (config.enableNotificatiions()) {
             notifier.notify(msg);
         }
 
         return;
+
     }
+
 }
