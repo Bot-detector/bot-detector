@@ -10,7 +10,7 @@ public interface BotDetectorConfig extends Config
     @ConfigItem(
             position = 1,
             keyName = "sendAtLogout",
-            name = "Send names upon logout:",
+            name = "Send names only after logout:",
             description = "Waits to uploads names until you've logged out. Use this if you have a poor connection."
     )
     default boolean sendAtLogout() { return false; }
@@ -34,7 +34,7 @@ public interface BotDetectorConfig extends Config
     @ConfigItem(
             position = 4,
             keyName = "addDetectOption",
-            name = "Right-click 'Detect' player:",
+            name = "Right-click 'Detect' players:",
             description = "Adds a menu entry to player menus that allows you to see what a player is classified as."
     )
     default boolean addDetectOption() { return false; }
