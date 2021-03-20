@@ -2,12 +2,16 @@ package com.botdetector;
 
 import com.google.gson.Gson;
 import net.runelite.api.Client;
+import net.runelite.api.Player;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.Notifier;
 import okhttp3.*;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 
 public class BotDetectorHTTP {
 
@@ -24,7 +28,7 @@ public class BotDetectorHTTP {
     @Inject
     private Client client;
 
-    private HashSet<String> submissionSet = new HashSet<String>();
+    private HashSet<Player> submissionSet = new HashSet<Player>();
 
     @Inject
     private BotDetectorPlugin plugin;
@@ -34,7 +38,7 @@ public class BotDetectorHTTP {
     }
 
 
-    public void sendToServer(HashSet<String> detectedPlayers, int isManual) throws IOException {
+    public void sendToServer(HashSet<Player> detectedPlayers, int isManual) throws IOException {
 
         submissionSet.addAll(detectedPlayers);
 
@@ -49,6 +53,7 @@ public class BotDetectorHTTP {
             @Override
             public void onFailure(Call call, IOException e) {
                 plugin.pushNotification("Bot Detector: Player Name List Upload Failed.");
+                System.out.println("Send exception: " + e);
             }
 
             @Override
@@ -66,13 +71,14 @@ public class BotDetectorHTTP {
                     submissionSet.clear();
                 } else {
 
+                    System.out.println("Received bad reponse: " + response.code());
                     response.close();
                 }
             }
         });
     }
 
-    public void getPlayerData(String rsn, boolean fromSearchBar) throws IOException {
+    public void getPlayerData(String rsn, boolean reportable) throws IOException {
 
         String url = BASE_URL + ":8080" + "/user/" +
                 rsn.replace( " ", "%20");;
@@ -107,7 +113,7 @@ public class BotDetectorHTTP {
                     {
                         plugin.panel.updatePlayerData(rsn, groupID, false);
 
-                        if(!fromSearchBar)
+                        if(reportable)
                         {
                             plugin.panel.addReportButtons();
                         }
@@ -126,7 +132,6 @@ public class BotDetectorHTTP {
 
     public void getPlayerStats(String rsn) throws IOException {
 
-
         String url = BASE_URL + BASE_PORT + "/stats/contributions/" +
                 rsn.replace( " ", "%20");
 
@@ -139,7 +144,7 @@ public class BotDetectorHTTP {
 
             @Override
             public void onFailure(Call call, IOException e) {
-
+                System.out.println("Failed to get player stats.");
             }
 
             @Override
@@ -151,6 +156,7 @@ public class BotDetectorHTTP {
                             new PlayerStats().getClass()));
 
                 } else {
+                    System.out.println("Bad player stats response: " + response.code());
                     response.close();
                 }
             }
@@ -159,19 +165,114 @@ public class BotDetectorHTTP {
 
     public void reportPlayer(String rsn) {
 
+        Request request = new Request.Builder()
+                .url(BASE_URL + BASE_PORT + "/plugin/detect/" + 1)
+                .post(RequestBody.create(MEDIA_TYPE_JSON, getPlayersReported(rsn)))
+                .build();
+
+        Call call = okClient.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                plugin.pushNotification("Bot Detector: Player Name List Upload Failed.");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+
+                if (response.isSuccessful()) {
+
+                    plugin.pushNotification("Bot Detector: " +
+                            submissionSet.size() +
+                            " Player Names Uploaded Successfully!");
+
+                    plugin.addNumNamesSubmitted(submissionSet.size());
+
+                    submissionSet.clear();
+                } else {
+
+                    response.close();
+                }
+            }
+        });
     }
 
-    public String createJSONList(HashSet<String> set) {
+    public void reportPlayer(HashSet<String> reported) {
+        //Handle a list of players.
+    }
+
+    private String getPlayersReported(String rsn) {
+        HashSet<Player> matches = new HashSet<Player>();
+
+        Iterator<Player> iterator = plugin.detectedPlayers.iterator();
+        while(iterator.hasNext()) {
+            if(iterator.next().getName() == rsn) {
+                matches.add(iterator.next());
+
+                break;
+            }
+        }
+
+        return createJSONList(matches);
+
+    }
+
+    public String buildPlayerJSONString(Player target) {
+
+        Timestamp ts = new Timestamp(System.currentTimeMillis());
+
+        WorldPoint targetLocation = target.getWorldLocation();
+
+        String playerString = "{";
+
+        playerString += "\"reporter\":\""
+                + client.getLocalPlayer().getName()
+                + "\",";
+
+        playerString += "\"reported\":\""
+                + target.getName()
+                + "\",";
+
+        playerString += "\"region_id\":\""
+                + targetLocation.getRegionID()
+                + "\","
+                + "\"x\": "
+                + targetLocation.getX()
+                + ","
+                + "\"y\": "
+                + targetLocation.getY()
+                + ","
+                + "\"z\": "
+                + targetLocation.getPlane()
+                + ",";
+
+
+        playerString += "\"ts\" :"
+                + "\""
+                + ts
+                + "\"";
+
+        playerString += "}";
+
+        System.out.println(playerString);
+
+        return playerString;
+    }
+
+    public String createJSONList(HashSet<Player> set) {
         String json = "[";
 
-        Iterator<String> iterator = set.iterator();
+        Iterator<Player> iterator = set.iterator();
         while(iterator.hasNext()) {
-            json += (iterator.next() + ",");
+            json += (buildPlayerJSONString(iterator.next()) + ",");
         }
 
         json = json.substring(0, json.length() - 1);
 
         json += "]";
+
+        System.out.println(json);
 
         return json;
     }

@@ -105,7 +105,9 @@ public class BotDetectorPanel extends PluginPanel {
         reportBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                BotDetectorPlugin.http.reportPlayer(
+                  playerName.getText()
+                );
             }
         });
 
@@ -115,6 +117,7 @@ public class BotDetectorPanel extends PluginPanel {
         denyBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
                 removeReportButtons();
             }
         });
@@ -170,7 +173,7 @@ public class BotDetectorPanel extends PluginPanel {
 
                 if (localPlayer != null)
                 {
-                    lookupPlayer(localPlayer.getName(), true);
+                    lookupPlayer(localPlayer.getName(), false);
                 }
             }
         });
@@ -265,20 +268,26 @@ public class BotDetectorPanel extends PluginPanel {
         playerInfoPanel.add(reportBtnTitle);
         playerInfoPanel.add(reportBtn);
         playerInfoPanel.add(denyBtn);
+
+        playerInfoPanel.revalidate();
+        playerInfoPanel.repaint();
     }
 
     void removeReportButtons() {
         playerInfoPanel.remove(reportBtnTitle);
         playerInfoPanel.remove(reportBtn);
         playerInfoPanel.remove(denyBtn);
+
+        playerInfoPanel.revalidate();
+        playerInfoPanel.repaint();
     }
 
-    public void lookupPlayer(String rsn, boolean fromSearchBar) throws IOException {
+    public void lookupPlayer(String rsn, boolean reportable) throws IOException {
         searchBar.setText(rsn);
-        lookupPlayer(fromSearchBar);
+        lookupPlayer(reportable);
     }
 
-    private void lookupPlayer(boolean fromSearchBar) throws IOException {
+    private void lookupPlayer(boolean reportable) throws IOException {
         removeReportButtons();
 
         String sanitizedRSN = sanitizeText(searchBar.getText());
@@ -299,7 +308,7 @@ public class BotDetectorPanel extends PluginPanel {
         searchBar.setEditable(false);
         loading = true;
 
-        BotDetectorPlugin.http.getPlayerData(sanitizedRSN, fromSearchBar);
+        BotDetectorPlugin.http.getPlayerData(sanitizedRSN, reportable);
 
     }
 

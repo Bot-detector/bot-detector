@@ -21,10 +21,14 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
 import java.io.IOException;
+import java.sql.Array;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.awt.image.BufferedImage;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import net.runelite.client.util.ImageUtil;
 import org.apache.commons.lang3.ArrayUtils;
@@ -39,11 +43,10 @@ import org.apache.commons.lang3.ArrayUtils;
 public class BotDetectorPlugin extends Plugin {
 
     private static final String DETECT = "Detect";
+    private static final String MASS_DETECT = "Mass Detect";
     private static final String KICK_OPTION = "Kick";
     private static final ImmutableList<String> AFTER_OPTIONS =
             ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
-
-
 
     @Inject
     private Client client;
@@ -78,7 +81,8 @@ public class BotDetectorPlugin extends Plugin {
 
     static int numNamesSubmitted = 0;
     static String currPlayer;
-    HashSet<String> detectedPlayers = new HashSet<String>();
+    static HashSet<Player> targetedPlayers = new HashSet<Player>();
+    HashSet<Player> detectedPlayers = new HashSet<Player>();
 
     int tickCount  = 0;
     boolean playerLoggedIn = false;
@@ -200,46 +204,6 @@ public class BotDetectorPlugin extends Plugin {
         }
     }
 
-    public String buildPlayerJSONString(Player target, String reporter) {
-
-        Timestamp ts = new Timestamp(System.currentTimeMillis());
-
-        WorldPoint targetLocation = target.getWorldLocation();
-
-        String playerString = "{";
-
-        playerString += "\"reporter\":\""
-                + reporter
-                + "\",";
-
-        playerString += "\"reported\":\""
-                + target.getName()
-                + "\",";
-
-        playerString += "\"region_id\":\""
-                + targetLocation.getRegionID()
-                + "\","
-                + "\"x\": "
-                + targetLocation.getX()
-                + ","
-                + "\"y\": "
-                + targetLocation.getY()
-                + ","
-                + "\"z\": "
-                + targetLocation.getPlane()
-                + ",";
-
-
-        playerString += "\"ts\" :"
-                + "\""
-                + ts
-                + "\"";
-
-        playerString += "}";
-
-        return playerString;
-    }
-
     @Subscribe
     public void onPlayerSpawned(PlayerSpawned event) throws IOException {
 
@@ -250,12 +214,12 @@ public class BotDetectorPlugin extends Plugin {
         if(player.getName().equals(currPlayer)) {
 
             http.getPlayerStats(currPlayer);
+
         }
         else {
 
-            String json = buildPlayerJSONString(player, currPlayer);
+            detectedPlayers.add(player);
 
-            detectedPlayers.add(json);
         }
     }
 
@@ -293,7 +257,7 @@ public class BotDetectorPlugin extends Plugin {
         if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
                 && event.getMenuOption().equals(DETECT))
         {
-            final String target;
+
             if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
             {
                 Player player = client.getCachedPlayers()[event.getId()];
@@ -303,16 +267,42 @@ public class BotDetectorPlugin extends Plugin {
                     return;
                 }
 
-                target = player.getName();
+                updatePlayerData(player);
+                targetedPlayers.add(player);
 
             }
             else
             {
-                target = Text.removeTags(event.getMenuTarget());
+                //Checks to see if player selected from chat has been on screen recently
+                //If they have then we have their approximate location that we can report with.
+                String targetRSN = Text.removeTags(event.getMenuTarget());
+
+                Player target = findPlayerInCache(targetRSN);
+
+                if(target == null) {
+                    updatePlayerData(targetRSN);
+                }
+                else {
+                    updatePlayerData(target);
+                }
             }
 
-            updatePlayerData(target);
+        }else if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
+                && event.getMenuOption().equals(MASS_DETECT))
+        {
+            //Mass Detection
+            return;
         }
+    }
+
+    private Player findPlayerInCache(String rsn) {
+        List<Player> currPlayers = client.getPlayers();
+
+        List<Player> matches = currPlayers.stream()
+                .filter(p -> p.getName().equals(rsn))
+                .collect(Collectors.toList());
+
+        return matches.get(0);
     }
 
     private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
@@ -340,6 +330,22 @@ public class BotDetectorPlugin extends Plugin {
             }
             try {
                 panel.lookupPlayer(playerName, false);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void updatePlayerData(Player player)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            if (!navButton.isSelected())
+            {
+                navButton.getOnSelect().run();
+            }
+            try {
+                panel.lookupPlayer(player.getName(), true);
             } catch (IOException e) {
                 e.printStackTrace();
             }
