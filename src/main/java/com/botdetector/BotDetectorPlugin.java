@@ -322,8 +322,6 @@ public class BotDetectorPlugin extends Plugin {
     private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
     {
         MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
-        int menuEntryCount = newMenu.length;
-        ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
         client.setMenuEntries(newMenu);
     }
 
