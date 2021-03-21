@@ -12,15 +12,19 @@ import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class BotDetectorHTTP {
 
     public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
-    public static final OkHttpClient okClient = new OkHttpClient();
-    public static final Gson gson = new Gson();
-
     private static final String BASE_URL = "http://osrsbot-detector.ddns.net";
     private static final String BASE_PORT = ":5000";
+
+    public static final Gson gson = new Gson();
+    public static OkHttpClient okClient = new OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
 
     @Inject
     private Notifier notifier;
@@ -39,6 +43,7 @@ public class BotDetectorHTTP {
 
 
     public void sendToServer(HashSet<Player> detectedPlayers, int isManual) throws IOException {
+
 
         submissionSet.addAll(detectedPlayers);
 

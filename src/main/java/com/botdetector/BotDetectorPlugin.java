@@ -83,6 +83,7 @@ public class BotDetectorPlugin extends Plugin {
     static String currPlayer;
     static HashSet<Player> targetedPlayers = new HashSet<Player>();
     HashSet<Player> detectedPlayers = new HashSet<Player>();
+    HashSet<String> detectedPlayerNames = new HashSet<String>();
 
     int tickCount  = 0;
     boolean playerLoggedIn = false;
@@ -126,6 +127,7 @@ public class BotDetectorPlugin extends Plugin {
         if (detectedPlayers.size() > 0) {
             http.sendToServer(detectedPlayers, 0);
             detectedPlayers.clear();
+            detectedPlayerNames.clear();
         }
 
         if (config.addDetectOption() && client != null) {
@@ -164,10 +166,17 @@ public class BotDetectorPlugin extends Plugin {
 
             tickCount ++;
 
+            if(tickCount % 50 == 0) {
+                System.out.println(tickCount);
+            }
+
             if (tickCount > timeSend) {
+                System.out.println("Time to send");
                 if (detectedPlayers.size() > 0) {
+                    System.out.println("Should be sending....");
                     http.sendToServer(detectedPlayers, 0);
                     detectedPlayers.clear();
+                    detectedPlayerNames.clear();
                 }
                 tickCount  = 0;
             }
@@ -199,6 +208,7 @@ public class BotDetectorPlugin extends Plugin {
                 {
                     http.sendToServer(detectedPlayers, 0);
                     detectedPlayers.clear();
+                    detectedPlayerNames.clear();
                 }
             }
         }
@@ -218,8 +228,12 @@ public class BotDetectorPlugin extends Plugin {
         }
         else {
 
-            detectedPlayers.add(player);
+            int setSize = detectedPlayerNames.size();
+            detectedPlayerNames.add(player.getName());
 
+            if(detectedPlayerNames.size() ==(setSize + 1)) {
+                detectedPlayers.add(player);
+            }
         }
     }
 
