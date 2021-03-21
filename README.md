@@ -1,8 +1,4 @@
-# Bot Detector Plugin (V1 - SNAPSHOT)
-
-WARNING: THERE MIGHT BE LAG IN SENDING LARGE FILE SIZES DEPENDING ON THE STRENGTH OF YOUR MACHINE. This is basically Early Access for the program, so do not manually send names in dangerous situations. 
-
-NOTICE: WE ARE CURRENTLY IN THE DATA-COLLECTION PHASE IN ORDER TO TRAIN THE FIRST VERSION OF THE KNN NETWORK. CURRENTLY WE'LL NEED 100K UNIQUE NAMES AT LEAST :) Thank you for sending names to the server everyone!
+# Bot Detector Plugin
 
 --------------------------------------------------------------------------------------------------------
 
@@ -16,12 +12,7 @@ This plugin pulls surrounding Player Names from Old School RuneScape. It then se
 
 --------------------------------------------------------------------------------------------------------
 
-Planned Changes: 
-- Improve/Add a UI
-
 Roadmap For Future Updates:
 - Allow for players to recieve updates on the names that they have identified/come across in game.
 - Highlight players that have already been scanned in-game
-- Mark player group conditions
-- Allow for access to a 3rd Party Website end of the plugin for processed data
-- Add a 'Player Lookup' feature
+- Add labels to group IDs
