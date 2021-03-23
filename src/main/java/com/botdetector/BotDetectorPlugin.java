@@ -176,7 +176,6 @@ public class BotDetectorPlugin extends Plugin {
                     System.out.println("Should be sending....");
                     http.sendToServer(detectedPlayers, 0);
                     detectedPlayers.clear();
-                    detectedPlayerNames.clear();
                 }
                 tickCount  = 0;
             }
@@ -201,6 +200,7 @@ public class BotDetectorPlugin extends Plugin {
             {
                 currPlayer = "";
                 playerLoggedIn = false;
+                tickCount = 0;
 
                 SwingUtilities.invokeLater(panel::resetPlayerStats);
 
@@ -208,7 +208,6 @@ public class BotDetectorPlugin extends Plugin {
                 {
                     http.sendToServer(detectedPlayers, 0);
                     detectedPlayers.clear();
-                    detectedPlayerNames.clear();
                 }
             }
         }
@@ -322,6 +321,11 @@ public class BotDetectorPlugin extends Plugin {
     private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
     {
         MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
+
+        System.out.print("Length of Menu: " + client.getMenuEntries().length);
+        
+        MenuEntry[] menu = client.getMenuEntries();
+        
         client.setMenuEntries(newMenu);
     }
 

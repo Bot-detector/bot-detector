@@ -8,7 +8,9 @@ import net.runelite.client.Notifier;
 import okhttp3.*;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.sql.Array;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -128,9 +130,9 @@ public class BotDetectorHTTP {
                     plugin.pushNotification("Could not locate player data.");
 
                     plugin.panel.updatePlayerData("Server Error", "---", true);
-
-                    response.close();
                 }
+
+                response.close();
             }
         });
     }
@@ -162,8 +164,9 @@ public class BotDetectorHTTP {
 
                 } else {
                     System.out.println("Bad player stats response: " + response.code());
-                    response.close();
                 }
+
+                response.close();
             }
         });
     }
@@ -179,26 +182,27 @@ public class BotDetectorHTTP {
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                plugin.pushNotification("Bot Detector: Player Name List Upload Failed.");
+                plugin.pushNotification("Report Failed");
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
 
-
                 if (response.isSuccessful()) {
 
-                    plugin.pushNotification("Bot Detector: " +
-                            submissionSet.size() +
-                            " Player Names Uploaded Successfully!");
+                    plugin.pushNotification("Player reported successfully!");
 
                     plugin.addNumNamesSubmitted(submissionSet.size());
+
+                    plugin.panel.updatePlayerStats();
+                    plugin.panel.removeReportButtons();
 
                     submissionSet.clear();
                 } else {
 
-                    response.close();
                 }
+
+                response.close();
             }
         });
     }
@@ -208,16 +212,34 @@ public class BotDetectorHTTP {
     }
 
     private String getPlayersReported(String rsn) {
-        HashSet<Player> matches = new HashSet<Player>();
+        HashSet<Player> detected = plugin.detectedPlayers;
+        List<Player> matches = new ArrayList<>();
 
-        Iterator<Player> iterator = plugin.detectedPlayers.iterator();
+        Player iterPlayer;
+        String iterName = "";
+
+
+        Iterator<Player> iterator = detected.iterator();
         while(iterator.hasNext()) {
-            if(iterator.next().getName() == rsn) {
-                matches.add(iterator.next());
+
+            iterPlayer = iterator.next();
+            iterName = iterPlayer.getName();
+
+            System.out.println(iterName);
+            System.out.println(iterName.length());
+            System.out.println(rsn);
+            System.out.println(rsn.length());
+
+            if(iterName.equals(rsn)) {
+                System.out.println("Adding: " + rsn);
+
+                matches.add(iterPlayer);
 
                 break;
             }
         }
+
+        System.out.println("I found this: " + matches.get(0).getName());
 
         return createJSONList(matches);
 
@@ -260,8 +282,6 @@ public class BotDetectorHTTP {
 
         playerString += "}";
 
-        System.out.println(playerString);
-
         return playerString;
     }
 
@@ -272,6 +292,22 @@ public class BotDetectorHTTP {
         while(iterator.hasNext()) {
             json += (buildPlayerJSONString(iterator.next()) + ",");
         }
+
+        json = json.substring(0, json.length() - 1);
+
+        json += "]";
+
+        return json;
+    }
+
+    public String createJSONList(List<Player> players) {
+        String json = "[";
+
+        for(int i= 0; i < players.size(); i++) {
+            json += (buildPlayerJSONString(players.get(i)) + ",");
+        }
+
+        System.out.println(json);
 
         json = json.substring(0, json.length() - 1);
 

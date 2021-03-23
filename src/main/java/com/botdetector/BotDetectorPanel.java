@@ -53,6 +53,7 @@ public class BotDetectorPanel extends PluginPanel {
     JLabel numBans;
     JLabel accuracy;
 
+    String currRSN;
     JLabel playerName;
     JLabel playerGroupID;
     JLabel reportBtnTitle = new JLabel("<html><body style = 'color: #a5a5a5'>"
@@ -105,8 +106,9 @@ public class BotDetectorPanel extends PluginPanel {
         reportBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                System.out.println("Reporting: " + currRSN);
                 BotDetectorPlugin.http.reportPlayer(
-                  playerName.getText()
+                  currRSN
                 );
             }
         });
@@ -257,6 +259,8 @@ public class BotDetectorPanel extends PluginPanel {
         }
         else
         {
+            currRSN = rsn;
+
             playerName.setText(htmlLabel("Player Name: ",  sanitizeText(rsn), "#a5a5a5", "white"));
             playerGroupID.setText(htmlLabel("Group ID: ", groupID, "#a5a5a5", "white"));
             searchBar.setEditable(true);
