@@ -34,24 +34,22 @@ public class BotDetectorHTTP {
     @Inject
     private Client client;
 
-    private HashSet<Player> submissionSet = new HashSet<Player>();
-
     @Inject
     private BotDetectorPlugin plugin;
 
-    public BotDetectorHTTP() {
+    private List<Player> playersToSubmit = new ArrayList<>();
 
-    }
-
-
-    public void sendToServer(HashSet<Player> detectedPlayers, int isManual) throws IOException {
+    public BotDetectorHTTP() { }
 
 
-        submissionSet.addAll(detectedPlayers);
+    public void sendToServer(List<Player> detectedPlayers, int isManual) throws IOException {
+
+
+        playersToSubmit.addAll(detectedPlayers);
 
         Request request = new Request.Builder()
                 .url(BASE_URL + BASE_PORT + "/plugin/detect/" + isManual)
-                .post(RequestBody.create(MEDIA_TYPE_JSON, createJSONList(submissionSet)))
+                .post(RequestBody.create(MEDIA_TYPE_JSON, createJSONList(playersToSubmit)))
                 .build();
 
 
@@ -70,12 +68,12 @@ public class BotDetectorHTTP {
                 if (response.isSuccessful()) {
 
                     plugin.pushNotification("Bot Detector: " +
-                            submissionSet.size() +
+                            playersToSubmit.size() +
                             " Player Names Uploaded Successfully!");
 
-                    plugin.addNumNamesSubmitted(submissionSet.size());
+                    plugin.addNumNamesSubmitted(playersToSubmit.size());
 
-                    submissionSet.clear();
+                    playersToSubmit.clear();
                 } else {
 
                     System.out.println("Received bad reponse: " + response.code());
@@ -192,12 +190,12 @@ public class BotDetectorHTTP {
 
                     plugin.pushNotification("Player reported successfully!");
 
-                    plugin.addNumNamesSubmitted(submissionSet.size());
+                    plugin.addNumNamesSubmitted(playersToSubmit.size());
 
                     plugin.panel.updatePlayerStats();
                     plugin.panel.removeReportButtons();
 
-                    submissionSet.clear();
+                    playersToSubmit.clear();
                 } else {
 
                 }
@@ -212,36 +210,15 @@ public class BotDetectorHTTP {
     }
 
     private String getPlayersReported(String rsn) {
-        HashSet<Player> detected = plugin.detectedPlayers;
-        List<Player> matches = new ArrayList<>();
+        List<Player> detected = plugin.detectedPlayers;
 
-        Player iterPlayer;
-        String iterName = "";
+        Player matchedPlayer =
+                detected.stream()
+                        .filter(player -> player.getName().equals(rsn))
+                        .findFirst()
+                        .orElse(null);
 
-
-        Iterator<Player> iterator = detected.iterator();
-        while(iterator.hasNext()) {
-
-            iterPlayer = iterator.next();
-            iterName = iterPlayer.getName();
-
-            System.out.println(iterName);
-            System.out.println(iterName.length());
-            System.out.println(rsn);
-            System.out.println(rsn.length());
-
-            if(iterName.equals(rsn)) {
-                System.out.println("Adding: " + rsn);
-
-                matches.add(iterPlayer);
-
-                break;
-            }
-        }
-
-        System.out.println("I found this: " + matches.get(0).getName());
-
-        return createJSONList(matches);
+        return createJSONList(matchedPlayer);
 
     }
 
@@ -282,24 +259,12 @@ public class BotDetectorHTTP {
 
         playerString += "}";
 
+        System.out.println(playerString);
+
         return playerString;
     }
 
-    public String createJSONList(HashSet<Player> set) {
-        String json = "[";
-
-        Iterator<Player> iterator = set.iterator();
-        while(iterator.hasNext()) {
-            json += (buildPlayerJSONString(iterator.next()) + ",");
-        }
-
-        json = json.substring(0, json.length() - 1);
-
-        json += "]";
-
-        return json;
-    }
-
+    //List of Players
     public String createJSONList(List<Player> players) {
         String json = "[";
 
@@ -314,6 +279,17 @@ public class BotDetectorHTTP {
         json += "]";
 
         System.out.println(json);
+
+        return json;
+    }
+
+    //Single Player
+    public String createJSONList(Player player) {
+        String json = "[";
+
+        json += buildPlayerJSONString(player);
+
+        json += "]";
 
         return json;
     }

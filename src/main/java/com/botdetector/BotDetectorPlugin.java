@@ -23,11 +23,8 @@ import com.google.inject.Provides;
 import java.io.IOException;
 import java.sql.Array;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.*;
 import java.awt.image.BufferedImage;
-import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import net.runelite.client.util.ImageUtil;
@@ -82,7 +79,7 @@ public class BotDetectorPlugin extends Plugin {
     static int numNamesSubmitted = 0;
     static String currPlayer;
     static HashSet<Player> targetedPlayers = new HashSet<Player>();
-    HashSet<Player> detectedPlayers = new HashSet<Player>();
+    List<Player> detectedPlayers = new ArrayList<Player>();
     HashSet<String> detectedPlayerNames = new HashSet<String>();
 
     int tickCount  = 0;
