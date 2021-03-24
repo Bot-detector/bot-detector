@@ -7,6 +7,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.Notifier;
 import okhttp3.*;
 import javax.inject.Inject;
+import javax.swing.*;
 import java.io.IOException;
 import java.sql.Array;
 import java.sql.Timestamp;
@@ -72,6 +73,7 @@ public class BotDetectorHTTP {
                             " Player Names Uploaded Successfully!");
 
                     plugin.addNumNamesSubmitted(playersToSubmit.size());
+                    getPlayerStats(plugin.currPlayer);
 
                     playersToSubmit.clear();
                 } else {
@@ -193,7 +195,7 @@ public class BotDetectorHTTP {
                     plugin.addNumNamesSubmitted(playersToSubmit.size());
 
                     plugin.panel.updatePlayerStats();
-                    plugin.panel.removeReportButtons();
+                    SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
 
                     playersToSubmit.clear();
                 } else {

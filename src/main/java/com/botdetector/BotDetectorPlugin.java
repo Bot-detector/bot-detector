@@ -373,5 +373,4 @@ public class BotDetectorPlugin extends Plugin {
         return;
 
     }
-
 }
