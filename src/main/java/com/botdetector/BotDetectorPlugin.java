@@ -3,7 +3,6 @@ package com.botdetector;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
 import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.Notifier;
@@ -17,18 +16,19 @@ import javax.inject.Inject;
 import javax.swing.*;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
+
+import java.awt.*;
 import java.io.IOException;
-import java.sql.Array;
-import java.sql.Timestamp;
 import java.util.*;
 import java.awt.image.BufferedImage;
+import java.util.List;
 import java.util.stream.Collectors;
-
 import net.runelite.client.util.ImageUtil;
-import org.apache.commons.lang3.ArrayUtils;
 
 @PluginDescriptor(
         name = "Bot Detector",
@@ -64,6 +64,10 @@ public class BotDetectorPlugin extends Plugin {
     private BotDetectorHeatMapOverlay heatMapOverlay;
 
     @Inject
+    private BotDetectorTileOverlay tileOverlay;
+
+
+    @Inject
     private OverlayManager overlayManager;
 
     public static BotDetectorHTTP http;
@@ -77,13 +81,14 @@ public class BotDetectorPlugin extends Plugin {
     }
 
     static int numNamesSubmitted = 0;
-    static String currPlayer;
     static HashSet<Player> targetedPlayers = new HashSet<Player>();
     List<Player> detectedPlayers = new ArrayList<Player>();
+    List<Player> freshPlayers = new ArrayList<Player>();
     HashSet<String> detectedPlayerNames = new HashSet<String>();
 
     int tickCount  = 0;
     boolean playerLoggedIn = false;
+    String currPlayer;
 
 
     public BotDetectorPlugin() throws IOException {
@@ -91,8 +96,8 @@ public class BotDetectorPlugin extends Plugin {
 
     @Override
     protected void startUp() throws Exception {
-        currPlayer = "";
 
+        currPlayer = "";
 
         panel = injector.getInstance(BotDetectorPanel.class);
         panel.init();
@@ -116,14 +121,16 @@ public class BotDetectorPlugin extends Plugin {
         }
 
         overlayManager.add(heatMapOverlay);
+        overlayManager.add(tileOverlay);
     }
 
     @Override
     protected void shutDown() throws Exception {
 
         if (detectedPlayers.size() > 0) {
-            http.sendToServer(detectedPlayers, 0);
+            http.sendToServer(freshPlayers, 0, currPlayer);
             detectedPlayers.clear();
+            freshPlayers.clear();
             detectedPlayerNames.clear();
         }
 
@@ -134,6 +141,7 @@ public class BotDetectorPlugin extends Plugin {
         clientToolbar.removeNavigation(navButton);
 
         overlayManager.remove(heatMapOverlay);
+        overlayManager.remove(tileOverlay);
     }
 
     @Subscribe
@@ -171,8 +179,8 @@ public class BotDetectorPlugin extends Plugin {
                 System.out.println("Time to send");
                 if (detectedPlayers.size() > 0) {
                     System.out.println("Should be sending....");
-                    http.sendToServer(detectedPlayers, 0);
-                    detectedPlayers.clear();
+                    http.sendToServer(freshPlayers, 0, currPlayer);
+                    freshPlayers.clear();
                 }
                 tickCount  = 0;
             }
@@ -181,14 +189,16 @@ public class BotDetectorPlugin extends Plugin {
 
     @Subscribe
     public void onGameStateChanged(GameStateChanged gameStateChanged) throws IOException {
-        GameState gs = gameStateChanged.getGameState();
 
-        if(gs.getState() == 30) {
+        if(gameStateChanged.getGameState() == GameState.LOGGED_IN) {
 
             playerLoggedIn = true;
+            final IndexedSprite[] modIcons = client.getModIcons();
+            System.out.println(modIcons[0].getClass().getName());
+            System.out.println(modIcons.length);
 
         }
-        else if (gs.getState() == 10)
+        else if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
         {
             //If player was previously logged in and is now back at the login screen
             //(not hopping, loading, etc..)
@@ -203,7 +213,8 @@ public class BotDetectorPlugin extends Plugin {
 
                 if(detectedPlayers.size() > 0 )
                 {
-                    http.sendToServer(detectedPlayers, 0);
+                    http.sendToServer(freshPlayers, 0, currPlayer);
+                    freshPlayers.clear();
                     detectedPlayers.clear();
                 }
             }
@@ -224,12 +235,14 @@ public class BotDetectorPlugin extends Plugin {
         }
         else {
 
-            int setSize = detectedPlayerNames.size();
+            int listSize = detectedPlayerNames.size();
             detectedPlayerNames.add(player.getName());
 
-            if(detectedPlayerNames.size() ==(setSize + 1)) {
+            if(detectedPlayerNames.size() == (listSize + 1)) {
                 detectedPlayers.add(player);
+                freshPlayers.add(player);
             }
+
         }
     }
 
@@ -371,6 +384,5 @@ public class BotDetectorPlugin extends Plugin {
         }
 
         return;
-
     }
 }

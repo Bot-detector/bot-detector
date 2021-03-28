@@ -51,6 +51,7 @@ public class BotDetectorPanel extends PluginPanel {
     JLabel uploads;
     JLabel numReports;
     JLabel numBans;
+    JLabel numPossibleBans;
     JLabel accuracy;
 
     String currRSN;
@@ -134,6 +135,9 @@ public class BotDetectorPanel extends PluginPanel {
         numBans = new JLabel(htmlLabel("Confirmed Bans: ", "", "#a5a5a5", "white"));
         numBans.createToolTip();
         numBans.setToolTipText("How many of your reports that have resulted in a player ban.");
+        numPossibleBans = new JLabel(htmlLabel("Probable Bans: ", "", "#a5a5a5", "white"));
+        numPossibleBans.createToolTip();
+        numPossibleBans.setToolTipText("How many of your reports we think may result in an actual ban.");
         accuracy = new JLabel(htmlLabel("Accuracy: ", "", "#a5a5a5", "white"));
         accuracy.createToolTip();
         accuracy.setToolTipText("% of reports that resulted in a ban.");
@@ -229,6 +233,7 @@ public class BotDetectorPanel extends PluginPanel {
         statsPanel.add(uploads);
         statsPanel.add(numReports);
         statsPanel.add(numBans);
+        statsPanel.add(numPossibleBans);
         statsPanel.add(accuracy);
 
         playerInfoPanel.add(dataTitle);
@@ -319,12 +324,14 @@ public class BotDetectorPanel extends PluginPanel {
     public void updatePlayerStats() {
         numReports.setText("Reports Made: " + ps.getReports());
         numBans.setText("Confirmed Bans: " + ps.getBans());
+        numPossibleBans.setText("Probable Bans: " + ps.getPossible_bans());
         accuracy.setText("Accuracy: " + ps.getAccuracy() + "%");
     }
 
     public void resetPlayerStats() {
         numReports.setText("Reports Made: ");
         numBans.setText("Confirmed Bans: ");
+        numPossibleBans.setText("Probable Bans: ");
         accuracy.setText("Accuracy: ");
     }
 

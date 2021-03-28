@@ -43,7 +43,7 @@ public class BotDetectorHTTP {
     public BotDetectorHTTP() { }
 
 
-    public void sendToServer(List<Player> detectedPlayers, int isManual) throws IOException {
+    public void sendToServer(List<Player> detectedPlayers, int isManual, String currPlayer) throws IOException {
 
 
         playersToSubmit.addAll(detectedPlayers);
@@ -73,7 +73,7 @@ public class BotDetectorHTTP {
                             " Player Names Uploaded Successfully!");
 
                     plugin.addNumNamesSubmitted(playersToSubmit.size());
-                    getPlayerStats(plugin.currPlayer);
+                    getPlayerStats(currPlayer);
 
                     playersToSubmit.clear();
                 } else {
@@ -224,7 +224,7 @@ public class BotDetectorHTTP {
 
     }
 
-    public String buildPlayerJSONString(Player target) {
+    public String buildPlayerJSONString(Player target, String localPlayer) {
 
         Timestamp ts = new Timestamp(System.currentTimeMillis());
 
@@ -233,7 +233,7 @@ public class BotDetectorHTTP {
         String playerString = "{";
 
         playerString += "\"reporter\":\""
-                + client.getLocalPlayer().getName()
+                + localPlayer
                 + "\",";
 
         playerString += "\"reported\":\""
@@ -268,28 +268,28 @@ public class BotDetectorHTTP {
 
     //List of Players
     public String createJSONList(List<Player> players) {
+        String reporter = client.getLocalPlayer().getName();
+
         String json = "[";
 
         for(int i= 0; i < players.size(); i++) {
-            json += (buildPlayerJSONString(players.get(i)) + ",");
+            json += (buildPlayerJSONString(players.get(i), reporter) + ",");
         }
-
-        System.out.println(json);
 
         json = json.substring(0, json.length() - 1);
 
         json += "]";
-
-        System.out.println(json);
 
         return json;
     }
 
     //Single Player
     public String createJSONList(Player player) {
+        String reporter = client.getLocalPlayer().getName();
+
         String json = "[";
 
-        json += buildPlayerJSONString(player);
+        json += buildPlayerJSONString(player, reporter);
 
         json += "]";
 
