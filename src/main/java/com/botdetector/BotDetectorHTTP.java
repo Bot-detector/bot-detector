@@ -180,7 +180,7 @@ public class BotDetectorHTTP {
 
     public void getPlayerTimesReported(String rsn) throws IOException {
 
-        String url = "http://127.0.0.1" + BASE_PORT + "/plugin/detect/" +
+        String url = BASE_URL + BASE_PORT + "/plugin/detect/" +
                 rsn.replace( " ", "%20");
 
         Request request = new Request.Builder()
