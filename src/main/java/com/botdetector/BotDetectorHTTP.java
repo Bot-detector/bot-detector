@@ -1,6 +1,9 @@
 package com.botdetector;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
@@ -9,13 +12,12 @@ import okhttp3.*;
 import javax.inject.Inject;
 import javax.swing.*;
 import java.io.IOException;
-import java.sql.Array;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 
 public class BotDetectorHTTP {
 
@@ -24,6 +26,7 @@ public class BotDetectorHTTP {
     private static final String BASE_PORT = ":5000";
 
     public static final Gson gson = new Gson();
+
     public static OkHttpClient okClient = new OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
@@ -115,6 +118,10 @@ public class BotDetectorHTTP {
                     if (groupID.equals("-1"))
                     {
                         plugin.panel.updatePlayerData(rsn, "Indeterminable", true);
+                        if(reportable)
+                        {
+                            plugin.panel.addReportButtons();
+                        }
                     }
                     else
                     {
@@ -171,6 +178,49 @@ public class BotDetectorHTTP {
         });
     }
 
+    public void getPlayerTimesReported(String rsn) throws IOException {
+
+        String url = "http://127.0.0.1" + BASE_PORT + "/plugin/detect/" +
+                rsn.replace( " ", "%20");
+
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        Call call = okClient.newCall(request);
+        call.enqueue(new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                System.out.println("Failed to get times player has been reported.");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+                if (response.isSuccessful()) {
+
+                    JsonParser parser = new JsonParser();
+                    JsonElement element = parser.parse(response.body().string());
+                    JsonObject jsonObject = element.getAsJsonObject();
+                    int timesReported = jsonObject.get("times_reported").getAsInt();
+                    System.out.println(timesReported);
+
+                    if(timesReported > 0) {
+                        plugin.addSeenDetectedPlayer(rsn);
+                    } else {
+                        return;
+                    }
+
+                } else {
+                    System.out.println("Bad player times reported response: " + response.code());
+                }
+
+                response.close();
+            }
+        });
+    }
+
     public void reportPlayer(String rsn) {
 
         Request request = new Request.Builder()
@@ -193,6 +243,7 @@ public class BotDetectorHTTP {
                     plugin.pushNotification("Player reported successfully!");
 
                     plugin.addNumNamesSubmitted(playersToSubmit.size());
+                    plugin.addSeenDetectedPlayer(rsn);
 
                     plugin.panel.updatePlayerStats();
                     SwingUtilities.invokeLater(plugin.panel::removeReportButtons);

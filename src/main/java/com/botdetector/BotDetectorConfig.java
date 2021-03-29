@@ -81,6 +81,6 @@ public interface BotDetectorConfig extends Config
             name = "Tile Color:",
             description = "Color of player tiles."
     )
-    default Color getTileColor() { return new Color(0, 0, 0); }
+    default Color getTileColor() { return new Color(220,20,60); }
 
 }

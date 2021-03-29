@@ -16,13 +16,9 @@ import javax.inject.Inject;
 import javax.swing.*;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
-import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
-
-import java.awt.*;
 import java.io.IOException;
 import java.util.*;
 import java.awt.image.BufferedImage;
@@ -66,7 +62,6 @@ public class BotDetectorPlugin extends Plugin {
     @Inject
     private BotDetectorTileOverlay tileOverlay;
 
-
     @Inject
     private OverlayManager overlayManager;
 
@@ -82,6 +77,9 @@ public class BotDetectorPlugin extends Plugin {
 
     static int numNamesSubmitted = 0;
     static HashSet<Player> targetedPlayers = new HashSet<Player>();
+    //Players seen in game that have been manually reported by our users.
+    static List<String> seenReportedPlayers = new ArrayList<>();
+
     List<Player> detectedPlayers = new ArrayList<Player>();
     List<Player> freshPlayers = new ArrayList<Player>();
     HashSet<String> detectedPlayerNames = new HashSet<String>();
@@ -176,9 +174,7 @@ public class BotDetectorPlugin extends Plugin {
             }
 
             if (tickCount > timeSend) {
-                System.out.println("Time to send");
                 if (detectedPlayers.size() > 0) {
-                    System.out.println("Should be sending....");
                     http.sendToServer(freshPlayers, 0, currPlayer);
                     freshPlayers.clear();
                 }
@@ -225,10 +221,11 @@ public class BotDetectorPlugin extends Plugin {
     public void onPlayerSpawned(PlayerSpawned event) throws IOException {
 
         Player player = event.getPlayer();
+        String playerName = player.getName();
 
         currPlayer = client.getLocalPlayer().getName();
 
-        if(player.getName().equals(currPlayer)) {
+        if(playerName.equals(currPlayer)) {
 
             http.getPlayerStats(currPlayer);
 
@@ -236,13 +233,36 @@ public class BotDetectorPlugin extends Plugin {
         else {
 
             int listSize = detectedPlayerNames.size();
-            detectedPlayerNames.add(player.getName());
+            detectedPlayerNames.add(playerName);
+
+            if(config.enableTileLabels()) {
+                http.getPlayerTimesReported(playerName);
+            }
 
             if(detectedPlayerNames.size() == (listSize + 1)) {
                 detectedPlayers.add(player);
                 freshPlayers.add(player);
             }
+        }
+    }
 
+    @Subscribe
+    public void onPlayerDespawned(PlayerDespawned event) throws IOException {
+
+        if(!config.enableTileLabels()) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+
+        int indxFound = seenReportedPlayers.indexOf(player.getName());
+
+        if(indxFound != -1) {
+            seenReportedPlayers.remove(indxFound);
+            tileOverlay.setPlayersHaveChanged(true);
+        }
+        else {
+            return;
         }
     }
 
@@ -344,6 +364,20 @@ public class BotDetectorPlugin extends Plugin {
         numNamesSubmitted += n;
 
         SwingUtilities.invokeLater(panel::updateUploads);
+    }
+
+    public void addSeenDetectedPlayer(String rsn)
+    {
+        if(seenReportedPlayers.contains(rsn)) {
+            return;
+        }else{
+            seenReportedPlayers.add(rsn);
+            tileOverlay.setPlayersHaveChanged(true);
+        }
+    }
+
+    public List<String> getSeenReportedPlayers() {
+        return seenReportedPlayers;
     }
 
     private void updatePlayerData(String playerName)

@@ -68,7 +68,6 @@ public class BotDetectorPanel extends PluginPanel {
     @Subscribe
     public void onSessionOpen(SessionOpen sessionOpen)
     {
-
     }
 
     @Subscribe
@@ -254,6 +253,8 @@ public class BotDetectorPanel extends PluginPanel {
 
     void updatePlayerData(String rsn, String groupID, boolean error)
     {
+        currRSN = rsn;
+
         if(error)
         {
             playerName.setText(htmlLabel("Player Name: ", rsn , "#a5a5a5", "red"));
@@ -264,8 +265,6 @@ public class BotDetectorPanel extends PluginPanel {
         }
         else
         {
-            currRSN = rsn;
-
             playerName.setText(htmlLabel("Player Name: ",  sanitizeText(rsn), "#a5a5a5", "white"));
             playerGroupID.setText(htmlLabel("Group ID: ", groupID, "#a5a5a5", "white"));
             searchBar.setEditable(true);
