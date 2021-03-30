@@ -320,6 +320,8 @@ public class BotDetectorPlugin extends Plugin {
                 //If they have then we have their approximate location that we can report with.
                 String targetRSN = Text.removeTags(event.getMenuTarget());
 
+                System.out.println("Targeted RSN: " + targetRSN);
+
                 Player target = findPlayerInCache(targetRSN);
 
                 if(target == null) {
@@ -342,17 +344,21 @@ public class BotDetectorPlugin extends Plugin {
         List<Player> currPlayers = client.getPlayers();
 
         List<Player> matches = currPlayers.stream()
-                .filter(p -> p.getName().equals(rsn))
+                .filter(p -> p.getName().contains(rsn))
                 .collect(Collectors.toList());
 
-        return matches.get(0);
+        try {
+            return matches.get(0);
+        }
+        catch (IndexOutOfBoundsException exception) {
+            return null;
+        }
+
     }
 
     private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
     {
         MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
-
-        System.out.print("Length of Menu: " + client.getMenuEntries().length);
         
         MenuEntry[] menu = client.getMenuEntries();
         

@@ -201,10 +201,9 @@ public class BotDetectorHTTP {
                 if (response.isSuccessful()) {
 
                     JsonParser parser = new JsonParser();
-                    JsonElement element = parser.parse(response.body().string());
-                    JsonObject jsonObject = element.getAsJsonObject();
-                    int timesReported = jsonObject.get("times_reported").getAsInt();
-                    System.out.println(timesReported);
+                    JsonElement responseJSON = parser.parse(response.body().string());
+                    JsonObject jObject = responseJSON.getAsJsonObject();
+                    int timesReported = jObject.get("times_reported").getAsInt();
 
                     if(timesReported > 0) {
                         plugin.addSeenDetectedPlayer(rsn);
