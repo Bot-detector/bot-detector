@@ -63,6 +63,7 @@ public interface BotDetectorConfig extends Config
             position = 7,
             keyName = "playerLabelColor",
             name = "Label Color:",
+            hidden = true,
             description = "Color of players' group membership labels."
     )
     default Color getPlayerLabelColor() { return new Color(0, 0, 0); }
@@ -71,6 +72,7 @@ public interface BotDetectorConfig extends Config
             position = 8,
             keyName = "enableTileLabel",
             name = "Enable Color-Coded Tiles:",
+            hidden = true,
             description = "Place color-coded tiles below players to show their group memberships."
     )
     default boolean enableTileLabels() { return false; }

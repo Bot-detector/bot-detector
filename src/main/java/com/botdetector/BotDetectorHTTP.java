@@ -22,8 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class BotDetectorHTTP {
 
     public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
-    private static final String BASE_URL = "http://osrsbot-detector.ddns.net";
-    private static final String BASE_PORT = ":5000";
+    private static final String BASE_URL = "https://www.osrsbotdetector.com/api";
 
     public static final Gson gson = new Gson();
 
@@ -52,7 +51,7 @@ public class BotDetectorHTTP {
         playersToSubmit.addAll(detectedPlayers);
 
         Request request = new Request.Builder()
-                .url(BASE_URL + BASE_PORT + "/plugin/detect/" + isManual)
+                .url(BASE_URL + "/plugin/detect/" + isManual)
                 .post(RequestBody.create(MEDIA_TYPE_JSON, createJSONList(playersToSubmit)))
                 .build();
 
@@ -90,7 +89,7 @@ public class BotDetectorHTTP {
 
     public void getPlayerData(String rsn, boolean reportable) throws IOException {
 
-        String url = BASE_URL + ":8080" + "/user/" +
+        String url = "http://45.33.127.106:8080" + "/user/" +
                 rsn.replace( " ", "%20");;
 
         Request request = new Request.Builder()
@@ -146,7 +145,7 @@ public class BotDetectorHTTP {
 
     public void getPlayerStats(String rsn) throws IOException {
 
-        String url = BASE_URL + BASE_PORT + "/stats/contributions/" +
+        String url = BASE_URL + "/stats/contributions/" +
                 rsn.replace( " ", "%20");
 
         Request request = new Request.Builder()
@@ -180,7 +179,7 @@ public class BotDetectorHTTP {
 
     public void getPlayerTimesReported(String rsn) throws IOException {
 
-        String url = BASE_URL + BASE_PORT + "/plugin/detect/" +
+        String url = BASE_URL + "/plugin/detect/" +
                 rsn.replace( " ", "%20");
 
         Request request = new Request.Builder()
@@ -223,7 +222,7 @@ public class BotDetectorHTTP {
     public void reportPlayer(String rsn) {
 
         Request request = new Request.Builder()
-                .url(BASE_URL + BASE_PORT + "/plugin/detect/" + 1)
+                .url(BASE_URL + "/plugin/detect/" + 1)
                 .post(RequestBody.create(MEDIA_TYPE_JSON, getPlayersReported(rsn)))
                 .build();
 
