@@ -19,12 +19,15 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.runelite.client.util.ImageUtil;
+
+import java.io.IOException;
 
 @PluginDescriptor(
         name = "Bot Detector",
@@ -37,6 +40,7 @@ public class BotDetectorPlugin extends Plugin {
 
     private static final String DETECT = "Detect";
     private static final String MASS_DETECT = "Mass Detect";
+    private static final String RECORD_SPAMMER = "Record Spammer";
     private static final String KICK_OPTION = "Kick";
     private static final ImmutableList<String> AFTER_OPTIONS =
             ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
@@ -69,6 +73,11 @@ public class BotDetectorPlugin extends Plugin {
     public BotDetectorPanel panel;
     private NavigationButton navButton;
 
+    //For language logging
+    private File SpamLog;
+    private FileWriter fileWriter;
+    private BufferedWriter bufferedWriter;
+
 
     @Provides
     BotDetectorConfig provideConfig(ConfigManager configManager) {
@@ -82,6 +91,7 @@ public class BotDetectorPlugin extends Plugin {
 
     List<Player> detectedPlayers = new ArrayList<Player>();
     List<Player> freshPlayers = new ArrayList<Player>();
+    List<String> watchedSpammers = new ArrayList<>();
     HashSet<String> detectedPlayerNames = new HashSet<String>();
 
     int tickCount  = 0;
@@ -113,9 +123,14 @@ public class BotDetectorPlugin extends Plugin {
 
         clientToolbar.addNavigation(navButton);
 
-
         if (config.addDetectOption() && client != null) {
             menuManager.addPlayerMenuItem(DETECT);
+        }
+
+        if (config.enableSpammerRecording() && client != null) {
+            menuManager.addPlayerMenuItem(RECORD_SPAMMER);
+            createSpamLog();
+
         }
 
         overlayManager.add(heatMapOverlay);
@@ -136,6 +151,11 @@ public class BotDetectorPlugin extends Plugin {
             menuManager.removePlayerMenuItem(DETECT);
         }
 
+        if (config.enableSpammerRecording() && client != null) {
+            menuManager.removePlayerMenuItem(RECORD_SPAMMER);
+            bufferedWriter.close();
+        }
+
         clientToolbar.removeNavigation(navButton);
 
         overlayManager.remove(heatMapOverlay);
@@ -143,7 +163,7 @@ public class BotDetectorPlugin extends Plugin {
     }
 
     @Subscribe
-    public void onConfigChanged(ConfigChanged event) {
+    public void onConfigChanged(ConfigChanged event) throws IOException {
         if (!event.getGroup().equals("botdetector")) {
             return;
         }
@@ -153,6 +173,14 @@ public class BotDetectorPlugin extends Plugin {
                 menuManager.addPlayerMenuItem(DETECT);
             } else if (Boolean.parseBoolean(event.getOldValue()) && !Boolean.parseBoolean(event.getNewValue())) {
                 menuManager.removePlayerMenuItem(DETECT);
+            }
+        }else if(event.getKey().equals("enableSpammerRecording")) {
+            if (!Boolean.parseBoolean(event.getOldValue()) && Boolean.parseBoolean(event.getNewValue())) {
+                menuManager.addPlayerMenuItem(RECORD_SPAMMER);
+                createSpamLog();
+            } else if (Boolean.parseBoolean(event.getOldValue()) && !Boolean.parseBoolean(event.getNewValue())) {
+                menuManager.removePlayerMenuItem(RECORD_SPAMMER);
+                bufferedWriter.close();
             }
         }
     }
@@ -337,6 +365,47 @@ public class BotDetectorPlugin extends Plugin {
         {
             //Mass Detection
             return;
+        }else if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
+                && event.getMenuOption().equals(RECORD_SPAMMER)) {
+
+            if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
+            {
+                Player player = client.getCachedPlayers()[event.getId()];
+
+                if (player == null)
+                {
+                    return;
+                }
+
+                String playerName = player.getName();
+
+                if(watchedSpammers.contains(playerName)) {
+                    //Already watching this player!
+                    return;
+                }
+
+                System.out.println("Added spammer: " + playerName);
+                watchedSpammers.add(playerName.toLowerCase());
+
+            }
+        }
+    }
+
+    @Subscribe
+    public void onChatMessage(ChatMessage event) throws IOException {
+
+        String messenger = event.getName().toLowerCase();
+        messenger = messenger.replaceAll("\u00a0"," ");
+
+        if(watchedSpammers.size() == 0) {
+            return;
+        }
+
+        for (String name:
+             watchedSpammers) {
+            if(messenger.equals(name)) {
+                bufferedWriter.write(event.getMessage() + "\n");
+            }
         }
     }
 
@@ -424,5 +493,26 @@ public class BotDetectorPlugin extends Plugin {
         }
 
         return;
+    }
+
+    public void createSpamLog() throws IOException {
+        SpamLog = new File("spam_log.txt");
+
+        try {
+
+            if (SpamLog.createNewFile()) {
+                //Log: File created
+            } else {
+                //Log: File exists
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+
+        }
+
+        fileWriter = new FileWriter(SpamLog, true);
+        bufferedWriter = new BufferedWriter(fileWriter);
+
     }
 }
