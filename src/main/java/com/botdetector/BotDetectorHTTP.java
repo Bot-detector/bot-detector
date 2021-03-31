@@ -13,6 +13,9 @@ import javax.inject.Inject;
 import javax.swing.*;
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -276,6 +279,7 @@ public class BotDetectorHTTP {
     public String buildPlayerJSONString(Player target, String localPlayer) {
 
         Timestamp ts = new Timestamp(System.currentTimeMillis());
+        ZonedDateTime utcDateTime = ZonedDateTime.ofInstant(ts.toInstant(), ZoneId.of("UTC"));
 
         WorldPoint targetLocation = target.getWorldLocation();
 
@@ -305,7 +309,7 @@ public class BotDetectorHTTP {
 
         playerString += "\"ts\" :"
                 + "\""
-                + ts
+                + utcDateTime
                 + "\"";
 
         playerString += "}";
