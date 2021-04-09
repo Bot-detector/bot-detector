@@ -112,4 +112,14 @@ public interface BotDetectorConfig extends Config {
     default boolean enableSpammerRecording() {
         return false;
     }
+
+    @ConfigItem(
+            position = 10,
+            keyName = "enableAnonymousReporting",
+            name = "Enable Anonymous Reporting:",
+            description = "Your RSN will not be sent with reports. Disable if you'd like to track your contributions."
+    )
+    default boolean enableAnonymousReporting() {
+        return true;
+    }
 }

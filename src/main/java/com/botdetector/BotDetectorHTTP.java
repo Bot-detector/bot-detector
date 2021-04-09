@@ -41,6 +41,9 @@ public class BotDetectorHTTP {
     private Client client;
 
     @Inject
+    private BotDetectorConfig config;
+
+    @Inject
     private BotDetectorPlugin plugin;
 
     private List<Player> playersToSubmit = new ArrayList<>();
@@ -139,6 +142,44 @@ public class BotDetectorHTTP {
                     plugin.pushNotification("Could not locate player data.");
 
                     plugin.panel.updatePlayerData("Server Error", "---", true);
+                }
+
+                response.close();
+            }
+        });
+    }
+
+    public void getPlayerID(String rsn) throws IOException {
+        String url = BASE_URL + "/stats/getcontributorid/" +
+                rsn.replace( " ", "%20");
+
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        Call call = okClient.newCall(request);
+        call.enqueue(new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                System.out.println("Failed to get player stats.");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+                if (response.isSuccessful()) {
+
+                    JsonParser parser = new JsonParser();
+                    JsonElement responseJSON = parser.parse(response.body().string());
+                    JsonObject jObject = responseJSON.getAsJsonObject();
+                    int player_id = jObject.get("player_id").getAsInt();
+
+                    plugin.setCurrPlayerID(player_id);
+
+
+                } else {
+                    System.out.println("Bad player stats response: " + response.code());
                 }
 
                 response.close();
@@ -306,6 +347,7 @@ public class BotDetectorHTTP {
                 + targetLocation.getPlane()
                 + ",";
 
+        //TODO Add in Members/f2p
 
         playerString += "\"ts\" :"
                 + "\""
@@ -321,7 +363,14 @@ public class BotDetectorHTTP {
 
     //List of Players
     public String createJSONList(List<Player> players) {
-        String reporter = client.getLocalPlayer().getName();
+
+        String reporter = "";
+
+        if(config.enableAnonymousReporting()) {
+            reporter = "AnonymousUser";
+        }else{
+            reporter = client.getLocalPlayer().getName();
+        }
 
         String json = "[";
 
@@ -338,7 +387,13 @@ public class BotDetectorHTTP {
 
     //Single Player
     public String createJSONList(Player player) {
-        String reporter = client.getLocalPlayer().getName();
+        String reporter = "";
+
+        if(config.enableAnonymousReporting()) {
+            reporter = "AnonymousUser";
+        }else{
+            reporter = client.getLocalPlayer().getName();
+        }
 
         String json = "[";
 
