@@ -1,5 +1,7 @@
-package com.botdetector;
+package com.botdetector.ui;
 
+import com.botdetector.BotDetectorPlugin;
+import com.botdetector.PlayerStats;
 import com.google.inject.Inject;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -7,11 +9,16 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Set;
 import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import lombok.SneakyThrows;
 import net.runelite.api.Client;
+import net.runelite.api.HashTable;
 import net.runelite.api.Player;
 import net.runelite.client.Notifier;
 import net.runelite.client.events.SessionClose;
@@ -40,13 +47,19 @@ public class BotDetectorPanel extends PluginPanel {
     private static final int MAX_RSN_LENGTH = 12;
     private boolean active;
     private boolean loading;
+    private boolean feedbackBtnsActive;
+    private boolean reportBtnsActive;
 
     private final IconTextField searchBar;
 
+    private JPanel linksPanel;
     private JPanel statsPanel;
     private JPanel playerInfoPanel;
+    private JPanel additionalPredictionsPanel;
 
     public PlayerStats ps;
+
+    JSeparator btnSpacer;
 
     JLabel uploads;
     JLabel numReports;
@@ -56,14 +69,24 @@ public class BotDetectorPanel extends PluginPanel {
 
     String currRSN;
     JLabel playerName;
-    JLabel playerGroupID;
+    JLabel playerGroupLabel;
+    JLabel playerGroupConfidence;
+
+    JButton reportBtn;
+    JButton dontReportBtn;
     JLabel reportBtnTitle = new JLabel("<html><body style = 'color: #a5a5a5'>"
                                 + "Report as Bot?"
                                 +"</body></html>");
 
+    JButton correctBtn;
+    JButton incorrectBtn;
+    JLabel feedbackTitle = new JLabel("<html><body style = 'color: #a5a5a5'>"
+            + "Is The Prediction Correct?"
+            +"</body></html>");
+
     JButton refreshStatsBtn;
-    JButton reportBtn;
-    JButton denyBtn;
+
+
 
     @Subscribe
     public void onSessionOpen(SessionOpen sessionOpen)
@@ -95,9 +118,14 @@ public class BotDetectorPanel extends PluginPanel {
         loading = false;
         ps = new PlayerStats();
 
+        btnSpacer = new JSeparator();
+
         //Panels
+        linksPanel = new JPanel();
         statsPanel = new JPanel();
         playerInfoPanel =  new JPanel();
+        additionalPredictionsPanel = new JPanel();
+        additionalPredictionsPanel.setVisible(false);
 
         //Buttons
         reportBtn = new JButton("Report");
@@ -113,10 +141,32 @@ public class BotDetectorPanel extends PluginPanel {
             }
         });
 
-        denyBtn = new JButton("Don't Report");
-        denyBtn.createToolTip();
-        denyBtn.setToolTipText("Player is real and not a rule-breaker.");
-        denyBtn.addActionListener(new ActionListener() {
+        dontReportBtn = new JButton("Don't Report");
+        dontReportBtn.createToolTip();
+        dontReportBtn.setToolTipText("Player is real and not a rule-breaker.");
+        dontReportBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                removeReportButtons();
+            }
+        });
+
+        correctBtn = new JButton("It's Correct!");
+        correctBtn.createToolTip();
+        correctBtn.setToolTipText("Let us know if our prediction seems correct.");
+        correctBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                removeReportButtons();
+            }
+        });
+
+        incorrectBtn = new JButton("I Think It's Wrong");
+        incorrectBtn.createToolTip();
+        incorrectBtn.setToolTipText("Let us know if our prediction seems incorrect.");
+        incorrectBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
 
@@ -136,14 +186,15 @@ public class BotDetectorPanel extends PluginPanel {
         numBans.setToolTipText("How many of your reports that have resulted in a player ban.");
         numPossibleBans = new JLabel(htmlLabel("Probable Bans: ", "", "#a5a5a5", "white"));
         numPossibleBans.createToolTip();
-        numPossibleBans.setToolTipText("How many of your reports we think may result in an actual ban.");
+        numPossibleBans.setToolTipText("How many of your reports we think could result in bans.");
         accuracy = new JLabel(htmlLabel("Accuracy: ", "", "#a5a5a5", "white"));
         accuracy.createToolTip();
         accuracy.setToolTipText("% of reports that resulted in a ban.");
 
         //Player Info Panel
         playerName = new JLabel(htmlLabel("Player Name: ", "---", "#a5a5a5", "white"));
-        playerGroupID = new JLabel(htmlLabel("Group ID: ", "---", "#a5a5a5", "white"));
+        playerGroupLabel = new JLabel(htmlLabel("Prediction: ", "---", "#a5a5a5", "white"));
+        playerGroupConfidence = new JLabel(htmlLabel("Confidence: ", "---", "#a5a5a5", "white"));
 
         //Search Bar Setup
         searchBar = new IconTextField();
@@ -193,7 +244,7 @@ public class BotDetectorPanel extends PluginPanel {
 
     }
 
-    void init()
+    public void init()
     {
         setLayout(new GridBagLayout());
         setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -215,17 +266,30 @@ public class BotDetectorPanel extends PluginPanel {
         statsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         statsPanel.setLayout(new GridLayout(0, 1));
 
+        playerInfoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        playerInfoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        playerInfoPanel.setLayout(new GridLayout(0, 1));
+
+        additionalPredictionsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        additionalPredictionsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        additionalPredictionsPanel.setLayout(new GridLayout(0, 1));
+
         JLabel dataTitle =  new JLabel(htmlLabel("Player Data: ", "", "#a5a5a5", "white"));
         dataTitle.setFont((boldFont));
 
         JLabel statsTitle =  new JLabel(htmlLabel("Statistics: ", "", "#a5a5a5", "white"));
         statsTitle.setFont(boldFont);
 
-        add(searchBar, constraints);
+
+        add(linksPanel, constraints);
         constraints.gridy++;
         add(statsPanel, constraints);
         constraints.gridy++;
+        add(searchBar, constraints);
+        constraints.gridy++;
         add(playerInfoPanel, constraints);
+        constraints.gridy++;
+        add(additionalPredictionsPanel, constraints);
         constraints.gridy++;
 
         statsPanel.add(statsTitle);
@@ -233,17 +297,19 @@ public class BotDetectorPanel extends PluginPanel {
         statsPanel.add(numReports);
         statsPanel.add(numBans);
         statsPanel.add(numPossibleBans);
-        statsPanel.add(accuracy);
+        //TODO Have accuracy reflect manual reports only
+        //statsPanel.add(accuracy);
 
         playerInfoPanel.add(dataTitle);
         playerInfoPanel.add(playerName);
-        playerInfoPanel.add(playerGroupID);
+        playerInfoPanel.add(playerGroupLabel);
+        playerInfoPanel.add(playerGroupConfidence);
 
         eventBus.register(this);
 
     }
 
-    void updateUploads()
+    public void updateUploads()
     {
         uploads.setText(htmlLabel("Names Uploaded: ",
                 String.valueOf(BotDetectorPlugin.numNamesSubmitted),
@@ -251,43 +317,146 @@ public class BotDetectorPanel extends PluginPanel {
     }
 
 
-    void updatePlayerData(String rsn, String groupID, boolean error)
+    //You only get here if something went wrong.
+    public void updatePlayerData(String rsn, boolean error)
     {
         currRSN = rsn;
 
+        playerName.setText(htmlLabel("Player Name: ", rsn , "#a5a5a5", "red"));
+        playerGroupLabel.setText(htmlLabel("Prediction: ", "-----", "#a5a5a5", "red"));
+        playerGroupConfidence.setText(htmlLabel("Confidence: ", "-----", "#a5a5a5", "red"));
+        loading = false;
+        searchBar.setEditable(true);
+        searchBar.setIcon(IconTextField.Icon.ERROR);
+
+    }
+
+    public void updatePlayerData(Hashtable<String, String> predictionData, boolean error)
+    {
+        currRSN = predictionData.get("player_name");
+        String predictionLabel = predictionData.get("prediction_label");
+        Float confidencePer = (Float.parseFloat(predictionData.get("prediction_confidence"))  * 100);
+
         if(error)
         {
-            playerName.setText(htmlLabel("Player Name: ", rsn , "#a5a5a5", "red"));
-            playerGroupID.setText(htmlLabel("Group ID: ", groupID, "#a5a5a5", "red"));
+            playerName.setText(htmlLabel("Player Name: ", currRSN , "#a5a5a5", "red"));
+            playerGroupLabel.setText(htmlLabel("Prediction: ", "-----", "#a5a5a5", "red"));
+            playerGroupConfidence.setText(htmlLabel("Confidence: ", "-----", "#a5a5a5", "red"));
             loading = false;
             searchBar.setEditable(true);
             searchBar.setIcon(IconTextField.Icon.ERROR);
         }
         else
         {
-            playerName.setText(htmlLabel("Player Name: ",  sanitizeText(rsn), "#a5a5a5", "white"));
-            playerGroupID.setText(htmlLabel("Group ID: ", groupID, "#a5a5a5", "white"));
+            playerName.setText(htmlLabel("Player Name: ",  sanitizeText(currRSN),
+                    "#a5a5a5", "white"));
+            playerGroupLabel.setText(htmlLabel("Prediction: ", predictionLabel,
+                    "#a5a5a5", "white"));
+            playerGroupConfidence.setText(htmlLabel("Confidence: ", String.format("%.2f", confidencePer) + "%",
+                    "#a5a5a5", "white"));
             searchBar.setEditable(true);
             searchBar.setIcon(IconTextField.Icon.SEARCH);
         }
     }
 
-    void addReportButtons() {
-        playerInfoPanel.add(reportBtnTitle);
-        playerInfoPanel.add(reportBtn);
-        playerInfoPanel.add(denyBtn);
+    public void updateAdditionalPredictions(LinkedHashMap<String, String> predictions, boolean error) {
+
+        if(error == false) {
+            additionalPredictionsPanel.removeAll();
+            additionalPredictionsPanel.setVisible(true);
+
+            JLabel title = new JLabel(htmlLabel("Prediction Breakdown: ",
+                    "",
+                    "#a5a5a5",
+                    "white"));
+
+            title.setFont(boldFont);
+
+            additionalPredictionsPanel.add(title);
+
+            Set<String> keys = predictions.keySet();
+
+            for (String key : keys) {
+                additionalPredictionsPanel.add(
+                        new JLabel(htmlLabel(key + ": ",
+                                String.format("%.2f", Float.parseFloat(predictions.get(key)) * 100) + "%",
+                                "#a5a5a5",
+                                getPredictionColor(predictions.get(key))
+                        ))
+                );
+            }
+
+            additionalPredictionsPanel.revalidate();
+            additionalPredictionsPanel.repaint();
+        }
+
+    }
+
+    //TODO Make the colors more dynamic in range
+    public String getPredictionColor(String pred_conf) {
+
+        Float conf = Float.parseFloat(pred_conf);
+
+        System.out.print("CONF: " + conf);
+
+        if(conf >= .8) {
+            return "green";
+        } else if(conf >= .60) {
+            return "orange";
+        } else {
+            return "red";
+        }
+    }
+
+    public void addFeedbackButtons() {
+        feedbackBtnsActive = true;
+
+        playerInfoPanel.add(feedbackTitle);
+        playerInfoPanel.add(correctBtn);
+        playerInfoPanel.add(incorrectBtn);
+        playerInfoPanel.add(btnSpacer);
 
         playerInfoPanel.revalidate();
         playerInfoPanel.repaint();
     }
 
-    void removeReportButtons() {
-        playerInfoPanel.remove(reportBtnTitle);
-        playerInfoPanel.remove(reportBtn);
-        playerInfoPanel.remove(denyBtn);
+    public void removeFeedbackButtons() {
+
+        if(feedbackBtnsActive == true) {
+            playerInfoPanel.remove(feedbackTitle);
+            playerInfoPanel.remove(correctBtn);
+            playerInfoPanel.remove(incorrectBtn);
+            playerInfoPanel.remove(btnSpacer);
+
+            playerInfoPanel.revalidate();
+            playerInfoPanel.repaint();
+        }
+
+        feedbackBtnsActive = false;
+    }
+
+    public void addReportButtons() {
+        reportBtnsActive = true;
+
+        playerInfoPanel.add(reportBtnTitle);
+        playerInfoPanel.add(reportBtn);
+        playerInfoPanel.add(dontReportBtn);
 
         playerInfoPanel.revalidate();
         playerInfoPanel.repaint();
+    }
+
+    public void removeReportButtons() {
+        if(reportBtnsActive == true) {
+            playerInfoPanel.remove(reportBtnTitle);
+            playerInfoPanel.remove(reportBtn);
+            playerInfoPanel.remove(dontReportBtn);
+
+            playerInfoPanel.revalidate();
+            playerInfoPanel.repaint();
+        }
+
+        reportBtnsActive = false;
     }
 
     public void lookupPlayer(String rsn, boolean reportable) throws IOException {
@@ -316,7 +485,7 @@ public class BotDetectorPanel extends PluginPanel {
         searchBar.setEditable(false);
         loading = true;
 
-        BotDetectorPlugin.http.getPlayerData(sanitizedRSN, reportable);
+        BotDetectorPlugin.http.getPlayerPrediction(sanitizedRSN, reportable);
 
     }
 

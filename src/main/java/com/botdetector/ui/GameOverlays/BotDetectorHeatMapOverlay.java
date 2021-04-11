@@ -1,5 +1,6 @@
-package com.botdetector;
+package com.botdetector.ui.GameOverlays;
 
+import com.botdetector.BotDetectorConfig;
 import com.google.inject.Inject;
 import java.awt.Color;
 import java.awt.Dimension;

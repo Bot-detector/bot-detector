@@ -1,5 +1,7 @@
-package com.botdetector;
+package com.botdetector.ui.GameOverlays;
 
+import com.botdetector.BotDetectorConfig;
+import com.botdetector.BotDetectorPlugin;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.client.ui.overlay.*;

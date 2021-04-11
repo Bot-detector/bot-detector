@@ -1,9 +1,9 @@
-package com.botdetector;
+package com.botdetector.http;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.botdetector.BotDetectorConfig;
+import com.botdetector.BotDetectorPlugin;
+import com.botdetector.PlayerStats;
+import com.google.gson.*;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
@@ -16,9 +16,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 
@@ -93,9 +91,9 @@ public class BotDetectorHTTP {
         });
     }
 
-    public void getPlayerData(String rsn, boolean reportable) throws IOException {
+    public void getPlayerPrediction(String rsn, boolean reportable) throws IOException {
 
-        String url = "http://45.33.127.106:8080" + "/user/" +
+        String url = BASE_URL + "/site/prediction/" +
                 rsn.replace( " ", "%20");;
 
         Request request = new Request.Builder()
@@ -109,7 +107,7 @@ public class BotDetectorHTTP {
             public void onFailure(Call call, IOException e) {
                 plugin.pushNotification("Could not locate player data.");
 
-                plugin.panel.updatePlayerData("Server Error", "---", true);
+                plugin.panel.updatePlayerData("Server Error", true);
 
             }
 
@@ -118,30 +116,70 @@ public class BotDetectorHTTP {
 
                 if (response.isSuccessful()) {
 
-                    String groupID = response.body().string();
+                    JsonParser parser = new JsonParser();
+                    JsonElement responseJSON = parser.parse(response.body().string());
+                    JsonObject jObject = responseJSON.getAsJsonObject();
 
-                    if (groupID.equals("-1"))
-                    {
-                        plugin.panel.updatePlayerData(rsn, "Indeterminable", true);
-                        if(reportable)
-                        {
-                            plugin.panel.addReportButtons();
-                        }
-                    }
-                    else
-                    {
-                        plugin.panel.updatePlayerData(rsn, groupID, false);
+                    Hashtable<String, String> primaryPredictionData = getPrimaryPrediction(jObject);
+                    LinkedHashMap<String, String> secondaryPredictionData =
+                            getSecondaryPredictions(
+                                    jObject.get("secondary_predictions")
+                                    .getAsJsonArray()
+                            );
 
-                        if(reportable)
-                        {
-                            plugin.panel.addReportButtons();
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            plugin.panel.updatePlayerData(primaryPredictionData, false);
                         }
+                    });
+
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            plugin.panel.updateAdditionalPredictions(secondaryPredictionData, false);
+                        }
+                    });
+
+                    if(jObject.get("player_id").getAsInt() > 0) {
+                        plugin.panel.addFeedbackButtons();
+                    }else {
+                        plugin.panel.removeFeedbackButtons();
                     }
+
+                    if(reportable)
+                    {
+                        plugin.panel.addReportButtons();
+                    }else{
+                        plugin.panel.removeReportButtons();;
+                    }
+
+
+                    /*
+                    {
+  "id": 713433,
+  "name": "zezima",
+  "prediction_label": "Real_Player",
+  "prediction_confidence": 0.9149213294257196,
+  "secondary_predictions": {
+    "Fletching_bot": 0.0,
+    "Zalcano_bot": 0.0041,
+    "Magic_bot": 0.0062,
+    "Smithing_bot": 0.0102,
+    "Mining_bot": 0.0198,
+    "Wintertodt_bot": 0.0449,
+    "Real_Player": 0.9149
+  }
+}
+
+
+                     */
+
 
                 } else {
                     plugin.pushNotification("Could not locate player data.");
 
-                    plugin.panel.updatePlayerData("Server Error", "---", true);
+                    plugin.panel.updatePlayerData("Server Error", true);
                 }
 
                 response.close();
@@ -173,7 +211,7 @@ public class BotDetectorHTTP {
                     JsonParser parser = new JsonParser();
                     JsonElement responseJSON = parser.parse(response.body().string());
                     JsonObject jObject = responseJSON.getAsJsonObject();
-                    int player_id = jObject.get("player_id").getAsInt();
+                    int player_id = jObject.get("id").getAsInt();
 
                     plugin.setCurrPlayerID(player_id);
 
@@ -402,5 +440,30 @@ public class BotDetectorHTTP {
         json += "]";
 
         return json;
+    }
+
+    public Hashtable<String, String> getPrimaryPrediction(JsonObject data) {
+
+        Hashtable<String, String> predData = new Hashtable<>();
+
+        predData.put("player_name", data.get("player_name").getAsString());
+        predData.put("prediction_label", data.get("prediction_label").getAsString());
+        predData.put("prediction_confidence", data.get("prediction_confidence").getAsString());
+
+
+        return predData;
+    }
+
+    public LinkedHashMap<String, String> getSecondaryPredictions(JsonArray data) {
+        LinkedHashMap<String, String> predData = new LinkedHashMap<>();
+
+        for(int i = 0; i < data.size(); i++) {
+            JsonArray currElement = data.get(i).getAsJsonArray();
+
+            predData.put(currElement.get(0).getAsString(), currElement.get(1).getAsString());
+
+        }
+
+        return predData;
     }
 }

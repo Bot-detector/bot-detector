@@ -1,5 +1,9 @@
 package com.botdetector;
 
+import com.botdetector.http.BotDetectorHTTP;
+import com.botdetector.ui.BotDetectorPanel;
+import com.botdetector.ui.GameOverlays.BotDetectorHeatMapOverlay;
+import com.botdetector.ui.GameOverlays.BotDetectorTileOverlay;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
 import net.runelite.api.*;
@@ -77,12 +81,12 @@ public class BotDetectorPlugin extends Plugin {
         return configManager.getConfig(BotDetectorConfig.class);
     }
 
-    static int numNamesSubmitted = 0;
+    public static int numNamesSubmitted = 0;
     static HashSet<Player> targetedPlayers = new HashSet<Player>();
     //Players seen in game that have been manually reported by our users.
     static List<String> seenReportedPlayers = new ArrayList<>();
 
-    List<Player> detectedPlayers = new ArrayList<Player>();
+    public List<Player> detectedPlayers = new ArrayList<Player>();
     List<Player> freshPlayers = new ArrayList<Player>();
     HashSet<String> detectedPlayerNames = new HashSet<String>();
 
@@ -431,7 +435,6 @@ public class BotDetectorPlugin extends Plugin {
     }
 
     public void setCurrPlayerID(int id) {
-        System.out.println("Our id: " + id);
         currPlayerID = id;
     }
 }

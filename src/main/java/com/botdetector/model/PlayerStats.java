@@ -2,7 +2,7 @@ package com.botdetector;
 
 public class PlayerStats {
 
-    PlayerStats() {
+    public PlayerStats() {
         this.reports = 0;
         this.bans = 0;
         this.accuracy = 0;

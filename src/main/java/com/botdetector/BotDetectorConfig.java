@@ -107,7 +107,8 @@ public interface BotDetectorConfig extends Config {
             position = 10,
             keyName = "enableSpammerRecording",
             name = "Add Option to Record Spammers:",
-            description = "Place color-coded tiles below players to show their group memberships."
+            hidden = true,
+            description = "Save chat messages from those you mark as spammers to a txt file."
     )
     default boolean enableSpammerRecording() {
         return false;
