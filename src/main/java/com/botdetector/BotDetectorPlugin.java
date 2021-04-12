@@ -23,6 +23,8 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
+import net.runelite.http.api.worlds.World;
+import net.runelite.http.api.worlds.WorldRegion;
 
 import java.io.*;
 import java.util.*;
@@ -30,6 +32,7 @@ import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.runelite.client.util.ImageUtil;
+import net.runelite.http.api.worlds.World;
 
 import java.io.IOException;
 
@@ -82,9 +85,11 @@ public class BotDetectorPlugin extends Plugin {
     }
 
     public static int numNamesSubmitted = 0;
+    public static int worldIsMembers;
     static HashSet<Player> targetedPlayers = new HashSet<Player>();
     //Players seen in game that have been manually reported by our users.
     static List<String> seenReportedPlayers = new ArrayList<>();
+
 
     public List<Player> detectedPlayers = new ArrayList<Player>();
     List<Player> freshPlayers = new ArrayList<Player>();
@@ -234,6 +239,7 @@ public class BotDetectorPlugin extends Plugin {
 
             http.getPlayerID(client.getLocalPlayer().getName());
             http.getPlayerStats(currPlayer);
+            setWorldType();
 
         }
         else {
@@ -436,5 +442,21 @@ public class BotDetectorPlugin extends Plugin {
 
     public void setCurrPlayerID(int id) {
         currPlayerID = id;
+    }
+
+    public void setWorldType() {
+        EnumSet<WorldType> types = client.getWorldType();
+
+        if(types.isEmpty()) {
+            worldIsMembers = 0;
+        }else{
+            for(WorldType type : types) {
+                if(type == WorldType.MEMBERS) {
+                    worldIsMembers = 1;
+                }else{
+                    worldIsMembers = 0;
+                }
+            }
+        }
     }
 }
