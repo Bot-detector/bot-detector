@@ -459,4 +459,8 @@ public class BotDetectorPlugin extends Plugin {
             }
         }
     }
+
+    public int getWorldIsMembers() {
+        return worldIsMembers;
+    }
 }

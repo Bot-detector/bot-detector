@@ -385,7 +385,9 @@ public class BotDetectorHTTP {
                 + targetLocation.getPlane()
                 + ",";
 
-        //TODO Add in Members/f2p
+        playerString += "\"on_members_world\":\""
+                + plugin.getWorldIsMembers()
+                + "\",";
 
         playerString += "\"ts\" :"
                 + "\""
