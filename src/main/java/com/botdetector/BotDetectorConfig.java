@@ -123,4 +123,12 @@ public interface BotDetectorConfig extends Config {
     default boolean enableAnonymousReporting() {
         return true;
     }
+
+    @ConfigItem(
+            position = 11,
+            keyName = "authToken",
+            name = "Token:",
+            description = "If you have an auth token from the devs, enter it here for special features!."
+    )
+    default String authToken() { return ""; }
 }
