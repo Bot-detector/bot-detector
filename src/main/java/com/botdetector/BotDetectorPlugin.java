@@ -279,6 +279,25 @@ public class BotDetectorPlugin extends Plugin {
     }
 
     @Subscribe
+    public void onChatMessage(ChatMessage msgEvent) {
+        String contents = msgEvent.getMessage();
+
+        if(contents.charAt(0) == '!') {
+
+                System.out.println("Command detected!");
+                String[] split_contents = contents.split(" ");
+
+                //Discord Linking Command
+                if(split_contents[0].toLowerCase().equals("!code")) {
+                    System.out.println(split_contents[1]);
+                }
+        }else{
+            return;
+        }
+
+    }
+
+    @Subscribe
     public void onMenuEntryAdded(MenuEntryAdded event) {
         if (config.addDetectOption() == false) {
             return;
