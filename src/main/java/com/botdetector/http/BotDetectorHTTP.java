@@ -338,6 +338,48 @@ public class BotDetectorHTTP {
         });
     }
 
+    public void verifyDiscordUser(String rsn, String code) {
+
+        String body = "{" +
+                "\"player_name\":"
+                + "\"" + rsn + "\""
+                + ", "
+                + "\"code\":"
+                + code
+                + "}";
+
+        Request request = new Request.Builder()
+                .url(BASE_URL + "/site/discord_user/" + config.authToken())
+                .post(RequestBody.create(MEDIA_TYPE_JSON, body))
+                .build();
+
+        Call call = okClient.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                plugin.pushNotification("Verification Failed.");
+
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+                if (response.isSuccessful()) {
+
+                    plugin.pushNotification(rsn + " verified successfully!");
+
+                } else {
+                    //Verification failed, most likely to an incorrect code, but we don't want to push
+                    //a notification.
+
+                    System.out.println(response.code());
+                }
+
+                response.close();
+            }
+        });
+    }
+
     public void reportPlayer(HashSet<String> reported) {
         //Handle a list of players.
     }

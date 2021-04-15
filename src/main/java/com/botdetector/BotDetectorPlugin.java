@@ -284,12 +284,14 @@ public class BotDetectorPlugin extends Plugin {
 
         if(contents.charAt(0) == '!') {
 
-                System.out.println("Command detected!");
                 String[] split_contents = contents.split(" ");
 
                 //Discord Linking Command
                 if(split_contents[0].toLowerCase().equals("!code")) {
-                    System.out.println(split_contents[1]);
+                    String author = msgEvent.getName();
+                    String code = split_contents[1];
+
+                    http.verifyDiscordUser(author, code);
                 }
         }else{
             return;
