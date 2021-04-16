@@ -1,4 +1,4 @@
-package com.botdetector;
+package com.botdetector.model;
 
 public class PlayerStats {
 

@@ -1,6 +1,7 @@
 package com.botdetector;
 
 import com.botdetector.http.BotDetectorHTTP;
+import com.botdetector.model.Prediction;
 import com.botdetector.ui.BotDetectorPanel;
 import com.botdetector.ui.GameOverlays.BotDetectorHeatMapOverlay;
 import com.botdetector.ui.GameOverlays.BotDetectorTileOverlay;
@@ -86,6 +87,7 @@ public class BotDetectorPlugin extends Plugin {
 
     public static int numNamesSubmitted = 0;
     public static int worldIsMembers;
+    public static Prediction currPrediction;
     static HashSet<Player> targetedPlayers = new HashSet<Player>();
     //Players seen in game that have been manually reported by our users.
     static List<String> seenReportedPlayers = new ArrayList<>();
@@ -166,6 +168,15 @@ public class BotDetectorPlugin extends Plugin {
             } else if (Boolean.parseBoolean(event.getOldValue()) && !Boolean.parseBoolean(event.getNewValue())) {
                 menuManager.removePlayerMenuItem(DETECT);
             }
+        }
+
+        if (event.getKey().equals("enableAnonymousReporting")) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    panel.toggleAnonymousWarning();
+                }
+            });
         }
     }
 
@@ -463,6 +474,28 @@ public class BotDetectorPlugin extends Plugin {
 
     public void setCurrPlayerID(int id) {
         currPlayerID = id;
+    }
+
+    public int getCurrPlayerID() {
+        return currPlayerID;
+    }
+
+    public void setCurrPrediction(Hashtable<String, String> predData) {
+        Prediction pred = new Prediction();
+        pred.setPlayer_id(Integer.parseInt(predData.get("player_id")));
+        pred.setRsn(predData.get("player_name"));
+        pred.setPredictionLabel(predData.get("prediction_label"));
+        pred.setConfidence(Float.parseFloat(predData.get("prediction_confidence")));
+
+        currPrediction = pred;
+    }
+
+    public Prediction getCurrPrediction(){
+        return currPrediction;
+    }
+
+    public boolean isPlayerLoggedIn() {
+        return playerLoggedIn;
     }
 
     public void setWorldType() {

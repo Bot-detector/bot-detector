@@ -1,7 +1,9 @@
 package com.botdetector.ui;
 
+import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
-import com.botdetector.PlayerStats;
+import com.botdetector.model.PlayerStats;
+import com.botdetector.ui.Icons;
 import com.google.inject.Inject;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -10,7 +12,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -18,7 +19,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import lombok.SneakyThrows;
 import net.runelite.api.Client;
-import net.runelite.api.HashTable;
 import net.runelite.api.Player;
 import net.runelite.client.Notifier;
 import net.runelite.client.events.SessionClose;
@@ -29,12 +29,16 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
+import net.runelite.client.util.LinkBrowser;
 
 public class BotDetectorPanel extends PluginPanel {
 
     @Inject
     @Nullable
     private Client client;
+
+    @Inject
+    private BotDetectorConfig config;
 
     @Inject
     private EventBus eventBus;
@@ -60,6 +64,7 @@ public class BotDetectorPanel extends PluginPanel {
     public PlayerStats ps;
 
     JSeparator btnSpacer;
+    JLabel anonymousWarning;
 
     JLabel uploads;
     JLabel numReports;
@@ -121,11 +126,11 @@ public class BotDetectorPanel extends PluginPanel {
         btnSpacer = new JSeparator();
 
         //Panels
-        linksPanel = new JPanel();
         statsPanel = new JPanel();
         playerInfoPanel =  new JPanel();
         additionalPredictionsPanel = new JPanel();
         additionalPredictionsPanel.setVisible(false);
+
 
         //Buttons
         reportBtn = new JButton("Report");
@@ -158,8 +163,7 @@ public class BotDetectorPanel extends PluginPanel {
         correctBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                removeReportButtons();
+                BotDetectorPlugin.http.sendPredictionFeedback(1);
             }
         });
 
@@ -169,10 +173,15 @@ public class BotDetectorPanel extends PluginPanel {
         incorrectBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                removeReportButtons();
+                BotDetectorPlugin.http.sendPredictionFeedback(-1);
             }
         });
+
+        //UI Components
+        anonymousWarning = new JLabel(" Anonymous Reporting Active");
+        anonymousWarning.setIcon(Icons.WARNING_ICON);
+        anonymousWarning.createToolTip();
+        anonymousWarning.setToolTipText("Your reports will not be added to your tallies.");
 
         //Stats Panel Items
         uploads = new JLabel(htmlLabel("Names Uploaded: ", "0", "#a5a5a5", "white"));
@@ -200,7 +209,7 @@ public class BotDetectorPanel extends PluginPanel {
         searchBar = new IconTextField();
         searchBar.setIcon(IconTextField.Icon.SEARCH);
         searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
-        searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
         searchBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
         searchBar.setMinimumSize(new Dimension(0, 30));
         searchBar.addActionListener(e -> {
@@ -258,30 +267,30 @@ public class BotDetectorPanel extends PluginPanel {
         constraints.weighty = 0;
         constraints.insets = new Insets(0, 0, 10, 0);
 
-        playerInfoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        playerInfoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
         playerInfoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         playerInfoPanel.setLayout(new GridLayout(0, 1));
 
-        statsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        statsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
         statsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         statsPanel.setLayout(new GridLayout(0, 1));
 
-        playerInfoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        playerInfoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
         playerInfoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         playerInfoPanel.setLayout(new GridLayout(0, 1));
 
-        additionalPredictionsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        additionalPredictionsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
         additionalPredictionsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         additionalPredictionsPanel.setLayout(new GridLayout(0, 1));
 
         JLabel dataTitle =  new JLabel(htmlLabel("Player Data: ", "", "#a5a5a5", "white"));
         dataTitle.setFont((boldFont));
 
-        JLabel statsTitle =  new JLabel(htmlLabel("Statistics: ", "", "#a5a5a5", "white"));
+        JLabel statsTitle =  new JLabel(htmlLabel("Reporting Statistics: ", "", "#a5a5a5", "white"));
         statsTitle.setFont(boldFont);
 
 
-        add(linksPanel, constraints);
+        add(linksPanel(), constraints);
         constraints.gridy++;
         add(statsPanel, constraints);
         constraints.gridy++;
@@ -297,6 +306,10 @@ public class BotDetectorPanel extends PluginPanel {
         statsPanel.add(numReports);
         statsPanel.add(numBans);
         statsPanel.add(numPossibleBans);
+
+        if(config.enableAnonymousReporting()) {
+            statsPanel.add(anonymousWarning);
+        }
         //TODO Have accuracy reflect manual reports only
         //statsPanel.add(accuracy);
 
@@ -307,6 +320,95 @@ public class BotDetectorPanel extends PluginPanel {
 
         eventBus.register(this);
 
+    }
+
+    private JPanel linksPanel() {
+
+        JLabel webIcon = new JLabel(Icons.WEB_ICON);
+        webIcon.setToolTipText("Our Website");
+        webIcon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                LinkBrowser.browse("https://www.osrsbotdetector.com/");
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                webIcon.setIcon(Icons.WEB_ICON);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                webIcon.setIcon(Icons.WEB_ICON);
+            }
+        });
+
+        JLabel githubIcon = new JLabel(Icons.GITHUB_ICON);
+        githubIcon.setToolTipText("Check Out Our Souce Code");
+        githubIcon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                LinkBrowser.browse("https://github.com/Belieal/flipping-utilities");
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                githubIcon.setIcon(Icons.GITHUB_ICON);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                githubIcon.setIcon(Icons.GITHUB_ICON);
+            }
+        });
+
+        JLabel discordIcon = new JLabel(Icons.DISCORD_ICON);
+        discordIcon.setToolTipText("Join Our Discord!");
+        discordIcon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                LinkBrowser.browse("https://discord.com/invite/JCAGpcjbfP");
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                discordIcon.setIcon(Icons.DISCORD_ICON);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                discordIcon.setIcon(Icons.DISCORD_ICON);
+            }
+        });
+
+        JLabel patreonIcon = new JLabel(Icons.PATREON_ICON);
+        patreonIcon.setToolTipText("Help Keep Us Going");
+        patreonIcon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                LinkBrowser.browse("https://www.patreon.com/bot_detector");
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                patreonIcon.setIcon(Icons.PATREON_ICON);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                patreonIcon.setIcon(Icons.PATREON_ICON);
+            }
+        });
+
+        JPanel linksPanel = new JPanel();
+        linksPanel.setBorder(new EmptyBorder(0,6,0,0));
+        linksPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+        linksPanel.add(webIcon);
+        linksPanel.add(discordIcon);
+        linksPanel.add(githubIcon);
+        linksPanel.add(patreonIcon);
+
+        return linksPanel;
     }
 
     public void updateUploads()
@@ -457,6 +559,17 @@ public class BotDetectorPanel extends PluginPanel {
         }
 
         reportBtnsActive = false;
+    }
+
+    public void toggleAnonymousWarning() {
+        if(config.enableAnonymousReporting()) {
+            statsPanel.add(anonymousWarning);
+        }else{
+            statsPanel.remove(anonymousWarning);
+        }
+
+        statsPanel.revalidate();
+        statsPanel.repaint();
     }
 
     public void lookupPlayer(String rsn, boolean reportable) throws IOException {

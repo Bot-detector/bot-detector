@@ -2,7 +2,8 @@ package com.botdetector.http;
 
 import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
-import com.botdetector.PlayerStats;
+import com.botdetector.model.PlayerStats;
+import com.botdetector.model.Prediction;
 import com.google.gson.*;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
@@ -121,6 +122,8 @@ public class BotDetectorHTTP {
                     JsonObject jObject = responseJSON.getAsJsonObject();
 
                     Hashtable<String, String> primaryPredictionData = getPrimaryPrediction(jObject);
+                    plugin.setCurrPrediction(primaryPredictionData);
+
                     LinkedHashMap<String, String> secondaryPredictionData =
                             getSecondaryPredictions(
                                     jObject.get("secondary_predictions")
@@ -141,40 +144,21 @@ public class BotDetectorHTTP {
                         }
                     });
 
-                    if(jObject.get("player_id").getAsInt() > 0) {
-                        plugin.panel.addFeedbackButtons();
-                    }else {
-                        plugin.panel.removeFeedbackButtons();
+
+                    if(!config.enableAnonymousReporting() && plugin.isPlayerLoggedIn()) {
+                        if ((jObject.get("player_id").getAsInt() > 0)) {
+                            plugin.panel.addFeedbackButtons();
+                        } else {
+                            plugin.panel.removeFeedbackButtons();
+                        }
+
+                        if (reportable) {
+                            plugin.panel.addReportButtons();
+                        } else {
+                            plugin.panel.removeReportButtons();
+                            ;
+                        }
                     }
-
-                    if(reportable)
-                    {
-                        plugin.panel.addReportButtons();
-                    }else{
-                        plugin.panel.removeReportButtons();;
-                    }
-
-
-                    /*
-                    {
-  "id": 713433,
-  "name": "zezima",
-  "prediction_label": "Real_Player",
-  "prediction_confidence": 0.9149213294257196,
-  "secondary_predictions": {
-    "Fletching_bot": 0.0,
-    "Zalcano_bot": 0.0041,
-    "Magic_bot": 0.0062,
-    "Smithing_bot": 0.0102,
-    "Mining_bot": 0.0198,
-    "Wintertodt_bot": 0.0449,
-    "Real_Player": 0.9149
-  }
-}
-
-
-                     */
-
 
                 } else {
                     plugin.pushNotification("Could not locate player data.");
@@ -313,6 +297,7 @@ public class BotDetectorHTTP {
             @Override
             public void onFailure(Call call, IOException e) {
                 plugin.pushNotification("Report Failed");
+                SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
             }
 
             @Override
@@ -326,13 +311,49 @@ public class BotDetectorHTTP {
                     plugin.addSeenDetectedPlayer(rsn);
 
                     plugin.panel.updatePlayerStats();
-                    SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
 
                     playersToSubmit.clear();
                 } else {
 
                 }
 
+                //TODO: Cache player location on our own for better success rates.
+                SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
+                response.close();
+            }
+        });
+    }
+
+    public void sendPredictionFeedback(int vote) {
+        System.out.println("voting is gay");
+
+        Request request = new Request.Builder()
+                .url("http://localhost:5000" + "/plugin/predictionfeedback/")
+                .post(RequestBody.create(MEDIA_TYPE_JSON, buildFeebackString(vote)))
+                .build();
+
+        Call call = okClient.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                plugin.pushNotification("Report Failed");
+                System.out.println("Failure!!");
+                SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+                if (response.isSuccessful()) {
+
+                    System.out.println("Success!!");
+                    plugin.pushNotification("Thank you for your feedback!");
+
+                } else {
+                    System.out.println("Failure 22222!!");
+                }
+
+                SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
                 response.close();
             }
         });
@@ -380,8 +401,40 @@ public class BotDetectorHTTP {
         });
     }
 
-    public void reportPlayer(HashSet<String> reported) {
-        //Handle a list of players.
+    private String buildFeebackString(int vote) {
+
+        Prediction pred = plugin.getCurrPrediction();
+
+        String feedbackString = "{";
+
+        feedbackString += "\"rsn\":\""
+                + pred.getRsn()
+                + "\",";
+
+        feedbackString += "\"voter_id\":"
+                + String.valueOf(plugin.getCurrPlayerID())
+                + ",";
+
+        feedbackString += "\"subject_id\":"
+                + String.valueOf(pred.getPlayer_id())
+                + ",";
+
+        feedbackString += "\"vote\":"
+                + String.valueOf(vote)
+                + ",";
+
+        feedbackString += "\"prediction\":\""
+                + pred.getPredictionLabel()
+                + "\",";
+
+        feedbackString += "\"confidence\":"
+                + String.valueOf(pred.getConfidence());
+
+        feedbackString += "}";
+
+        System.out.print(feedbackString);
+
+        return feedbackString;
     }
 
     private String getPlayersReported(String rsn) {
@@ -490,10 +543,10 @@ public class BotDetectorHTTP {
 
         Hashtable<String, String> predData = new Hashtable<>();
 
+        predData.put("player_id", data.get("player_id").getAsString());
         predData.put("player_name", data.get("player_name").getAsString());
         predData.put("prediction_label", data.get("prediction_label").getAsString());
         predData.put("prediction_confidence", data.get("prediction_confidence").getAsString());
-
 
         return predData;
     }
@@ -505,7 +558,6 @@ public class BotDetectorHTTP {
             JsonArray currElement = data.get(i).getAsJsonArray();
 
             predData.put(currElement.get(0).getAsString(), currElement.get(1).getAsString());
-
         }
 
         return predData;

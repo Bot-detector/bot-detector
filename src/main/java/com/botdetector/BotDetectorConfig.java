@@ -85,7 +85,7 @@ public interface BotDetectorConfig extends Config {
             position = 8,
             keyName = "enableTileLabel",
             name = "Enable Color-Coded Tiles:",
-            hidden = false,
+            hidden = true,
             description = "Place color-coded tiles below players to show their group memberships."
     )
     default boolean enableTileLabels() {
@@ -96,7 +96,7 @@ public interface BotDetectorConfig extends Config {
             position = 9,
             keyName = "tileColor",
             name = "Tile Color:",
-            hidden = false,
+            hidden = true,
             description = "Color of player tiles."
     )
     default Color getTileColor() {
