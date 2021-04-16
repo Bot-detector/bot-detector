@@ -193,7 +193,7 @@ public class BotDetectorPlugin extends Plugin {
             tickCount ++;
 
             if(tickCount % 50 == 0) {
-                System.out.println(tickCount);
+               // System.out.println(tickCount);
             }
 
             if (tickCount > timeSend) {
@@ -364,7 +364,7 @@ public class BotDetectorPlugin extends Plugin {
                 //If they have then we have their approximate location that we can report with.
                 String targetRSN = Text.removeTags(event.getMenuTarget());
 
-                System.out.println("Targeted RSN: " + targetRSN);
+                // System.out.println("Targeted RSN: " + targetRSN);
 
                 Player target = findPlayerInCache(targetRSN);
 
