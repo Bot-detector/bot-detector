@@ -324,6 +324,8 @@ public class BotDetectorPanel extends PluginPanel {
 
     private JPanel linksPanel() {
 
+        JLabel title = new JLabel("Connect With Us: ");
+
         JLabel webIcon = new JLabel(Icons.WEB_ICON);
         webIcon.setToolTipText("Our Website");
         webIcon.addMouseListener(new MouseAdapter() {
@@ -403,6 +405,7 @@ public class BotDetectorPanel extends PluginPanel {
         JPanel linksPanel = new JPanel();
         linksPanel.setBorder(new EmptyBorder(0,6,0,0));
         linksPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+        linksPanel.add(title);
         linksPanel.add(webIcon);
         linksPanel.add(discordIcon);
         linksPanel.add(githubIcon);
