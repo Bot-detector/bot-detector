@@ -1,8 +1,8 @@
-package com.botdetector;
+package com.botdetector.model;
 
 public class PlayerStats {
 
-    PlayerStats() {
+    public PlayerStats() {
         this.reports = 0;
         this.bans = 0;
         this.accuracy = 0;
@@ -10,6 +10,7 @@ public class PlayerStats {
 
     private int reports;
     private int bans;
+    private int possible_bans;
     private float accuracy;
 
     public int getReports() {
@@ -19,6 +20,8 @@ public class PlayerStats {
     public int getBans() {
         return this.bans;
     }
+
+    public int getPossible_bans() { return this.possible_bans; }
 
     public float getAccuracy() {
 

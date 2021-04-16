@@ -1,9 +1,13 @@
 package com.botdetector;
 
+import com.botdetector.http.BotDetectorHTTP;
+import com.botdetector.model.Prediction;
+import com.botdetector.ui.BotDetectorPanel;
+import com.botdetector.ui.GameOverlays.BotDetectorHeatMapOverlay;
+import com.botdetector.ui.GameOverlays.BotDetectorTileOverlay;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
 import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.Notifier;
@@ -20,14 +24,18 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
-import java.io.IOException;
-import java.sql.Timestamp;
-import java.util.HashSet;
-import java.awt.image.BufferedImage;
-import java.util.Objects;
+import net.runelite.http.api.worlds.World;
+import net.runelite.http.api.worlds.WorldRegion;
 
+import java.io.*;
+import java.util.*;
+import java.awt.image.BufferedImage;
+import java.util.List;
+import java.util.stream.Collectors;
 import net.runelite.client.util.ImageUtil;
-import org.apache.commons.lang3.ArrayUtils;
+import net.runelite.http.api.worlds.World;
+
+import java.io.IOException;
 
 @PluginDescriptor(
         name = "Bot Detector",
@@ -39,11 +47,10 @@ import org.apache.commons.lang3.ArrayUtils;
 public class BotDetectorPlugin extends Plugin {
 
     private static final String DETECT = "Detect";
+    private static final String MASS_DETECT = "Mass Detect";
     private static final String KICK_OPTION = "Kick";
     private static final ImmutableList<String> AFTER_OPTIONS =
             ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
-
-
 
     @Inject
     private Client client;
@@ -64,24 +71,37 @@ public class BotDetectorPlugin extends Plugin {
     private BotDetectorHeatMapOverlay heatMapOverlay;
 
     @Inject
+    private BotDetectorTileOverlay tileOverlay;
+
+    @Inject
     private OverlayManager overlayManager;
 
     public static BotDetectorHTTP http;
     public BotDetectorPanel panel;
     private NavigationButton navButton;
 
-
     @Provides
     BotDetectorConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(BotDetectorConfig.class);
     }
 
-    static int numNamesSubmitted = 0;
-    static String currPlayer;
-    HashSet<String> detectedPlayers = new HashSet<String>();
+    public static int numNamesSubmitted = 0;
+    public static int worldIsMembers;
+    public static Prediction currPrediction;
+    static HashSet<Player> targetedPlayers = new HashSet<Player>();
+    //Players seen in game that have been manually reported by our users.
+    static List<String> seenReportedPlayers = new ArrayList<>();
+
+
+    public List<Player> detectedPlayers = new ArrayList<Player>();
+    List<Player> freshPlayers = new ArrayList<Player>();
+    HashSet<String> detectedPlayerNames = new HashSet<String>();
 
     int tickCount  = 0;
     boolean playerLoggedIn = false;
+
+    String currPlayer;
+    int currPlayerID;
 
 
     public BotDetectorPlugin() throws IOException {
@@ -89,8 +109,8 @@ public class BotDetectorPlugin extends Plugin {
 
     @Override
     protected void startUp() throws Exception {
-        currPlayer = "";
 
+        currPlayer = "";
 
         panel = injector.getInstance(BotDetectorPanel.class);
         panel.init();
@@ -108,20 +128,22 @@ public class BotDetectorPlugin extends Plugin {
 
         clientToolbar.addNavigation(navButton);
 
-
         if (config.addDetectOption() && client != null) {
             menuManager.addPlayerMenuItem(DETECT);
         }
 
         overlayManager.add(heatMapOverlay);
+        overlayManager.add(tileOverlay);
     }
 
     @Override
     protected void shutDown() throws Exception {
 
         if (detectedPlayers.size() > 0) {
-            http.sendToServer(detectedPlayers, 0);
+            http.sendToServer(freshPlayers, 0, currPlayer);
             detectedPlayers.clear();
+            freshPlayers.clear();
+            detectedPlayerNames.clear();
         }
 
         if (config.addDetectOption() && client != null) {
@@ -131,10 +153,11 @@ public class BotDetectorPlugin extends Plugin {
         clientToolbar.removeNavigation(navButton);
 
         overlayManager.remove(heatMapOverlay);
+        overlayManager.remove(tileOverlay);
     }
 
     @Subscribe
-    public void onConfigChanged(ConfigChanged event) {
+    public void onConfigChanged(ConfigChanged event) throws IOException {
         if (!event.getGroup().equals("botdetector")) {
             return;
         }
@@ -145,6 +168,15 @@ public class BotDetectorPlugin extends Plugin {
             } else if (Boolean.parseBoolean(event.getOldValue()) && !Boolean.parseBoolean(event.getNewValue())) {
                 menuManager.removePlayerMenuItem(DETECT);
             }
+        }
+
+        if (event.getKey().equals("enableAnonymousReporting")) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    panel.toggleAnonymousWarning();
+                }
+            });
         }
     }
 
@@ -160,10 +192,14 @@ public class BotDetectorPlugin extends Plugin {
 
             tickCount ++;
 
+            if(tickCount % 50 == 0) {
+                System.out.println(tickCount);
+            }
+
             if (tickCount > timeSend) {
                 if (detectedPlayers.size() > 0) {
-                    http.sendToServer(detectedPlayers, 0);
-                    detectedPlayers.clear();
+                    http.sendToServer(freshPlayers, 0, currPlayer);
+                    freshPlayers.clear();
                 }
                 tickCount  = 0;
             }
@@ -172,14 +208,13 @@ public class BotDetectorPlugin extends Plugin {
 
     @Subscribe
     public void onGameStateChanged(GameStateChanged gameStateChanged) throws IOException {
-        GameState gs = gameStateChanged.getGameState();
 
-        if(gs.getState() == 30) {
+        if(gameStateChanged.getGameState() == GameState.LOGGED_IN) {
 
             playerLoggedIn = true;
 
         }
-        else if (gs.getState() == 10)
+        else if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
         {
             //If player was previously logged in and is now back at the login screen
             //(not hopping, loading, etc..)
@@ -187,76 +222,92 @@ public class BotDetectorPlugin extends Plugin {
             if(playerLoggedIn)
             {
                 currPlayer = "";
+                currPlayerID = 0;
                 playerLoggedIn = false;
+                tickCount = 0;
 
                 SwingUtilities.invokeLater(panel::resetPlayerStats);
 
                 if(detectedPlayers.size() > 0 )
                 {
-                    http.sendToServer(detectedPlayers, 0);
+                    http.sendToServer(freshPlayers, 0, currPlayer);
+                    freshPlayers.clear();
                     detectedPlayers.clear();
                 }
             }
         }
     }
 
-    public String buildPlayerJSONString(Player target, String reporter) {
-
-        Timestamp ts = new Timestamp(System.currentTimeMillis());
-
-        WorldPoint targetLocation = target.getWorldLocation();
-
-        String playerString = "{";
-
-        playerString += "\"reporter\":\""
-                + reporter
-                + "\",";
-
-        playerString += "\"reported\":\""
-                + target.getName()
-                + "\",";
-
-        playerString += "\"region_id\":\""
-                + targetLocation.getRegionID()
-                + "\","
-                + "\"x\": "
-                + targetLocation.getX()
-                + ","
-                + "\"y\": "
-                + targetLocation.getY()
-                + ","
-                + "\"z\": "
-                + targetLocation.getPlane()
-                + ",";
-
-
-        playerString += "\"ts\" :"
-                + "\""
-                + ts
-                + "\"";
-
-        playerString += "}";
-
-        return playerString;
-    }
-
     @Subscribe
     public void onPlayerSpawned(PlayerSpawned event) throws IOException {
 
         Player player = event.getPlayer();
+        String playerName = player.getName();
 
         currPlayer = client.getLocalPlayer().getName();
 
-        if(player.getName().equals(currPlayer)) {
+        if(playerName.equals(currPlayer)) {
 
+            http.getPlayerID(client.getLocalPlayer().getName());
             http.getPlayerStats(currPlayer);
+            setWorldType();
+
         }
         else {
 
-            String json = buildPlayerJSONString(player, currPlayer);
+            int listSize = detectedPlayerNames.size();
+            detectedPlayerNames.add(playerName);
 
-            detectedPlayers.add(json);
+            if(config.enableTileLabels()) {
+                http.getPlayerTimesReported(playerName);
+            }
+
+            if(detectedPlayerNames.size() == (listSize + 1)) {
+                detectedPlayers.add(player);
+                freshPlayers.add(player);
+            }
         }
+    }
+
+    @Subscribe
+    public void onPlayerDespawned(PlayerDespawned event) throws IOException {
+
+        if(!config.enableTileLabels()) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+
+        int idxFound = seenReportedPlayers.indexOf(player.getName());
+
+        if(idxFound != -1) {
+            seenReportedPlayers.remove(idxFound);
+            tileOverlay.setPlayersHaveChanged(true);
+        }
+        else {
+            return;
+        }
+    }
+
+    @Subscribe
+    public void onChatMessage(ChatMessage msgEvent) {
+        String contents = msgEvent.getMessage();
+
+        if(contents.charAt(0) == '!') {
+
+                String[] split_contents = contents.split(" ");
+
+                //Discord Linking Command
+                if(split_contents[0].toLowerCase().equals("!code")) {
+                    String author = msgEvent.getName();
+                    String code = split_contents[1];
+
+                    http.verifyDiscordUser(author, code);
+                }
+        }else{
+            return;
+        }
+
     }
 
     @Subscribe
@@ -293,7 +344,7 @@ public class BotDetectorPlugin extends Plugin {
         if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
                 && event.getMenuOption().equals(DETECT))
         {
-            final String target;
+
             if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
             {
                 Player player = client.getCachedPlayers()[event.getId()];
@@ -303,23 +354,60 @@ public class BotDetectorPlugin extends Plugin {
                     return;
                 }
 
-                target = player.getName();
+                updatePlayerData(player);
+                targetedPlayers.add(player);
 
             }
             else
             {
-                target = Text.removeTags(event.getMenuTarget());
+                //Checks to see if player selected from chat has been on screen recently
+                //If they have then we have their approximate location that we can report with.
+                String targetRSN = Text.removeTags(event.getMenuTarget());
+
+                System.out.println("Targeted RSN: " + targetRSN);
+
+                Player target = findPlayerInCache(targetRSN);
+
+                if(target == null) {
+                    updatePlayerData(targetRSN);
+                }
+                else {
+                    updatePlayerData(target);
+                }
             }
 
-            updatePlayerData(target);
+        }else if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
+                && event.getMenuOption().equals(MASS_DETECT))
+        {
+            //TODO Mass Detection
+            return;
         }
+
+    }
+
+
+    private Player findPlayerInCache(String rsn) {
+        List<Player> currPlayers = client.getPlayers();
+
+        List<Player> matches = currPlayers.stream()
+                .filter(p -> p.getName().contains(rsn))
+                .collect(Collectors.toList());
+
+        try {
+            return matches.get(0);
+        }
+        catch (IndexOutOfBoundsException exception) {
+            return null;
+        }
+
     }
 
     private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
     {
         MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
-        int menuEntryCount = newMenu.length;
-        ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
+        
+        MenuEntry[] menu = client.getMenuEntries();
+        
         client.setMenuEntries(newMenu);
     }
 
@@ -328,6 +416,20 @@ public class BotDetectorPlugin extends Plugin {
         numNamesSubmitted += n;
 
         SwingUtilities.invokeLater(panel::updateUploads);
+    }
+
+    public void addSeenDetectedPlayer(String rsn)
+    {
+        if(seenReportedPlayers.contains(rsn)) {
+            return;
+        }else{
+            seenReportedPlayers.add(rsn);
+            tileOverlay.setPlayersHaveChanged(true);
+        }
+    }
+
+    public List<String> getSeenReportedPlayers() {
+        return seenReportedPlayers;
     }
 
     private void updatePlayerData(String playerName)
@@ -346,13 +448,73 @@ public class BotDetectorPlugin extends Plugin {
         });
     }
 
+    private void updatePlayerData(Player player)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            if (!navButton.isSelected())
+            {
+                navButton.getOnSelect().run();
+            }
+            try {
+                panel.lookupPlayer(player.getName(), true);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
     public void pushNotification(String msg) {
         if (config.enableNotificatiions()) {
             notifier.notify(msg);
         }
 
         return;
-
     }
 
+    public void setCurrPlayerID(int id) {
+        currPlayerID = id;
+    }
+
+    public int getCurrPlayerID() {
+        return currPlayerID;
+    }
+
+    public void setCurrPrediction(Hashtable<String, String> predData) {
+        Prediction pred = new Prediction();
+        pred.setPlayer_id(Integer.parseInt(predData.get("player_id")));
+        pred.setRsn(predData.get("player_name"));
+        pred.setPredictionLabel(predData.get("prediction_label"));
+        pred.setConfidence(Float.parseFloat(predData.get("prediction_confidence")));
+
+        currPrediction = pred;
+    }
+
+    public Prediction getCurrPrediction(){
+        return currPrediction;
+    }
+
+    public boolean isPlayerLoggedIn() {
+        return playerLoggedIn;
+    }
+
+    public void setWorldType() {
+        EnumSet<WorldType> types = client.getWorldType();
+
+        if(types.isEmpty()) {
+            worldIsMembers = 0;
+        }else{
+            for(WorldType type : types) {
+                if(type == WorldType.MEMBERS) {
+                    worldIsMembers = 1;
+                }else{
+                    worldIsMembers = 0;
+                }
+            }
+        }
+    }
+
+    public int getWorldIsMembers() {
+        return worldIsMembers;
+    }
 }

@@ -1,5 +1,6 @@
-package com.botdetector;
+package com.botdetector.ui.GameOverlays;
 
+import com.botdetector.BotDetectorConfig;
 import com.google.inject.Inject;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -46,6 +47,8 @@ public class BotDetectorHeatMapOverlay extends Overlay {
 
         return null;
     }
+
+
 
     private void drawHeatMapOverlay(Graphics2D graphics) {
         Widget worldMap = client.getWidget(WidgetInfo.WORLD_MAP_VIEW);
@@ -103,5 +106,11 @@ public class BotDetectorHeatMapOverlay extends Overlay {
         }
 
         return;
+    }
+
+    //TODO Set up relative intensity values on API side. Mutate base color red's hue darker/lighter based on those values.
+    // https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
+    private Color getColorHue(String regionIntensity) {
+        return new Color(1,2,3);
     }
 }
