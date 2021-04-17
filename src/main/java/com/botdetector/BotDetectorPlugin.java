@@ -117,7 +117,7 @@ public class BotDetectorPlugin extends Plugin {
         http = injector.getInstance(BotDetectorHTTP.class);
 
 
-        final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
+        final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
 
         navButton = NavigationButton.builder()
                 .panel(panel)
