@@ -325,10 +325,10 @@ public class BotDetectorHTTP {
     }
 
     public void sendPredictionFeedback(int vote) {
-        System.out.println("voting is gay");
+        
 
         Request request = new Request.Builder()
-                .url("http://localhost:5000" + "/plugin/predictionfeedback/")
+                .url(BASE_URL + "/plugin/predictionfeedback/")
                 .post(RequestBody.create(MEDIA_TYPE_JSON, buildFeebackString(vote)))
                 .build();
 
@@ -350,7 +350,7 @@ public class BotDetectorHTTP {
                     plugin.pushNotification("Thank you for your feedback!");
 
                 } else {
-                    System.out.println("Failure 22222!!");
+                    System.out.println("Failure!!");
                 }
 
                 SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
