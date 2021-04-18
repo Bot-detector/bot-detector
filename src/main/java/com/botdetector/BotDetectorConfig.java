@@ -52,7 +52,7 @@ public interface BotDetectorConfig extends Config {
             position = 5,
             keyName = "enableHeatMap",
             name = "Enable heat map:",
-            hidden = true,
+            hidden = false,
             description = "Enables a heat map overlay on top of the world map which shows activity intensity of the selected group."
     )
     default boolean enableHeatMap() {
@@ -63,7 +63,7 @@ public interface BotDetectorConfig extends Config {
             position = 6,
             keyName = "enablePlayerLabels",
             name = "Enable Overhead Player Labels:",
-            hidden = true,
+            hidden = false,
             description = "Shows indicators of players' group memberships above their heads."
     )
     default boolean enablePlayerLabels() {
@@ -74,7 +74,7 @@ public interface BotDetectorConfig extends Config {
             position = 7,
             keyName = "playerLabelColor",
             name = "Label Color:",
-            hidden = true,
+            hidden = false,
             description = "Color of players' group membership labels."
     )
     default Color getPlayerLabelColor() {
@@ -85,7 +85,7 @@ public interface BotDetectorConfig extends Config {
             position = 8,
             keyName = "enableTileLabel",
             name = "Enable Color-Coded Tiles:",
-            hidden = true,
+            hidden = false,
             description = "Place color-coded tiles below players to show their group memberships."
     )
     default boolean enableTileLabels() {
@@ -96,7 +96,7 @@ public interface BotDetectorConfig extends Config {
             position = 9,
             keyName = "tileColor",
             name = "Tile Color:",
-            hidden = true,
+            hidden = false,
             description = "Color of player tiles."
     )
     default Color getTileColor() {
@@ -107,7 +107,7 @@ public interface BotDetectorConfig extends Config {
             position = 10,
             keyName = "enableSpammerRecording",
             name = "Add Option to Record Spammers:",
-            hidden = true,
+            hidden = false,
             description = "Save chat messages from those you mark as spammers to a txt file."
     )
     default boolean enableSpammerRecording() {
