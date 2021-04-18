@@ -86,8 +86,11 @@ public class BotDetectorHTTP {
                 } else {
 
                     System.out.println("Received bad reponse: " + response.code());
-                    response.close();
+                    
                 }
+                
+                response.close();
+
             }
         });
     }
