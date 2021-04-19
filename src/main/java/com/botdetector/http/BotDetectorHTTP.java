@@ -34,7 +34,6 @@ import okhttp3.Response;
 
 public class BotDetectorHTTP
 {
-
 	public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
 	private static final String BASE_URL = "https://www.osrsbotdetector.com/api";
 
@@ -63,7 +62,7 @@ public class BotDetectorHTTP
 	{
 	}
 
-	public void sendToServer(List<Player> detectedPlayers, int isManual, String currPlayer) throws IOException
+	public void sendToServer(List<Player> detectedPlayers, int isManual, String currPlayer)
 	{
 		playersToSubmit.addAll(detectedPlayers);
 
@@ -83,7 +82,7 @@ public class BotDetectorHTTP
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
 				if (response.isSuccessful())
 				{
@@ -106,7 +105,7 @@ public class BotDetectorHTTP
 		});
 	}
 
-	public void getPlayerPrediction(String rsn, boolean reportable) throws IOException
+	public void getPlayerPrediction(String rsn, boolean reportable)
 	{
 		String url = BASE_URL + "/site/prediction/" +
 			rsn.replace(" ", "%20");
@@ -143,23 +142,8 @@ public class BotDetectorHTTP
 								.getAsJsonArray()
 						);
 
-					SwingUtilities.invokeLater(new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							plugin.panel.updatePlayerData(primaryPredictionData, false);
-						}
-					});
-
-					SwingUtilities.invokeLater(new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							plugin.panel.updateAdditionalPredictions(secondaryPredictionData, false);
-						}
-					});
+					SwingUtilities.invokeLater(() -> plugin.panel.updatePlayerData(primaryPredictionData, false));
+					SwingUtilities.invokeLater(() -> plugin.panel.updateAdditionalPredictions(secondaryPredictionData, false));
 
 					if (!config.enableAnonymousReporting() && plugin.isPlayerLoggedIn())
 					{
@@ -193,7 +177,7 @@ public class BotDetectorHTTP
 		});
 	}
 
-	public void getPlayerID(String rsn) throws IOException
+	public void getPlayerID(String rsn)
 	{
 		String url = BASE_URL + "/stats/getcontributorid/" +
 			rsn.replace(" ", "%20");
@@ -233,7 +217,7 @@ public class BotDetectorHTTP
 		});
 	}
 
-	public void getPlayerStats(String rsn) throws IOException
+	public void getPlayerStats(String rsn)
 	{
 		String url = BASE_URL + "/stats/contributions/" +
 			rsn.replace(" ", "%20");
@@ -269,7 +253,7 @@ public class BotDetectorHTTP
 		});
 	}
 
-	public void getPlayerTimesReported(String rsn) throws IOException
+	public void getPlayerTimesReported(String rsn)
 	{
 		String url = BASE_URL + "/plugin/detect/" +
 			rsn.replace(" ", "%20");
@@ -334,7 +318,7 @@ public class BotDetectorHTTP
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
 				if (response.isSuccessful())
 				{
@@ -348,12 +332,8 @@ public class BotDetectorHTTP
 
 					playersToSubmit.clear();
 				}
-				else
-				{
 
-				}
-
-				//TODO: Cache player location on our own for better success rates.
+				// TODO: Cache player location on our own for better success rates.
 				SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
 				response.close();
 			}
@@ -379,7 +359,7 @@ public class BotDetectorHTTP
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
 				if (response.isSuccessful())
 				{
@@ -423,7 +403,7 @@ public class BotDetectorHTTP
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
 				if (response.isSuccessful())
 				{
@@ -452,15 +432,15 @@ public class BotDetectorHTTP
 			+ "\",";
 
 		feedbackString += "\"voter_id\":"
-			+ String.valueOf(plugin.getCurrPlayerID())
+			+ plugin.getCurrPlayerID()
 			+ ",";
 
 		feedbackString += "\"subject_id\":"
-			+ String.valueOf(pred.getPlayer_id())
+			+ pred.getPlayer_id()
 			+ ",";
 
 		feedbackString += "\"vote\":"
-			+ String.valueOf(vote)
+			+ vote
 			+ ",";
 
 		feedbackString += "\"prediction\":\""
@@ -468,7 +448,7 @@ public class BotDetectorHTTP
 			+ "\",";
 
 		feedbackString += "\"confidence\":"
-			+ String.valueOf(pred.getConfidence());
+			+ pred.getConfidence();
 
 		feedbackString += "}";
 
@@ -483,7 +463,7 @@ public class BotDetectorHTTP
 
 		Player matchedPlayer =
 			detected.stream()
-				.filter(player -> player.getName().equals(rsn))
+				.filter(player -> rsn.equals(player.getName()))
 				.findFirst()
 				.orElse(null);
 
@@ -539,7 +519,7 @@ public class BotDetectorHTTP
 	//List of Players
 	public String createJSONList(List<Player> players)
 	{
-		String reporter = "";
+		String reporter;
 
 		if (config.enableAnonymousReporting())
 		{
@@ -547,27 +527,35 @@ public class BotDetectorHTTP
 		}
 		else
 		{
-			reporter = client.getLocalPlayer().getName();
+			Player p = client.getLocalPlayer();
+			if (p == null)
+			{
+				reporter = "AnonymousUser";
+			}
+			else
+			{
+				reporter = p.getName();
+			}
 		}
 
-		String json = "[";
+		StringBuilder json = new StringBuilder("[");
 
-		for (int i = 0; i < players.size(); i++)
+		for (Player player : players)
 		{
-			json += (buildPlayerJSONString(players.get(i), reporter) + ",");
+			json.append(buildPlayerJSONString(player, reporter)).append(",");
 		}
 
-		json = json.substring(0, json.length() - 1);
+		json = new StringBuilder(json.substring(0, json.length() - 1));
 
-		json += "]";
+		json.append("]");
 
-		return json;
+		return json.toString();
 	}
 
 	//Single Player
 	public String createJSONList(Player player)
 	{
-		String reporter = "";
+		String reporter;
 
 		if (config.enableAnonymousReporting())
 		{
@@ -575,7 +563,15 @@ public class BotDetectorHTTP
 		}
 		else
 		{
-			reporter = client.getLocalPlayer().getName();
+			Player p = client.getLocalPlayer();
+			if (p == null)
+			{
+				reporter = "AnonymousUser";
+			}
+			else
+			{
+				reporter = p.getName();
+			}
 		}
 
 		String json = "[";

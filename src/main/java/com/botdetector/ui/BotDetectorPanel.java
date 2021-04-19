@@ -10,11 +10,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -28,20 +25,17 @@ import lombok.SneakyThrows;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.client.Notifier;
-import net.runelite.client.events.SessionClose;
-import net.runelite.client.events.SessionOpen;
 import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.LinkBrowser;
+import net.runelite.client.util.Text;
 
 public class BotDetectorPanel extends PluginPanel
 {
 	@Inject
-	@Nullable
 	private Client client;
 
 	@Inject
@@ -97,16 +91,6 @@ public class BotDetectorPanel extends PluginPanel
 
 	JButton refreshStatsBtn;
 
-	@Subscribe
-	public void onSessionOpen(SessionOpen sessionOpen)
-	{
-	}
-
-	@Subscribe
-	public void onSessionClose(SessionClose e)
-	{
-	}
-
 	@SneakyThrows
 	@Override
 	public void onActivate()
@@ -139,54 +123,26 @@ public class BotDetectorPanel extends PluginPanel
 		reportBtn = new JButton("Report");
 		reportBtn.createToolTip();
 		reportBtn.setToolTipText("Submit account as a probable offender.");
-		reportBtn.addActionListener(new ActionListener()
+		reportBtn.addActionListener(e ->
 		{
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				System.out.println("Reporting: " + currRSN);
-				BotDetectorPlugin.http.reportPlayer(
-					currRSN
-				);
-			}
+			System.out.println("Reporting: " + currRSN);
+			BotDetectorPlugin.http.reportPlayer(currRSN);
 		});
 
 		dontReportBtn = new JButton("Don't Report");
 		dontReportBtn.createToolTip();
 		dontReportBtn.setToolTipText("Player is real and not a rule-breaker.");
-		dontReportBtn.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-
-				removeReportButtons();
-			}
-		});
+		dontReportBtn.addActionListener(e -> removeReportButtons());
 
 		correctBtn = new JButton("It's Correct!");
 		correctBtn.createToolTip();
 		correctBtn.setToolTipText("Let us know if our prediction seems correct.");
-		correctBtn.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				BotDetectorPlugin.http.sendPredictionFeedback(1);
-			}
-		});
+		correctBtn.addActionListener(e -> BotDetectorPlugin.http.sendPredictionFeedback(1));
 
 		incorrectBtn = new JButton("I Think It's Wrong");
 		incorrectBtn.createToolTip();
 		incorrectBtn.setToolTipText("Let us know if our prediction seems incorrect.");
-		incorrectBtn.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				BotDetectorPlugin.http.sendPredictionFeedback(-1);
-			}
-		});
+		incorrectBtn.addActionListener(e -> BotDetectorPlugin.http.sendPredictionFeedback(-1));
 
 		//UI Components
 		anonymousWarning = new JLabel(" Anonymous Reporting Active");
@@ -223,17 +179,7 @@ public class BotDetectorPanel extends PluginPanel
 		searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		searchBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
 		searchBar.setMinimumSize(new Dimension(0, 30));
-		searchBar.addActionListener(e ->
-		{
-			try
-			{
-				lookupPlayer(true);
-			}
-			catch (IOException ioException)
-			{
-				ioException.printStackTrace();
-			}
-		});
+		searchBar.addActionListener(e -> lookupPlayer(true));
 		searchBar.addMouseListener(new MouseAdapter()
 		{
 			@SneakyThrows
@@ -480,7 +426,7 @@ public class BotDetectorPanel extends PluginPanel
 		}
 		else
 		{
-			playerName.setText(htmlLabel("Player Name: ", sanitizeText(currRSN),
+			playerName.setText(htmlLabel("Player Name: ", Text.sanitize(currRSN),
 				"#a5a5a5", "white"));
 			playerGroupLabel.setText(htmlLabel("Prediction: ", predictionLabel,
 				"#a5a5a5", "white"));
@@ -493,42 +439,44 @@ public class BotDetectorPanel extends PluginPanel
 
 	public void updateAdditionalPredictions(LinkedHashMap<String, String> predictions, boolean error)
 	{
-		if (error == false)
+		if (error)
 		{
-			additionalPredictionsPanel.removeAll();
-			additionalPredictionsPanel.setVisible(true);
-
-			JLabel title = new JLabel(htmlLabel("Prediction Breakdown: ",
-				"",
-				"#a5a5a5",
-				"white"));
-
-			title.setFont(boldFont);
-
-			additionalPredictionsPanel.add(title);
-
-			Set<String> keys = predictions.keySet();
-
-			for (String key : keys)
-			{
-				additionalPredictionsPanel.add(
-					new JLabel(htmlLabel(key + ": ",
-						String.format("%.2f", Float.parseFloat(predictions.get(key)) * 100) + "%",
-						"#a5a5a5",
-						getPredictionColor(predictions.get(key))
-					))
-				);
-			}
-
-			additionalPredictionsPanel.revalidate();
-			additionalPredictionsPanel.repaint();
+			return;
 		}
+
+		additionalPredictionsPanel.removeAll();
+		additionalPredictionsPanel.setVisible(true);
+
+		JLabel title = new JLabel(htmlLabel("Prediction Breakdown: ",
+			"",
+			"#a5a5a5",
+			"white"));
+
+		title.setFont(boldFont);
+
+		additionalPredictionsPanel.add(title);
+
+		Set<String> keys = predictions.keySet();
+
+		for (String key : keys)
+		{
+			additionalPredictionsPanel.add(
+				new JLabel(htmlLabel(key + ": ",
+					String.format("%.2f", Float.parseFloat(predictions.get(key)) * 100) + "%",
+					"#a5a5a5",
+					getPredictionColor(predictions.get(key))
+				))
+			);
+		}
+
+		additionalPredictionsPanel.revalidate();
+		additionalPredictionsPanel.repaint();
 	}
 
 	//TODO Make the colors more dynamic in range
 	public String getPredictionColor(String pred_conf)
 	{
-		Float conf = Float.parseFloat(pred_conf);
+		float conf = Float.parseFloat(pred_conf);
 
 		System.out.print("CONF: " + conf);
 
@@ -561,7 +509,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	public void removeFeedbackButtons()
 	{
-		if (feedbackBtnsActive == true)
+		if (feedbackBtnsActive)
 		{
 			playerInfoPanel.remove(feedbackTitle);
 			playerInfoPanel.remove(correctBtn);
@@ -589,7 +537,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	public void removeReportButtons()
 	{
-		if (reportBtnsActive == true)
+		if (reportBtnsActive)
 		{
 			playerInfoPanel.remove(reportBtnTitle);
 			playerInfoPanel.remove(reportBtn);
@@ -617,17 +565,17 @@ public class BotDetectorPanel extends PluginPanel
 		statsPanel.repaint();
 	}
 
-	public void lookupPlayer(String rsn, boolean reportable) throws IOException
+	public void lookupPlayer(String rsn, boolean reportable)
 	{
 		searchBar.setText(rsn);
 		lookupPlayer(reportable);
 	}
 
-	private void lookupPlayer(boolean reportable) throws IOException
+	private void lookupPlayer(boolean reportable)
 	{
 		removeReportButtons();
 
-		String sanitizedRSN = sanitizeText(searchBar.getText());
+		String sanitizedRSN = Text.sanitize(searchBar.getText());
 
 		if (sanitizedRSN.length() <= 0)
 		{
@@ -664,15 +612,10 @@ public class BotDetectorPanel extends PluginPanel
 		accuracy.setText("Accuracy: ");
 	}
 
-	public void setPlayerStats(PlayerStats stats) throws IOException
+	public void setPlayerStats(PlayerStats stats)
 	{
 		this.ps = stats;
 		updatePlayerStats();
-	}
-
-	private static String sanitizeText(String rsn)
-	{
-		return rsn.replace('\u00A0', ' ');
 	}
 
 	private static String htmlLabel(String key, String value, String keyColor, String valueColor)

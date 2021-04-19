@@ -23,7 +23,7 @@ public class BotDetectorHeatMapOverlay extends Overlay
 
 	private static final int LABEL_PADDING = 4;
 	private static final int REGION_SIZE = 1 << 6;
-	private static final int REGION_TRUNCATE = ~((1 << 6) - 1);
+	private static final int REGION_TRUNCATE = -(1 << 6);
 
 	private final Client client;
 	private final BotDetectorConfig config;
@@ -48,7 +48,6 @@ public class BotDetectorHeatMapOverlay extends Overlay
 
 		return null;
 	}
-
 
 	private void drawHeatMapOverlay(Graphics2D graphics)
 	{
@@ -94,7 +93,6 @@ public class BotDetectorHeatMapOverlay extends Overlay
 				int regionId = ((x >> 6) << 8) | (y >> 6);
 				Rectangle regionRect = new Rectangle(xPos, yPos, regionPixelSize, regionPixelSize);
 
-
 				if (regionRect.contains(mousePos.getX(), mousePos.getY()))
 				{
 					color = color.brighter();
@@ -111,11 +109,9 @@ public class BotDetectorHeatMapOverlay extends Overlay
 
 			}
 		}
-
-		return;
 	}
 
-	//TODO Set up relative intensity values on API side. Mutate base color red's hue darker/lighter based on those values.
+	// TODO Set up relative intensity values on API side. Mutate base color red's hue darker/lighter based on those values.
 	// https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
 	private Color getColorHue(String regionIntensity)
 	{
