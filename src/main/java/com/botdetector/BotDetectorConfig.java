@@ -14,7 +14,7 @@ public interface BotDetectorConfig extends Config {
             position = 1,
             keyName = "sendAtLogout",
             name = "Send Names Only After Logout",
-            description = "Waits to uploads names until you've logged out.<br>Use this if you have a poor connection."
+            description = "Waits to upload names until you've logged out.<br>Use this if you have a poor connection."
     )
     default boolean sendAtLogout() {
         return false;
