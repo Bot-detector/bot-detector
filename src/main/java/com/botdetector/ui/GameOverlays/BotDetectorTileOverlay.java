@@ -2,86 +2,104 @@ package com.botdetector.ui.GameOverlays;
 
 import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.Polygon;
+import java.util.ArrayList;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
-import net.runelite.client.ui.overlay.*;
 import javax.inject.Inject;
-import java.awt.*;
-import java.util.*;
 import java.util.List;
+import net.runelite.client.ui.overlay.Overlay;
+import net.runelite.client.ui.overlay.OverlayLayer;
+import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.OverlayPriority;
+import net.runelite.client.ui.overlay.OverlayUtil;
 
-public class BotDetectorTileOverlay  extends Overlay {
+public class BotDetectorTileOverlay extends Overlay
+{
+	private final BotDetectorConfig config;
+	private final Client client;
+	private final BotDetectorPlugin plugin;
 
-    private final BotDetectorConfig config;
-    private final Client client;
-    private final BotDetectorPlugin plugin;
+	private List<Player> playersToTile = new ArrayList<>();
 
-    private List<Player> playersToTile = new ArrayList<>();
+	private boolean playersHaveChanged;
 
-    private boolean playersHaveChanged;
+	@Inject
+	private BotDetectorTileOverlay(BotDetectorConfig config, Client client, BotDetectorPlugin plugin)
+	{
+		this.config = config;
+		this.client = client;
+		this.plugin = plugin;
+		setLayer(OverlayLayer.ABOVE_SCENE);
+		setPosition(OverlayPosition.DYNAMIC);
+		setPriority(OverlayPriority.MED);
 
-    @Inject
-    private BotDetectorTileOverlay(BotDetectorConfig config, Client client, BotDetectorPlugin plugin) {
-        this.config = config;
-        this.client = client;
-        this.plugin = plugin;
-        setLayer(OverlayLayer.ABOVE_SCENE);
-        setPosition(OverlayPosition.DYNAMIC);
-        setPriority(OverlayPriority.MED);
+		playersHaveChanged = false;
+	}
 
-        playersHaveChanged = false;
-    }
+	@Override
+	public Dimension render(Graphics2D graphics)
+	{
+		if (!config.enableTileLabels())
+		{
+			return null;
+		}
 
-    @Override
-    public Dimension render(Graphics2D graphics) {
+		if (playersHaveChanged)
+		{
+			playersToTile = getPlayersToTile();
+		}
 
-        if(!config.enableTileLabels()) {
-            return null;
-        }
+		if (playersToTile.size() == 0)
+		{
+			return null;
+		}
 
-        if(playersHaveChanged) {
-            playersToTile = getPlayersToTile();
-        }
+		Color color = config.getTileColor();
 
-        if(playersToTile.size() == 0) {
-            return null;
-        }
+		for (Player player : playersToTile)
+		{
 
-        Color color = config.getTileColor();
+			if (player == null || player.getName() == null)
+			{
+				continue;
+			}
 
-        for (Player player : playersToTile) {
+			final Polygon poly = player.getCanvasTilePoly();
 
-            if (player == null || player.getName() == null) {
-                continue;
-            }
+			if (poly != null)
+			{
+				OverlayUtil.renderPolygon(graphics, poly, color);
+			}
+		}
 
-            final Polygon poly = player.getCanvasTilePoly();
+		setPlayersHaveChanged(false);
 
-            if(poly != null) {
-                OverlayUtil.renderPolygon(graphics, poly, color);
-            }
-        }
+		return null;
+	}
 
-        setPlayersHaveChanged(false);
+	public List<Player> getPlayersToTile()
+	{
+		List<Player> toTile = new ArrayList<>();
+		List<String> reportedPlayers = plugin.getSeenReportedPlayers();
 
-        return null;
-    }
+		for (Player player : client.getPlayers())
+		{
+			if (reportedPlayers.contains(player.getName()))
+			{
+				toTile.add(player);
+			}
+		}
 
-    public List<Player> getPlayersToTile() {
-        List<Player> toTile = new ArrayList<>();
-        List<String> reportedPlayers = plugin.getSeenReportedPlayers();
+		return toTile;
+	}
 
-        for(Player player : client.getPlayers()) {
-            if(reportedPlayers.contains(player.getName())) {
-                toTile.add(player);
-            }
-        }
-
-        return toTile;
-    }
-
-    public void setPlayersHaveChanged(boolean playersHaveChanged) {
-        this.playersHaveChanged = playersHaveChanged;
-    }
+	public void setPlayersHaveChanged(boolean playersHaveChanged)
+	{
+		this.playersHaveChanged = playersHaveChanged;
+	}
 }
 
