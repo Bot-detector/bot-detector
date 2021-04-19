@@ -184,11 +184,7 @@ public class BotDetectorPlugin extends Plugin {
     public void onGameTick(GameTick event) throws IOException {
         if (!config.sendAtLogout()) {
 
-            int timeSend = 100 * (config.intConfig());
-
-            if (timeSend < 500) {
-                timeSend = 500;
-            }
+            int timeSend = 100 * Math.max(config.autoSendMinutes(), 5);
 
             tickCount ++;
 
