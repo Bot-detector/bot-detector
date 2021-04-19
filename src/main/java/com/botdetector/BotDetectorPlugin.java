@@ -44,13 +44,11 @@ import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.runelite.client.util.ImageUtil;
-import java.io.IOException;
 
 @PluginDescriptor(
 	name = "Bot Detector",
 	description = "This plugin sends encountered Player Names to a server in order to detect Botting Behavior.",
 	tags = {"Bot", "Detector", "Player"},
-	loadWhenOutdated = false,
 	enabledByDefault = false
 )
 public class BotDetectorPlugin extends Plugin
@@ -99,14 +97,14 @@ public class BotDetectorPlugin extends Plugin
 	public static int numNamesSubmitted = 0;
 	public static int worldIsMembers;
 	public static Prediction currPrediction;
-	static Set<Player> targetedPlayers = new HashSet<Player>();
+	static Set<Player> targetedPlayers = new HashSet<>();
 	//Players seen in game that have been manually reported by our users.
 	static List<String> seenReportedPlayers = new ArrayList<>();
 
 
-	public List<Player> detectedPlayers = new ArrayList<Player>();
-	List<Player> freshPlayers = new ArrayList<Player>();
-	HashSet<String> detectedPlayerNames = new HashSet<String>();
+	public List<Player> detectedPlayers = new ArrayList<>();
+	List<Player> freshPlayers = new ArrayList<>();
+	Set<String> detectedPlayerNames = new HashSet<>();
 
 	int tickCount = 0;
 	boolean playerLoggedIn = false;
@@ -114,13 +112,8 @@ public class BotDetectorPlugin extends Plugin
 	String currPlayer;
 	int currPlayerID;
 
-
-	public BotDetectorPlugin() throws IOException
-	{
-	}
-
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		currPlayer = "";
 
@@ -150,7 +143,7 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		if (detectedPlayers.size() > 0)
 		{
@@ -172,54 +165,56 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event) throws IOException
+	public void onConfigChanged(ConfigChanged event)
 	{
-		if (!event.getGroup().equals("botdetector"))
+		if (!event.getGroup().equals(BotDetectorConfig.CONFIG_GROUP))
 		{
 			return;
 		}
 
-		if (event.getKey().equals("addDetectOption"))
+		if (event.getKey().equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
 		{
-			if (!Boolean.parseBoolean(event.getOldValue()) && Boolean.parseBoolean(event.getNewValue()))
+			if (config.addDetectOption())
 			{
 				menuManager.addPlayerMenuItem(DETECT);
 			}
-			else if (Boolean.parseBoolean(event.getOldValue()) && !Boolean.parseBoolean(event.getNewValue()))
+			else
 			{
 				menuManager.removePlayerMenuItem(DETECT);
 			}
 		}
 
-		if (event.getKey().equals("enableAnonymousReporting"))
+		if (event.getKey().equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
 		{
 			SwingUtilities.invokeLater(panel::toggleAnonymousWarning);
 		}
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event) throws IOException
+	public void onGameTick(GameTick event)
 	{
-		if (!config.sendAtLogout())
+		if (config.sendAtLogout())
 		{
-			int timeSend = 100 * Math.max(config.autoSendMinutes(), 5);
+			return;
+		}
 
-			tickCount++;
+		int timeSend = 100 * Math.max(config.autoSendMinutes(), 5);
 
-			if (tickCount > timeSend)
+		tickCount++;
+
+		if (tickCount > timeSend)
+		{
+			if (detectedPlayers.size() > 0)
 			{
-				if (detectedPlayers.size() > 0)
-				{
-					http.sendToServer(freshPlayers, 0, currPlayer);
-					freshPlayers.clear();
-				}
-				tickCount = 0;
+				http.sendToServer(freshPlayers, 0, currPlayer);
+				freshPlayers.clear();
 			}
+			tickCount = 0;
 		}
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged) throws IOException
+	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
@@ -250,16 +245,31 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onPlayerSpawned(PlayerSpawned event) throws IOException
+	public void onPlayerSpawned(PlayerSpawned event)
 	{
 		Player player = event.getPlayer();
-		String playerName = player.getName();
+		if (player == null)
+		{
+			return;
+		}
 
-		currPlayer = client.getLocalPlayer().getName();
+		Player localPlayer = client.getLocalPlayer();
+		if (localPlayer == null)
+		{
+			return;
+		}
+
+		String playerName = player.getName();
+		currPlayer = localPlayer.getName();
+
+		if (playerName == null || currPlayer == null)
+		{
+			return;
+		}
 
 		if (playerName.equals(currPlayer))
 		{
-			http.getPlayerID(client.getLocalPlayer().getName());
+			http.getPlayerID(currPlayer);
 			http.getPlayerStats(currPlayer);
 			setWorldType();
 		}
@@ -282,7 +292,7 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onPlayerDespawned(PlayerDespawned event) throws IOException
+	public void onPlayerDespawned(PlayerDespawned event)
 	{
 		if (!config.enableTileLabels())
 		{
@@ -297,10 +307,6 @@ public class BotDetectorPlugin extends Plugin
 		{
 			seenReportedPlayers.remove(idxFound);
 			tileOverlay.setPlayersHaveChanged(true);
-		}
-		else
-		{
-			return;
 		}
 	}
 
@@ -321,10 +327,6 @@ public class BotDetectorPlugin extends Plugin
 
 				http.verifyDiscordUser(author, code);
 			}
-		}
-		else
-		{
-			return;
 		}
 	}
 
@@ -362,7 +364,7 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event) throws IOException
+	public void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
 			&& event.getMenuOption().equals(DETECT))
@@ -403,9 +405,7 @@ public class BotDetectorPlugin extends Plugin
 			&& event.getMenuOption().equals(MASS_DETECT))
 		{
 			//TODO Mass Detection
-			return;
 		}
-
 	}
 
 	private Player findPlayerInCache(String rsn)
@@ -413,7 +413,7 @@ public class BotDetectorPlugin extends Plugin
 		List<Player> currPlayers = client.getPlayers();
 
 		List<Player> matches = currPlayers.stream()
-			.filter(p -> p.getName().contains(rsn))
+			.filter(p -> p != null && p.getName() != null && p.getName().contains(rsn))
 			.collect(Collectors.toList());
 
 		try
@@ -429,7 +429,6 @@ public class BotDetectorPlugin extends Plugin
 	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
 	{
 		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
-		MenuEntry[] menu = client.getMenuEntries();
 		client.setMenuEntries(newMenu);
 	}
 
@@ -441,11 +440,7 @@ public class BotDetectorPlugin extends Plugin
 
 	public void addSeenDetectedPlayer(String rsn)
 	{
-		if (seenReportedPlayers.contains(rsn))
-		{
-			return;
-		}
-		else
+		if (!seenReportedPlayers.contains(rsn))
 		{
 			seenReportedPlayers.add(rsn);
 			tileOverlay.setPlayersHaveChanged(true);
@@ -465,14 +460,8 @@ public class BotDetectorPlugin extends Plugin
 			{
 				navButton.getOnSelect().run();
 			}
-			try
-			{
-				panel.lookupPlayer(playerName, false);
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
+
+			panel.lookupPlayer(playerName, false);
 		});
 	}
 
@@ -484,14 +473,8 @@ public class BotDetectorPlugin extends Plugin
 			{
 				navButton.getOnSelect().run();
 			}
-			try
-			{
-				panel.lookupPlayer(player.getName(), true);
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
+
+			panel.lookupPlayer(player.getName(), true);
 		});
 	}
 

@@ -7,9 +7,13 @@ import net.runelite.client.config.Range;
 import net.runelite.client.config.Units;
 import java.awt.Color;
 
-@ConfigGroup("botdetector")
+@ConfigGroup(BotDetectorConfig.CONFIG_GROUP)
 public interface BotDetectorConfig extends Config
 {
+	String CONFIG_GROUP = "botdetector";
+	String ADD_DETECT_OPTION_KEY = "addDetectOption";
+	String ANONYMOUS_REPORTING_KEY = "enableAnonymousReporting";
+
 	@ConfigItem(
 		position = 1,
 		keyName = "sendAtLogout",
@@ -47,7 +51,7 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 4,
-		keyName = "addDetectOption",
+		keyName = ADD_DETECT_OPTION_KEY,
 		name = "Right-click 'Detect' players",
 		description = "Adds a menu entry to player menus that allows you to see what a player is classified as."
 	)
@@ -60,7 +64,6 @@ public interface BotDetectorConfig extends Config
 		position = 5,
 		keyName = "enableHeatMap",
 		name = "Enable Heat Map",
-		hidden = false,
 		description = "Enables a heat map overlay on top of the world map which shows activity intensity of the selected group."
 	)
 	default boolean enableHeatMap()
@@ -72,7 +75,6 @@ public interface BotDetectorConfig extends Config
 		position = 6,
 		keyName = "enablePlayerLabels",
 		name = "Enable Overhead Player Labels",
-		hidden = false,
 		description = "Shows indicators of players' group memberships above their heads."
 	)
 	default boolean enablePlayerLabels()
@@ -84,7 +86,6 @@ public interface BotDetectorConfig extends Config
 		position = 7,
 		keyName = "playerLabelColor",
 		name = "Label Color",
-		hidden = false,
 		description = "Color of players' group membership labels."
 	)
 	default Color getPlayerLabelColor()
@@ -96,7 +97,6 @@ public interface BotDetectorConfig extends Config
 		position = 8,
 		keyName = "enableTileLabel",
 		name = "Enable Color-Coded Tiles",
-		hidden = false,
 		description = "Place color-coded tiles below players to show their group memberships."
 	)
 	default boolean enableTileLabels()
@@ -108,7 +108,6 @@ public interface BotDetectorConfig extends Config
 		position = 9,
 		keyName = "tileColor",
 		name = "Tile Color",
-		hidden = false,
 		description = "Color of player tiles."
 	)
 	default Color getTileColor()
@@ -120,7 +119,6 @@ public interface BotDetectorConfig extends Config
 		position = 10,
 		keyName = "enableSpammerRecording",
 		name = "Add Option to Record Spammers",
-		hidden = false,
 		description = "Save chat messages from those you mark as spammers to a txt file."
 	)
 	default boolean enableSpammerRecording()
@@ -129,8 +127,8 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 10,
-		keyName = "enableAnonymousReporting",
+		position = 11,
+		keyName = ANONYMOUS_REPORTING_KEY,
 		name = "Anonymous Reporting",
 		description = "Your RSN will not be sent with reports. Disable if you'd like to track your contributions."
 	)
@@ -140,7 +138,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 11,
+		position = 12,
 		keyName = "authToken",
 		name = "Authentication Token",
 		description = "If you have an auth token from the devs, enter it here for special features!."
