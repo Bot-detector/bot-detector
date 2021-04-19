@@ -1,9 +1,11 @@
 package com.botdetector;
+
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
-
-import java.awt.*;
+import net.runelite.client.config.Range;
+import net.runelite.client.config.Units;
+import java.awt.Color;
 
 @ConfigGroup("botdetector")
 public interface BotDetectorConfig extends Config {
@@ -11,8 +13,8 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 1,
             keyName = "sendAtLogout",
-            name = "Send names only after logout:",
-            description = "Waits to uploads names until you've logged out. Use this if you have a poor connection."
+            name = "Send Names Only After Logout",
+            description = "Waits to upload names until you've logged out.<br>Use this if you have a poor connection."
     )
     default boolean sendAtLogout() {
         return false;
@@ -21,17 +23,19 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 2,
             keyName = "intConfig",
-            name = "Send every 'X' minutes:",
-            description = "Minimum value: Sent every 5 minutes."
+            name = "Send Names Every",
+            description = "Sets the amount of time between automatic name uploads."
     )
-    default int intConfig() {
+    @Range(min = 5)
+    @Units(Units.MINUTES)
+    default int autoSendMinutes() {
         return 5;
     }
 
     @ConfigItem(
             position = 3,
             keyName = "enableNotifications",
-            name = "Enable notifications:",
+            name = "Enable Notifications",
             description = "Toggle notifications for when player names are submitted."
     )
     default boolean enableNotificatiions() {
@@ -41,7 +45,7 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 4,
             keyName = "addDetectOption",
-            name = "Right-click 'Detect' players:",
+            name = "Right-click 'Detect' players",
             description = "Adds a menu entry to player menus that allows you to see what a player is classified as."
     )
     default boolean addDetectOption() {
@@ -51,7 +55,7 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 5,
             keyName = "enableHeatMap",
-            name = "Enable heat map:",
+            name = "Enable Heat Map",
             hidden = false,
             description = "Enables a heat map overlay on top of the world map which shows activity intensity of the selected group."
     )
@@ -62,7 +66,7 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 6,
             keyName = "enablePlayerLabels",
-            name = "Enable Overhead Player Labels:",
+            name = "Enable Overhead Player Labels",
             hidden = false,
             description = "Shows indicators of players' group memberships above their heads."
     )
@@ -73,18 +77,18 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 7,
             keyName = "playerLabelColor",
-            name = "Label Color:",
+            name = "Label Color",
             hidden = false,
             description = "Color of players' group membership labels."
     )
     default Color getPlayerLabelColor() {
-        return new Color(0, 0, 0);
+        return Color.BLACK;
     }
 
     @ConfigItem(
             position = 8,
             keyName = "enableTileLabel",
-            name = "Enable Color-Coded Tiles:",
+            name = "Enable Color-Coded Tiles",
             hidden = false,
             description = "Place color-coded tiles below players to show their group memberships."
     )
@@ -95,7 +99,7 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 9,
             keyName = "tileColor",
-            name = "Tile Color:",
+            name = "Tile Color",
             hidden = false,
             description = "Color of player tiles."
     )
@@ -106,7 +110,7 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 10,
             keyName = "enableSpammerRecording",
-            name = "Add Option to Record Spammers:",
+            name = "Add Option to Record Spammers",
             hidden = false,
             description = "Save chat messages from those you mark as spammers to a txt file."
     )
@@ -117,7 +121,7 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 10,
             keyName = "enableAnonymousReporting",
-            name = "Enable Anonymous Reporting:",
+            name = "Anonymous Reporting",
             description = "Your RSN will not be sent with reports. Disable if you'd like to track your contributions."
     )
     default boolean enableAnonymousReporting() {
@@ -127,7 +131,7 @@ public interface BotDetectorConfig extends Config {
     @ConfigItem(
             position = 11,
             keyName = "authToken",
-            name = "Token:",
+            name = "Authentication Token",
             description = "If you have an auth token from the devs, enter it here for special features!."
     )
     default String authToken() { return ""; }
