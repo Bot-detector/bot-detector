@@ -8,7 +8,6 @@ import com.botdetector.ui.GameOverlays.BotDetectorTileOverlay;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
@@ -536,26 +535,7 @@ public class BotDetectorPlugin extends Plugin
 
 	public void setWorldType()
 	{
-		EnumSet<WorldType> types = client.getWorldType();
-
-		if (types.isEmpty())
-		{
-			worldIsMembers = 0;
-		}
-		else
-		{
-			for (WorldType type : types)
-			{
-				if (type == WorldType.MEMBERS)
-				{
-					worldIsMembers = 1;
-				}
-				else
-				{
-					worldIsMembers = 0;
-				}
-			}
-		}
+		worldIsMembers = client.getWorldType().contains(WorldType.MEMBERS) ? 1 : 0;
 	}
 
 	public int getWorldIsMembers()
