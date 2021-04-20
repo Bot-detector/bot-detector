@@ -15,7 +15,6 @@ import java.awt.event.MouseEvent;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Set;
-import javax.annotation.Nullable;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -46,6 +45,8 @@ public class BotDetectorPanel extends PluginPanel
 
 	@Inject
 	private Notifier notifier;
+
+	private BotDetectorPlugin plugin;
 
 	private final Font boldFont = FontManager.getRunescapeBoldFont();
 	private static final int MAX_RSN_LENGTH = 12;
@@ -106,10 +107,11 @@ public class BotDetectorPanel extends PluginPanel
 	}
 
 	@Inject
-	public BotDetectorPanel(@Nullable Client client)
+	public BotDetectorPanel(BotDetectorPlugin plugin)
 	{
+		this.plugin = plugin;
 		loading = false;
-		ps = new PlayerStats();
+		ps = new PlayerStats(0, 0, 0);
 
 		btnSpacer = new JSeparator();
 
@@ -392,7 +394,7 @@ public class BotDetectorPanel extends PluginPanel
 	public void updateUploads()
 	{
 		uploads.setText(htmlLabel("Names Uploaded: ",
-			String.valueOf(BotDetectorPlugin.numNamesSubmitted),
+			String.valueOf(plugin.getNumNamesSubmitted()),
 			"#a5a5a5", "white"));
 	}
 
@@ -600,7 +602,7 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		numReports.setText("Reports Made: " + ps.getReports());
 		numBans.setText("Confirmed Bans: " + ps.getBans());
-		numPossibleBans.setText("Probable Bans: " + ps.getPossible_bans());
+		numPossibleBans.setText("Probable Bans: " + ps.getPossibleBans());
 		accuracy.setText("Accuracy: " + ps.getAccuracy() + "%");
 	}
 

@@ -283,7 +283,7 @@ public class BotDetectorHTTP
 
 					if (timesReported > 0)
 					{
-						plugin.addSeenDetectedPlayer(rsn);
+						//plugin.addSeenDetectedPlayer(rsn);
 					}
 					else
 					{
@@ -326,7 +326,7 @@ public class BotDetectorHTTP
 					plugin.pushNotification("Player reported successfully!");
 
 					plugin.addNumNamesSubmitted(playersToSubmit.size());
-					plugin.addSeenDetectedPlayer(rsn);
+					//plugin.addSeenDetectedPlayer(rsn);
 
 					plugin.panel.updatePlayerStats();
 
@@ -428,7 +428,7 @@ public class BotDetectorHTTP
 		String feedbackString = "{";
 
 		feedbackString += "\"rsn\":\""
-			+ pred.getRsn()
+			+ pred.getDisplayName()
 			+ "\",";
 
 		feedbackString += "\"voter_id\":"
@@ -436,7 +436,7 @@ public class BotDetectorHTTP
 			+ ",";
 
 		feedbackString += "\"subject_id\":"
-			+ pred.getPlayer_id()
+			+ pred.getPlayerId()
 			+ ",";
 
 		feedbackString += "\"vote\":"

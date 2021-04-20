@@ -3,8 +3,6 @@ package com.botdetector;
 import com.botdetector.http.BotDetectorHTTP;
 import com.botdetector.model.Prediction;
 import com.botdetector.ui.BotDetectorPanel;
-import com.botdetector.ui.GameOverlays.BotDetectorHeatMapOverlay;
-import com.botdetector.ui.GameOverlays.BotDetectorTileOverlay;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
 import java.util.ArrayList;
@@ -12,6 +10,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
 import javax.swing.SwingUtilities;
+import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.MenuAction;
@@ -23,7 +22,6 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
-import net.runelite.api.events.PlayerDespawned;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.Notifier;
@@ -75,12 +73,6 @@ public class BotDetectorPlugin extends Plugin
 	private ClientToolbar clientToolbar;
 
 	@Inject
-	private BotDetectorHeatMapOverlay heatMapOverlay;
-
-	@Inject
-	private BotDetectorTileOverlay tileOverlay;
-
-	@Inject
 	private OverlayManager overlayManager;
 
 	public static BotDetectorHTTP http;
@@ -93,23 +85,29 @@ public class BotDetectorPlugin extends Plugin
 		return configManager.getConfig(BotDetectorConfig.class);
 	}
 
-	public static int numNamesSubmitted = 0;
-	public static int worldIsMembers;
-	public static Prediction currPrediction;
-	static Set<Player> targetedPlayers = new HashSet<>();
-	//Players seen in game that have been manually reported by our users.
-	static List<String> seenReportedPlayers = new ArrayList<>();
+	@Getter
+	private int numNamesSubmitted = 0;
+	@Getter
+	private int worldIsMembers;
+	@Getter
+	private Prediction currPrediction;
 
+	@Getter
+	private final List<Player> detectedPlayers = new ArrayList<>();
+	@Getter
+	private final List<Player> freshPlayers = new ArrayList<>();
+	@Getter
+	private final Set<String> detectedPlayerNames = new HashSet<>();
 
-	public List<Player> detectedPlayers = new ArrayList<>();
-	List<Player> freshPlayers = new ArrayList<>();
-	Set<String> detectedPlayerNames = new HashSet<>();
+	@Getter
+	private boolean playerLoggedIn = false;
 
-	int tickCount = 0;
-	boolean playerLoggedIn = false;
+	@Getter
+	private String currPlayer;
+	@Getter
+	private int currPlayerID;
 
-	String currPlayer;
-	int currPlayerID;
+	private int tickCount = 0;
 
 	@Override
 	protected void startUp()
@@ -136,9 +134,6 @@ public class BotDetectorPlugin extends Plugin
 		{
 			menuManager.addPlayerMenuItem(DETECT);
 		}
-
-		overlayManager.add(heatMapOverlay);
-		overlayManager.add(tileOverlay);
 	}
 
 	@Override
@@ -158,9 +153,6 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		clientToolbar.removeNavigation(navButton);
-
-		overlayManager.remove(heatMapOverlay);
-		overlayManager.remove(tileOverlay);
 	}
 
 	@Subscribe
@@ -277,35 +269,11 @@ public class BotDetectorPlugin extends Plugin
 			int listSize = detectedPlayerNames.size();
 			detectedPlayerNames.add(playerName);
 
-			if (config.enableTileLabels())
-			{
-				http.getPlayerTimesReported(playerName);
-			}
-
 			if (detectedPlayerNames.size() == (listSize + 1))
 			{
 				detectedPlayers.add(player);
 				freshPlayers.add(player);
 			}
-		}
-	}
-
-	@Subscribe
-	public void onPlayerDespawned(PlayerDespawned event)
-	{
-		if (!config.enableTileLabels())
-		{
-			return;
-		}
-
-		Player player = event.getPlayer();
-
-		int idxFound = seenReportedPlayers.indexOf(player.getName());
-
-		if (idxFound != -1)
-		{
-			seenReportedPlayers.remove(idxFound);
-			tileOverlay.setPlayersHaveChanged(true);
 		}
 	}
 
@@ -378,7 +346,6 @@ public class BotDetectorPlugin extends Plugin
 				}
 
 				updatePlayerData(player);
-				targetedPlayers.add(player);
 			}
 			else
 			{
@@ -437,20 +404,6 @@ public class BotDetectorPlugin extends Plugin
 		SwingUtilities.invokeLater(panel::updateUploads);
 	}
 
-	public void addSeenDetectedPlayer(String rsn)
-	{
-		if (!seenReportedPlayers.contains(rsn))
-		{
-			seenReportedPlayers.add(rsn);
-			tileOverlay.setPlayersHaveChanged(true);
-		}
-	}
-
-	public List<String> getSeenReportedPlayers()
-	{
-		return seenReportedPlayers;
-	}
-
 	private void updatePlayerData(String playerName)
 	{
 		SwingUtilities.invokeLater(() ->
@@ -490,39 +443,19 @@ public class BotDetectorPlugin extends Plugin
 		currPlayerID = id;
 	}
 
-	public int getCurrPlayerID()
-	{
-		return currPlayerID;
-	}
-
 	public void setCurrPrediction(Hashtable<String, String> predData)
 	{
 		Prediction pred = new Prediction();
-		pred.setPlayer_id(Integer.parseInt(predData.get("player_id")));
-		pred.setRsn(predData.get("player_name"));
+		pred.setPlayerId(Integer.parseInt(predData.get("player_id")));
+		pred.setDisplayName(predData.get("player_name"));
 		pred.setPredictionLabel(predData.get("prediction_label"));
 		pred.setConfidence(Float.parseFloat(predData.get("prediction_confidence")));
 
 		currPrediction = pred;
 	}
 
-	public Prediction getCurrPrediction()
-	{
-		return currPrediction;
-	}
-
-	public boolean isPlayerLoggedIn()
-	{
-		return playerLoggedIn;
-	}
-
 	public void setWorldType()
 	{
 		worldIsMembers = client.getWorldType().contains(WorldType.MEMBERS) ? 1 : 0;
-	}
-
-	public int getWorldIsMembers()
-	{
-		return worldIsMembers;
 	}
 }
