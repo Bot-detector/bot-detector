@@ -315,7 +315,7 @@ public class BotDetectorPanel extends PluginPanel
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				LinkBrowser.browse("https://github.com/Belieal/flipping-utilities");
+				LinkBrowser.browse("https://github.com/Ferrariic/Bot-Detector-Core-Files");
 			}
 
 			@Override

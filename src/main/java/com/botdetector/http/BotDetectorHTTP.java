@@ -62,7 +62,7 @@ public class BotDetectorHTTP
 	{
 	}
 
-	public void sendToServer(List<Player> detectedPlayers, int isManual, String currPlayer)
+	public void sendDetectedPlayers(List<Player> detectedPlayers, int isManual, String currPlayer)
 	{
 		playersToSubmit.addAll(detectedPlayers);
 
@@ -459,7 +459,7 @@ public class BotDetectorHTTP
 
 	private String getPlayersReported(String rsn)
 	{
-		List<Player> detected = plugin.detectedPlayers;
+		List<Player> detected = client.getPlayers();
 
 		Player matchedPlayer =
 			detected.stream()
