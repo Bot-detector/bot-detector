@@ -5,7 +5,6 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.Range;
 import net.runelite.client.config.Units;
-import java.awt.Color;
 
 @ConfigGroup(BotDetectorConfig.CONFIG_GROUP)
 public interface BotDetectorConfig extends Config
@@ -61,73 +60,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 5,
-		keyName = "enableHeatMap",
-		name = "Enable Heat Map",
-		description = "Enables a heat map overlay on top of the world map which shows activity intensity of the selected group."
-	)
-	default boolean enableHeatMap()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		position = 6,
-		keyName = "enablePlayerLabels",
-		name = "Enable Overhead Player Labels",
-		description = "Shows indicators of players' group memberships above their heads."
-	)
-	default boolean enablePlayerLabels()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		position = 7,
-		keyName = "playerLabelColor",
-		name = "Label Color",
-		description = "Color of players' group membership labels."
-	)
-	default Color getPlayerLabelColor()
-	{
-		return Color.BLACK;
-	}
-
-	@ConfigItem(
-		position = 8,
-		keyName = "enableTileLabel",
-		name = "Enable Color-Coded Tiles",
-		description = "Place color-coded tiles below players to show their group memberships."
-	)
-	default boolean enableTileLabels()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		position = 9,
-		keyName = "tileColor",
-		name = "Tile Color",
-		description = "Color of player tiles."
-	)
-	default Color getTileColor()
-	{
-		return new Color(220, 20, 60);
-	}
-
-	@ConfigItem(
 		position = 10,
-		keyName = "enableSpammerRecording",
-		name = "Add Option to Record Spammers",
-		description = "Save chat messages from those you mark as spammers to a txt file."
-	)
-	default boolean enableSpammerRecording()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		position = 11,
 		keyName = ANONYMOUS_REPORTING_KEY,
 		name = "Anonymous Reporting",
 		description = "Your RSN will not be sent with reports. Disable if you'd like to track your contributions."
@@ -138,7 +71,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 12,
+		position = 11,
 		keyName = "authToken",
 		name = "Authentication Token",
 		description = "If you have an auth token from the devs, enter it here for special features!."
