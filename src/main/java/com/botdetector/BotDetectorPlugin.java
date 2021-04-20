@@ -146,7 +146,7 @@ public class BotDetectorPlugin extends Plugin
 	{
 		if (detectedPlayers.size() > 0)
 		{
-			http.sendToServer(freshPlayers, 0, currPlayer);
+			http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
 			detectedPlayers.clear();
 			freshPlayers.clear();
 			detectedPlayerNames.clear();
@@ -205,7 +205,7 @@ public class BotDetectorPlugin extends Plugin
 		{
 			if (detectedPlayers.size() > 0)
 			{
-				http.sendToServer(freshPlayers, 0, currPlayer);
+				http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
 				freshPlayers.clear();
 			}
 			tickCount = 0;
@@ -235,7 +235,7 @@ public class BotDetectorPlugin extends Plugin
 
 				if (detectedPlayers.size() > 0)
 				{
-					http.sendToServer(freshPlayers, 0, currPlayer);
+					http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
 					freshPlayers.clear();
 					detectedPlayers.clear();
 				}
