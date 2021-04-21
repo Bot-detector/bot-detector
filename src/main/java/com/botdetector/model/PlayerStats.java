@@ -1,35 +1,23 @@
 package com.botdetector.model;
 
-public class PlayerStats {
+import com.google.gson.annotations.SerializedName;
+import lombok.Value;
 
-    public PlayerStats() {
-        this.reports = 0;
-        this.bans = 0;
-        this.accuracy = 0;
-    }
+@Value
+public class PlayerStats
+{
+	int reports;
+	int bans;
+	@SerializedName("possible_bans")
+	int possibleBans;
 
-    private int reports;
-    private int bans;
-    private int possible_bans;
-    private float accuracy;
-
-    public int getReports() {
-        return this.reports;
-    }
-
-    public int getBans() {
-        return this.bans;
-    }
-
-    public int getPossible_bans() { return this.possible_bans; }
-
-    public float getAccuracy() {
-
-        try {
-            return this.bans / this.reports;
-        }catch(Exception ArithmeticException) {
-            return 0;
-        }
-    }
+	public double getAccuracy()
+	{
+		if (reports > 0)
+		{
+			return bans / (double)reports;
+		}
+		return 0;
+	}
 
 }

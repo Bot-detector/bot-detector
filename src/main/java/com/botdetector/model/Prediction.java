@@ -1,41 +1,15 @@
 package com.botdetector.model;
 
-public class Prediction {
+import com.google.gson.annotations.SerializedName;
+import lombok.Data;
 
-    private int player_id;
-    private String rsn;
-    private String predictionLabel;
-    private float confidence;
-
-    public int getPlayer_id() {
-        return player_id;
-    }
-
-    public void setPlayer_id(int player_id) {
-        this.player_id = player_id;
-    }
-
-    public String getRsn() {
-        return rsn;
-    }
-
-    public void setRsn(String rsn) {
-        this.rsn = rsn;
-    }
-
-    public String getPredictionLabel() {
-        return predictionLabel;
-    }
-
-    public void setPredictionLabel(String predictionLabel) {
-        this.predictionLabel = predictionLabel;
-    }
-
-    public float getConfidence() {
-        return confidence;
-    }
-
-    public void setConfidence(float confidence) {
-        this.confidence = confidence;
-    }
+@Data
+public class Prediction
+{
+	@SerializedName("player_id")
+	private int playerId;
+	@SerializedName("rsn")
+	private String displayName;
+	private String predictionLabel;
+	private double confidence;
 }
