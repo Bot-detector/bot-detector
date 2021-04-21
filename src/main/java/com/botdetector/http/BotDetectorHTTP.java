@@ -78,7 +78,6 @@ public class BotDetectorHTTP
 			public void onFailure(Call call, IOException e)
 			{
 				plugin.pushNotification("Bot Detector: Player Name List Upload Failed.");
-				System.out.println("Send exception: " + e);
 			}
 
 			@Override
@@ -97,7 +96,6 @@ public class BotDetectorHTTP
 				}
 				else
 				{
-					System.out.println("Received bad reponse: " + response.code());
 				}
 
 				response.close();
@@ -192,7 +190,7 @@ public class BotDetectorHTTP
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				System.out.println("Failed to get player stats.");
+
 			}
 
 			@Override
@@ -209,7 +207,7 @@ public class BotDetectorHTTP
 				}
 				else
 				{
-					System.out.println("Bad player stats response: " + response.code());
+
 				}
 
 				response.close();
@@ -232,7 +230,7 @@ public class BotDetectorHTTP
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				System.out.println("Failed to get player stats.");
+
 			}
 
 			@Override
@@ -245,7 +243,7 @@ public class BotDetectorHTTP
 				}
 				else
 				{
-					System.out.println("Bad player stats response: " + response.code());
+
 				}
 
 				response.close();
@@ -268,7 +266,7 @@ public class BotDetectorHTTP
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				System.out.println("Failed to get times player has been reported.");
+
 			}
 
 			@Override
@@ -292,7 +290,7 @@ public class BotDetectorHTTP
 				}
 				else
 				{
-					System.out.println("Bad player times reported response: " + response.code());
+
 				}
 
 				response.close();
@@ -354,7 +352,6 @@ public class BotDetectorHTTP
 			public void onFailure(Call call, IOException e)
 			{
 				plugin.pushNotification("Report Failed");
-				System.out.println("Failure!!");
 				SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
 			}
 
@@ -363,13 +360,12 @@ public class BotDetectorHTTP
 			{
 				if (response.isSuccessful())
 				{
-					System.out.println("Success!!");
 					plugin.pushNotification("Thank you for your feedback!");
 
 				}
 				else
 				{
-					System.out.println("Failure!!");
+
 				}
 
 				SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
@@ -411,9 +407,7 @@ public class BotDetectorHTTP
 				}
 				else
 				{
-					//Verification failed, most likely to an incorrect code, but we don't want to push
-					//a notification.
-					System.out.println(response.code());
+
 				}
 
 				response.close();
@@ -451,8 +445,6 @@ public class BotDetectorHTTP
 			+ pred.getConfidence();
 
 		feedbackString += "}";
-
-		System.out.print(feedbackString);
 
 		return feedbackString;
 	}
@@ -510,8 +502,6 @@ public class BotDetectorHTTP
 			+ "\"";
 
 		playerString += "}";
-
-		System.out.println(playerString);
 
 		return playerString;
 	}

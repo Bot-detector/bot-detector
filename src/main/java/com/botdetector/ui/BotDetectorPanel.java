@@ -127,7 +127,6 @@ public class BotDetectorPanel extends PluginPanel
 		reportBtn.setToolTipText("Submit account as a probable offender.");
 		reportBtn.addActionListener(e ->
 		{
-			System.out.println("Reporting: " + currRSN);
 			BotDetectorPlugin.http.reportPlayer(currRSN);
 		});
 
@@ -272,8 +271,6 @@ public class BotDetectorPanel extends PluginPanel
 		{
 			statsPanel.add(anonymousWarning);
 		}
-		//TODO Have accuracy reflect manual reports only
-		//statsPanel.add(accuracy);
 
 		playerInfoPanel.add(dataTitle);
 		playerInfoPanel.add(playerName);
@@ -475,12 +472,9 @@ public class BotDetectorPanel extends PluginPanel
 		additionalPredictionsPanel.repaint();
 	}
 
-	//TODO Make the colors more dynamic in range
 	public String getPredictionColor(String pred_conf)
 	{
 		float conf = Float.parseFloat(pred_conf);
-
-		System.out.print("CONF: " + conf);
 
 		if (conf >= .8)
 		{
