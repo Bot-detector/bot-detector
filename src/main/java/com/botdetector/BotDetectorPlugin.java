@@ -1,5 +1,6 @@
 package com.botdetector;
 
+import com.botdetector.http.BotDetectorClient;
 import com.botdetector.http.BotDetectorHTTP;
 import com.botdetector.model.Prediction;
 import com.botdetector.ui.BotDetectorPanel;
@@ -79,6 +80,9 @@ public class BotDetectorPlugin extends Plugin
 	@Inject
 	private ChatMessageManager chatMessageManager;
 
+	@Inject
+	private BotDetectorClient detectorClient;
+
 	public static BotDetectorHTTP http;
 	public BotDetectorPanel panel;
 	private NavigationButton navButton;
@@ -117,7 +121,6 @@ public class BotDetectorPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
-
 		panel = injector.getInstance(BotDetectorPanel.class);
 		panel.init();
 		http = injector.getInstance(BotDetectorHTTP.class);
@@ -146,7 +149,7 @@ public class BotDetectorPlugin extends Plugin
 	{
 		if (detectedPlayers.size() > 0)
 		{
-			http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
+			//http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
 			detectedPlayers.clear();
 			freshPlayers.clear();
 			detectedPlayerNames.clear();
@@ -205,7 +208,7 @@ public class BotDetectorPlugin extends Plugin
 		{
 			if (detectedPlayers.size() > 0)
 			{
-				http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
+				//http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
 				freshPlayers.clear();
 			}
 
@@ -236,7 +239,7 @@ public class BotDetectorPlugin extends Plugin
 
 				if (detectedPlayers.size() > 0)
 				{
-					http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
+					//http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
 					freshPlayers.clear();
 					detectedPlayers.clear();
 				}
@@ -454,17 +457,18 @@ public class BotDetectorPlugin extends Plugin
 		currPlayerID = id;
 	}
 
-	public void setTicksToSend(int ticks) {
+	public void setTicksToSend(int ticks)
+	{
 		ticksToSend =  100 * Math.max(ticks, 5);
 	}
 
 	public void setCurrPrediction(Hashtable<String, String> predData)
 	{
-		Prediction pred = new Prediction();
-		pred.setPlayerId(Integer.parseInt(predData.get("player_id")));
-		pred.setDisplayName(predData.get("player_name"));
-		pred.setPredictionLabel(predData.get("prediction_label"));
-		pred.setConfidence(Float.parseFloat(predData.get("prediction_confidence")));
+		Prediction pred = new Prediction(Integer.parseInt(predData.get("player_id")),
+			predData.get("player_name"),
+			predData.get("prediction_label"),
+			Double.parseDouble(predData.get("prediction_confidence")),
+			null);
 
 		currPrediction = pred;
 	}

@@ -1,27 +1,44 @@
 package com.botdetector.model;
 
 import com.google.gson.annotations.SerializedName;
-import java.time.Instant;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Value;
+import net.runelite.api.coords.WorldPoint;
 
-@Data
+@Value
+@AllArgsConstructor
 public class PlayerSighting
 {
+	public PlayerSighting(String displayName, WorldPoint wp, boolean inMembersWorld, long timestamp)
+	{
+		this(displayName,
+			wp.getRegionID(),
+			wp.getX(),
+			wp.getY(),
+			wp.getPlane(),
+			inMembersWorld,
+			timestamp);
+	}
+
 	@SerializedName("reported")
-	String reported_name;
+	String displayName;
+
+	@SerializedName("region_id")
+	int regionID;
 
 	@SerializedName("x")
-	int x_coordinate;
+	int regionX;
 
 	@SerializedName("y")
-	int y_coordinate;
+	int regionY;
 
 	@SerializedName("z")
 	int plane;
 
-	boolean on_members_world;
+	@SerializedName("on_members_world")
+	boolean inMembersWorld;
 
 	@SerializedName("ts")
-	Instant timestamp;
+	long timestamp;
 
 }
