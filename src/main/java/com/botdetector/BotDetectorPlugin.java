@@ -353,8 +353,6 @@ public class BotDetectorPlugin extends Plugin
 				//If they have then we have their approximate location that we can report with.
 				String targetRSN = Text.removeTags(event.getMenuTarget());
 
-				// System.out.println("Targeted RSN: " + targetRSN);
-
 				Player target = findPlayerInCache(targetRSN);
 
 				if (target == null)
@@ -366,11 +364,6 @@ public class BotDetectorPlugin extends Plugin
 					updatePlayerData(target);
 				}
 			}
-		}
-		else if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-			&& event.getMenuOption().equals(MASS_DETECT))
-		{
-			//TODO Mass Detection
 		}
 	}
 
