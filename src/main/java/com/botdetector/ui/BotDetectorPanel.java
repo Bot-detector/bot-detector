@@ -127,7 +127,6 @@ public class BotDetectorPanel extends PluginPanel
 		reportBtn.setToolTipText("Submit account as a probable offender.");
 		reportBtn.addActionListener(e ->
 		{
-			System.out.println("Reporting: " + currRSN);
 			BotDetectorPlugin.http.reportPlayer(currRSN);
 		});
 
@@ -476,8 +475,6 @@ public class BotDetectorPanel extends PluginPanel
 	public String getPredictionColor(String pred_conf)
 	{
 		float conf = Float.parseFloat(pred_conf);
-
-		System.out.print("CONF: " + conf);
 
 		if (conf >= .8)
 		{

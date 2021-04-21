@@ -353,8 +353,6 @@ public class BotDetectorPlugin extends Plugin
 				//If they have then we have their approximate location that we can report with.
 				String targetRSN = Text.removeTags(event.getMenuTarget());
 
-				// System.out.println("Targeted RSN: " + targetRSN);
-
 				Player target = findPlayerInCache(targetRSN);
 
 				if (target == null)
