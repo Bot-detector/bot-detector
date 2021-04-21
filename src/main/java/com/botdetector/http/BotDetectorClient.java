@@ -13,6 +13,7 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -121,16 +122,9 @@ public class BotDetectorClient
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
-				if (response.isSuccessful())
-				{
-					future.complete(gson.fromJson(response.body().string(), Prediction.class));
-				}
-				else
-				{
-					future.complete(null);
-				}
+				future.complete(processResponse(gson, response, Prediction.class));
 
 				response.close();
 			}
@@ -158,22 +152,41 @@ public class BotDetectorClient
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
-				if (response.isSuccessful())
-				{
-					future.complete(gson.fromJson(response.body().string(), PlayerStats.class));
-				}
-				else
-				{
-					future.complete(null);
-				}
+				future.complete(processResponse(gson, response, PlayerStats.class));
 
 				response.close();
 			}
 		});
 
 		return future;
+	}
+
+	private <T> T processResponse(Gson gson, Response response, Class<T> ofT)
+	{
+		if (!response.isSuccessful())
+		{
+			log.error("Unsuccessful client response, '"
+				+ response.request().url()
+				+ "' returned a " + response.code() + ".");
+			return null;
+		}
+
+		try
+		{
+			return gson.fromJson(response.body().string(), ofT);
+		}
+		catch (JsonSyntaxException je)
+		{
+			log.error("Error parsing client response.", je);
+		}
+		catch (IOException ie)
+		{
+			log.error("Invalid data format from client.", ie);
+		}
+
+		return null;
 	}
 
 	@Value
