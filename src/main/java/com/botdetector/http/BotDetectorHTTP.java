@@ -62,7 +62,7 @@ public class BotDetectorHTTP
 	{
 	}
 
-	public void sendDetectedPlayers(List<Player> detectedPlayers, int isManual, String currPlayer)
+	public void sendDetectedPlayers(List<Player> detectedPlayers, int isManual, int currPlayerID)
 	{
 		playersToSubmit.addAll(detectedPlayers);
 
