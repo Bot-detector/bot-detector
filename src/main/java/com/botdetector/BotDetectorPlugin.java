@@ -11,6 +11,7 @@ import java.util.Hashtable;
 import java.util.Set;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.MenuAction;
@@ -25,6 +26,10 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.Notifier;
+import net.runelite.client.chat.ChatColorType;
+import net.runelite.client.chat.ChatMessageBuilder;
+import net.runelite.client.chat.ChatMessageManager;
+import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.menus.MenuManager;
@@ -34,7 +39,6 @@ import net.runelite.client.events.ConfigChanged;
 import javax.inject.Inject;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
-import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
@@ -73,7 +77,7 @@ public class BotDetectorPlugin extends Plugin
 	private ClientToolbar clientToolbar;
 
 	@Inject
-	private OverlayManager overlayManager;
+	private ChatMessageManager chatMessageManager;
 
 	public static BotDetectorHTTP http;
 	public BotDetectorPanel panel;
@@ -103,21 +107,20 @@ public class BotDetectorPlugin extends Plugin
 	private boolean playerLoggedIn = false;
 
 	@Getter
-	private String currPlayer;
+	private String currPlayer = "";
 	@Getter
 	private int currPlayerID;
 
 	private int tickCount = 0;
+	private int ticksToSend;
 
 	@Override
 	protected void startUp()
 	{
-		currPlayer = "";
 
 		panel = injector.getInstance(BotDetectorPanel.class);
 		panel.init();
 		http = injector.getInstance(BotDetectorHTTP.class);
-
 
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
 
@@ -134,6 +137,8 @@ public class BotDetectorPlugin extends Plugin
 		{
 			menuManager.addPlayerMenuItem(DETECT);
 		}
+
+		setTicksToSend(config.autoSendMinutes());
 	}
 
 	@Override
@@ -179,6 +184,11 @@ public class BotDetectorPlugin extends Plugin
 		{
 			SwingUtilities.invokeLater(panel::toggleAnonymousWarning);
 		}
+
+		if (event.getKey().equals(BotDetectorConfig.AUTO_SEND_MINUTES))
+		{
+
+		}
 	}
 
 	@Subscribe
@@ -189,17 +199,16 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		int timeSend = 100 * Math.max(config.autoSendMinutes(), 5);
-
 		tickCount++;
 
-		if (tickCount > timeSend)
+		if (tickCount > ticksToSend)
 		{
 			if (detectedPlayers.size() > 0)
 			{
 				http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
 				freshPlayers.clear();
 			}
+
 			tickCount = 0;
 		}
 	}
@@ -423,17 +432,30 @@ public class BotDetectorPlugin extends Plugin
 		});
 	}
 
-	public void pushNotification(String msg)
+	public void sendChatNotification(String msg)
 	{
-		if (config.enableNotificatiions())
+		if (config.enableChatNotificatiions() && playerLoggedIn)
 		{
-			notifier.notify(msg);
+			final String message = new ChatMessageBuilder()
+				.append(ChatColorType.HIGHLIGHT)
+				.append(msg)
+				.build();
+
+			chatMessageManager.queue(
+				QueuedMessage.builder()
+					.type(ChatMessageType.CONSOLE)
+					.runeLiteFormattedMessage(message)
+					.build());
 		}
 	}
 
 	public void setCurrPlayerID(int id)
 	{
 		currPlayerID = id;
+	}
+
+	public void setTicksToSend(int ticks) {
+		ticksToSend =  100 * Math.max(ticks, 5);
 	}
 
 	public void setCurrPrediction(Hashtable<String, String> predData)

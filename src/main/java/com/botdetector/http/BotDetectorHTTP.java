@@ -77,7 +77,7 @@ public class BotDetectorHTTP
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				plugin.pushNotification("Bot Detector: Player Name List Upload Failed.");
+				plugin.sendChatNotification("Bot Detector: Player Name List Upload Failed.");
 			}
 
 			@Override
@@ -85,11 +85,11 @@ public class BotDetectorHTTP
 			{
 				if (response.isSuccessful())
 				{
-					plugin.pushNotification("Bot Detector: " +
+					plugin.sendChatNotification("Bot Detector: " +
 						playersToSubmit.size() +
 						" Player Names Uploaded Successfully!");
 
-					plugin.addNumNamesSubmitted(playersToSubmit.size());
+					//plugin.addNumNamesSubmitted(playersToSubmit.size());
 					getPlayerStats(currPlayer);
 
 					playersToSubmit.clear();
@@ -118,7 +118,7 @@ public class BotDetectorHTTP
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				plugin.pushNotification("Could not locate player data.");
+				plugin.sendChatNotification("Could not locate player data.");
 				plugin.panel.updatePlayerData("Server Error", true);
 			}
 
@@ -166,7 +166,7 @@ public class BotDetectorHTTP
 				}
 				else
 				{
-					plugin.pushNotification("Could not locate player data.");
+					plugin.sendChatNotification("Could not locate player data.");
 					plugin.panel.updatePlayerData("Server Error", true);
 				}
 
@@ -311,7 +311,7 @@ public class BotDetectorHTTP
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				plugin.pushNotification("Report Failed");
+				plugin.sendChatNotification("Report Failed");
 				SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
 			}
 
@@ -321,7 +321,7 @@ public class BotDetectorHTTP
 				if (response.isSuccessful())
 				{
 
-					plugin.pushNotification("Player reported successfully!");
+					plugin.sendChatNotification("Player reported successfully!");
 
 					plugin.addNumNamesSubmitted(playersToSubmit.size());
 					//plugin.addSeenDetectedPlayer(rsn);
@@ -351,7 +351,7 @@ public class BotDetectorHTTP
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				plugin.pushNotification("Report Failed");
+				plugin.sendChatNotification("Report Failed");
 				SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
 			}
 
@@ -360,7 +360,7 @@ public class BotDetectorHTTP
 			{
 				if (response.isSuccessful())
 				{
-					plugin.pushNotification("Thank you for your feedback!");
+					plugin.sendChatNotification("Thank you for your feedback!");
 
 				}
 				else
@@ -395,7 +395,7 @@ public class BotDetectorHTTP
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				plugin.pushNotification("Verification Failed.");
+				plugin.sendChatNotification("Verification Failed.");
 			}
 
 			@Override
@@ -403,7 +403,7 @@ public class BotDetectorHTTP
 			{
 				if (response.isSuccessful())
 				{
-					plugin.pushNotification(rsn + " verified successfully!");
+					plugin.sendChatNotification(rsn + " verified successfully!");
 				}
 				else
 				{

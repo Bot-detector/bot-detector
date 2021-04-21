@@ -10,6 +10,7 @@ import net.runelite.client.config.Units;
 public interface BotDetectorConfig extends Config
 {
 	String CONFIG_GROUP = "botdetector";
+	String AUTO_SEND_MINUTES = "autoSendMinutes";
 	String ADD_DETECT_OPTION_KEY = "addDetectOption";
 	String ANONYMOUS_REPORTING_KEY = "enableAnonymousReporting";
 
@@ -26,7 +27,7 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 2,
-		keyName = "intConfig",
+		keyName = AUTO_SEND_MINUTES,
 		name = "Send Names Every",
 		description = "Sets the amount of time between automatic name uploads."
 	)
@@ -39,11 +40,11 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 3,
-		keyName = "enableNotifications",
-		name = "Enable Notifications",
+		keyName = "enableChatNotifications",
+		name = "Enable Chat Notifications",
 		description = "Toggle notifications for when player names are submitted."
 	)
-	default boolean enableNotificatiions()
+	default boolean enableChatNotificatiions()
 	{
 		return false;
 	}
