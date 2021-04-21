@@ -90,7 +90,7 @@ public class BotDetectorHTTP
 						" Player Names Uploaded Successfully!");
 
 					//plugin.addNumNamesSubmitted(playersToSubmit.size());
-					getPlayerStats(currPlayer);
+					//getPlayerStats(currPlayer);
 
 					playersToSubmit.clear();
 				}
