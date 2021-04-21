@@ -1,6 +1,7 @@
 package com.botdetector.http;
 
 import com.botdetector.model.PlayerSighting;
+import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
@@ -12,6 +13,7 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -120,16 +122,9 @@ public class BotDetectorClient
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
-				if (response.isSuccessful())
-				{
-					future.complete(gson.fromJson(response.body().string(), Prediction.class));
-				}
-				else
-				{
-					future.complete(null);
-				}
+				future.complete(processResponse(gson, response, Prediction.class));
 
 				response.close();
 			}
@@ -138,6 +133,61 @@ public class BotDetectorClient
 		return future;
 	}
 
+	public CompletableFuture<PlayerStats> requestPlayerStats(String displayName)
+	{
+		Gson gson = gsonBuilder.create();
+
+		Request request = new Request.Builder()
+			.url(PLAYER_STATS_URL + displayName.replace(" ", "%20"))
+			.build();
+
+		CompletableFuture<PlayerStats> future = new CompletableFuture<>();
+		okHttpClient.newCall(request).enqueue(new Callback()
+		{
+			@Override
+			public void onFailure(Call call, IOException e)
+			{
+				log.error("Error obtaining player stats data.", e);
+				future.complete(null);
+			}
+
+			@Override
+			public void onResponse(Call call, Response response)
+			{
+				future.complete(processResponse(gson, response, PlayerStats.class));
+
+				response.close();
+			}
+		});
+
+		return future;
+	}
+
+	private <T> T processResponse(Gson gson, Response response, Class<T> ofT)
+	{
+		if (!response.isSuccessful())
+		{
+			log.error("Unsuccessful client response, '"
+				+ response.request().url()
+				+ "' returned a " + response.code() + ".");
+			return null;
+		}
+
+		try
+		{
+			return gson.fromJson(response.body().string(), ofT);
+		}
+		catch (JsonSyntaxException je)
+		{
+			log.error("Error parsing client response.", je);
+		}
+		catch (IOException ie)
+		{
+			log.error("Invalid data format from client.", ie);
+		}
+
+		return null;
+	}
 
 	@Value
 	@AllArgsConstructor
