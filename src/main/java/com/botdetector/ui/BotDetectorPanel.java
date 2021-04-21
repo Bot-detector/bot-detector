@@ -272,8 +272,6 @@ public class BotDetectorPanel extends PluginPanel
 		{
 			statsPanel.add(anonymousWarning);
 		}
-		//TODO Have accuracy reflect manual reports only
-		//statsPanel.add(accuracy);
 
 		playerInfoPanel.add(dataTitle);
 		playerInfoPanel.add(playerName);
@@ -475,7 +473,6 @@ public class BotDetectorPanel extends PluginPanel
 		additionalPredictionsPanel.repaint();
 	}
 
-	//TODO Make the colors more dynamic in range
 	public String getPredictionColor(String pred_conf)
 	{
 		float conf = Float.parseFloat(pred_conf);

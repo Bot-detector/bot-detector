@@ -367,11 +367,6 @@ public class BotDetectorPlugin extends Plugin
 				}
 			}
 		}
-		else if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-			&& event.getMenuOption().equals(MASS_DETECT))
-		{
-			//TODO Mass Detection
-		}
 	}
 
 	private Player findPlayerInCache(String rsn)
