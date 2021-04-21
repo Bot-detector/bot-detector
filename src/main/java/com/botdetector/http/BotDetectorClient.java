@@ -1,6 +1,7 @@
 package com.botdetector.http;
 
 import com.botdetector.model.PlayerSighting;
+import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
@@ -138,6 +139,42 @@ public class BotDetectorClient
 		return future;
 	}
 
+	public CompletableFuture<PlayerStats> requestPlayerStats(String displayName)
+	{
+		Gson gson = gsonBuilder.create();
+
+		Request request = new Request.Builder()
+			.url(PLAYER_STATS_URL + displayName.replace(" ", "%20"))
+			.build();
+
+		CompletableFuture<PlayerStats> future = new CompletableFuture<>();
+		okHttpClient.newCall(request).enqueue(new Callback()
+		{
+			@Override
+			public void onFailure(Call call, IOException e)
+			{
+				log.error("Error obtaining player stats data.", e);
+				future.complete(null);
+			}
+
+			@Override
+			public void onResponse(Call call, Response response) throws IOException
+			{
+				if (response.isSuccessful())
+				{
+					future.complete(gson.fromJson(response.body().string(), PlayerStats.class));
+				}
+				else
+				{
+					future.complete(null);
+				}
+
+				response.close();
+			}
+		});
+
+		return future;
+	}
 
 	@Value
 	@AllArgsConstructor
