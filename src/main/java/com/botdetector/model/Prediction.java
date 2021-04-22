@@ -15,6 +15,6 @@ public class Prediction
 	String predictionLabel;
 	@SerializedName("prediction_confidence")
 	double confidence;
-	@SerializedName("secondary_predictions")
+	@SerializedName("predictions_breakdown")
 	Map<String, Double> secondaryPredictions;
 }
