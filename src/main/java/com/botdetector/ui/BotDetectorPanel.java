@@ -2,6 +2,7 @@ package com.botdetector.ui;
 
 import com.botdetector.BotDetectorPlugin;
 import com.botdetector.http.BotDetectorClient;
+import com.botdetector.model.PlayerStats;
 import com.google.common.collect.ImmutableList;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -75,6 +76,13 @@ public class BotDetectorPanel extends PluginPanel
 	private final BotDetectorClient detectorClient;
 
 	private boolean searchBarLoading;
+
+	// Player Stats
+	private JLabel playerStatsUploadedNamesLabel;
+	private JLabel playerStatsReportsLabel;
+	private JLabel playerStatsPossibleBansLabel;
+	private JLabel playerStatsConfirmedBansLabel;
+	private JLabel playerStatsAnonymousWarningLabel;
 
 	@Inject
 	public BotDetectorPanel(@Nullable Client client, BotDetectorPlugin plugin, BotDetectorClient detectorClient)
@@ -162,37 +170,85 @@ public class BotDetectorPanel extends PluginPanel
 
 		constraints.gridx = 0;
 		constraints.gridy = 0;
-		constraints.weightx = .5;
-		constraints.weighty = 1;
 		constraints.ipady = 5;
+		constraints.gridwidth = 2;
+		constraints.weightx = 1;
 		reportingStatsPanel.add(label, constraints);
 
-		label = new JLabel("Names Uploaded:");
+		label = new JLabel("Names Uploaded: ");
 		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 
 		constraints.gridy = 1;
 		constraints.gridy++;
 		constraints.ipady = 3;
+		constraints.gridwidth = 1;
+		constraints.weightx = 0;
 		reportingStatsPanel.add(label, constraints);
 
-		label = new JLabel("Reports Made:");
+		playerStatsUploadedNamesLabel = new JLabel();
+		playerStatsUploadedNamesLabel.setFont(SMALL_FONT);
+		playerStatsUploadedNamesLabel.setForeground(TEXT_COLOR);
+		label.setFont(NORMAL_FONT);
+		label.setForeground(TEXT_COLOR);
+		constraints.gridx = 1;
+		constraints.weightx = 1;
+		reportingStatsPanel.add(playerStatsUploadedNamesLabel, constraints);
+
+		label = new JLabel("Reports Made: ");
 		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		constraints.gridy++;
+		constraints.gridx = 0;
+		constraints.weightx = 0;
 		reportingStatsPanel.add(label, constraints);
 
-		label = new JLabel("Confirmed Bans:");
+		playerStatsReportsLabel = new JLabel();
+		playerStatsReportsLabel.setFont(SMALL_FONT);
+		playerStatsReportsLabel.setForeground(TEXT_COLOR);
+		constraints.gridx = 1;
+		constraints.weightx = 1;
+		reportingStatsPanel.add(playerStatsReportsLabel, constraints);
+
+		label = new JLabel("Confirmed Bans: ");
 		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		constraints.gridy++;
+		constraints.gridx = 0;
+		constraints.weightx = 0;
 		reportingStatsPanel.add(label, constraints);
 
-		label = new JLabel("Probable Bans:");
+		playerStatsConfirmedBansLabel = new JLabel();
+		playerStatsConfirmedBansLabel.setFont(SMALL_FONT);
+		playerStatsConfirmedBansLabel.setForeground(TEXT_COLOR);
+		constraints.gridx = 1;
+		constraints.weightx = 1;
+		reportingStatsPanel.add(playerStatsConfirmedBansLabel, constraints);
+
+		label = new JLabel("Probable Bans: ");
 		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		constraints.gridy++;
+		constraints.gridx = 0;
+		constraints.weightx = 0;
 		reportingStatsPanel.add(label, constraints);
+
+		playerStatsPossibleBansLabel = new JLabel();
+		playerStatsPossibleBansLabel.setFont(SMALL_FONT);
+		playerStatsPossibleBansLabel.setForeground(TEXT_COLOR);
+		constraints.gridx = 1;
+		constraints.weightx = 1;
+		reportingStatsPanel.add(playerStatsPossibleBansLabel, constraints);
+
+		playerStatsAnonymousWarningLabel = new JLabel(" Anonymous Reporting Active");
+		playerStatsAnonymousWarningLabel.setIcon(Icons.WARNING_ICON);
+		playerStatsAnonymousWarningLabel.setToolTipText("Your reports will not be added to your tallies.");
+		constraints.gridy++;
+		constraints.gridx = 0;
+		constraints.weightx = 1;
+		constraints.gridwidth = 2;
+		constraints.ipady = 5;
+		reportingStatsPanel.add(playerStatsAnonymousWarningLabel, constraints);
 
 		return reportingStatsPanel;
 	}
@@ -299,19 +355,30 @@ public class BotDetectorPanel extends PluginPanel
 		return predictionBreakdownPanel;
 	}
 
-	private void updateReportStatsPanel()
+	public void setNamesUploaded(int num)
 	{
-		//TODO Update contribution stats after names upload/manual report.
+		playerStatsUploadedNamesLabel.setText(String.valueOf(num));
 	}
 
-	private void updatePredictionPanel()
+	public void setPlayerStats(PlayerStats ps)
 	{
-		//TODO Add prediction upon prediction receipt.
+		if (ps != null)
+		{
+			playerStatsReportsLabel.setText(String.valueOf(ps.getReports()));
+			playerStatsConfirmedBansLabel.setText(String.valueOf(ps.getBans()));
+			playerStatsPossibleBansLabel.setText(String.valueOf(ps.getPossibleBans()));
+		}
+		else
+		{
+			playerStatsReportsLabel.setText("");
+			playerStatsConfirmedBansLabel.setText("");
+			playerStatsPossibleBansLabel.setText("");
+		}
 	}
 
-	private void updatePredictionBreakdownPanel()
+	public void setAnonymousWarning(boolean warn)
 	{
-		//TODO Add breakdown upon prediction receipt.
+		playerStatsAnonymousWarningLabel.setVisible(warn);
 	}
 
 	public void lookupPlayer(String rsn)

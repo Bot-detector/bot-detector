@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Value;
@@ -50,8 +51,10 @@ public class BotDetectorClient
 	private static final String FEEDBACK_URL = BASE_URL + "/plugin/predictionfeedback/";
 	private static final String VERIFY_DISCORD_URL = BASE_URL + "/site/discord_user/";
 
-	@Inject
-	private OkHttpClient okHttpClient;
+	public static OkHttpClient okHttpClient = new OkHttpClient.Builder()
+		.connectTimeout(30, TimeUnit.SECONDS)
+		.readTimeout(30, TimeUnit.SECONDS)
+		.build();
 
 	@Inject
 	private GsonBuilder gsonBuilder;

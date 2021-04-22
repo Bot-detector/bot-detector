@@ -18,6 +18,7 @@ import java.util.Map;
 import javax.swing.SwingUtilities;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.Player;
@@ -65,7 +66,7 @@ public class BotDetectorPlugin extends Plugin
 	private static final String CODE_COMMAND_STRING = "code";
 
 	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
-	private static final int REFRESH_PLAYER_STATS_SCHEDULE_SECONDS = 300;
+	private static final int REFRESH_PLAYER_STATS_SCHEDULE_SECONDS = 60;
 
 	private static final String ANONYMOUS_USER_NAME = "AnonymousUser";
 
@@ -99,6 +100,7 @@ public class BotDetectorPlugin extends Plugin
 
 	private Instant timeToAutoSend;
 	private String loggedPlayerName;
+	private int namesUploaded;
 
 	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	private final Map<String, PlayerSighting> persistentSightings = new HashMap<>();
@@ -107,6 +109,18 @@ public class BotDetectorPlugin extends Plugin
 	protected void startUp()
 	{
 		panel = injector.getInstance(BotDetectorPanel.class);
+		SwingUtilities.invokeLater(() ->
+		{
+			panel.setAnonymousWarning(config.enableAnonymousReporting());
+			panel.setNamesUploaded(0);
+		});
+
+
+		if (client.getGameState() == GameState.LOGGED_IN)
+		{
+			loggedPlayerName = client.getUsername();
+			refreshPlayerStats();
+		}
 
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
 
@@ -139,6 +153,8 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		clientToolbar.removeNavigation(navButton);
+
+		namesUploaded = 0;
 	}
 
 	private void updateTimeToAutoSend()
@@ -189,6 +205,8 @@ public class BotDetectorPlugin extends Plugin
 			{
 				if (b)
 				{
+					namesUploaded += uniqueNames;
+					SwingUtilities.invokeLater(() -> panel.setNamesUploaded(namesUploaded));
 					sendChatNotification("Successfully sent " + numReports +
 						" reports for " + uniqueNames + " different players.");
 				}
@@ -216,8 +234,14 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		// TODO: Update panel with player stats
-		System.out.println("SHOULD UPDATE STATS!");
+		detectorClient.requestPlayerStats(loggedPlayerName)
+			.whenComplete((ps, ex) ->
+			{
+				if (ps != null)
+				{
+					SwingUtilities.invokeLater(() -> panel.setPlayerStats(ps));
+				}
+			});
 	}
 
 	@Subscribe
@@ -241,7 +265,7 @@ public class BotDetectorPlugin extends Plugin
 
 		if (event.getKey().equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
 		{
-			//SwingUtilities.invokeLater(panel::toggleAnonymousWarning);
+			SwingUtilities.invokeLater(() -> panel.setAnonymousWarning(config.enableAnonymousReporting()));
 		}
 
 		if (event.getKey().equals(BotDetectorConfig.AUTO_SEND_MINUTES))
@@ -269,6 +293,7 @@ public class BotDetectorPlugin extends Plugin
 					flushPlayersToClient(false);
 					persistentSightings.clear();
 					loggedPlayerName = null;
+					SwingUtilities.invokeLater(() -> panel.setPlayerStats(null));
 				}
 				break;
 		}
