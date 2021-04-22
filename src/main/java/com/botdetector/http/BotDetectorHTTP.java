@@ -2,7 +2,6 @@ package com.botdetector.http;
 
 import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
-import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -13,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
-import javax.swing.SwingUtilities;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
@@ -119,7 +117,7 @@ public class BotDetectorHTTP
 			public void onFailure(Call call, IOException e)
 			{
 				plugin.sendChatNotification("Could not locate player data.");
-				plugin.panel.updatePlayerData("Server Error", true);
+				//plugin.panel.updatePlayerData("Server Error", true);
 			}
 
 			@Override
@@ -140,34 +138,34 @@ public class BotDetectorHTTP
 								.getAsJsonArray()
 						);
 
-					SwingUtilities.invokeLater(() -> plugin.panel.updatePlayerData(primaryPredictionData, false));
-					SwingUtilities.invokeLater(() -> plugin.panel.updateAdditionalPredictions(secondaryPredictionData, false));
+					//SwingUtilities.invokeLater(() -> plugin.panel.updatePlayerData(primaryPredictionData, false));
+					//SwingUtilities.invokeLater(() -> plugin.panel.updateAdditionalPredictions(secondaryPredictionData, false));
 
 					if (!config.enableAnonymousReporting() && plugin.isPlayerLoggedIn())
 					{
 						if ((jObject.get("player_id").getAsInt() > 0))
 						{
-							plugin.panel.addFeedbackButtons();
+							//plugin.panel.addFeedbackButtons();
 						}
 						else
 						{
-							plugin.panel.removeFeedbackButtons();
+							//plugin.panel.removeFeedbackButtons();
 						}
 
 						if (reportable)
 						{
-							plugin.panel.addReportButtons();
+							//plugin.panel.addReportButtons();
 						}
 						else
 						{
-							plugin.panel.removeReportButtons();
+							//plugin.panel.removeReportButtons();
 						}
 					}
 				}
 				else
 				{
 					plugin.sendChatNotification("Could not locate player data.");
-					plugin.panel.updatePlayerData("Server Error", true);
+					//plugin.panel.updatePlayerData("Server Error", true);
 				}
 
 				response.close();
@@ -238,8 +236,8 @@ public class BotDetectorHTTP
 			{
 				if (response.isSuccessful())
 				{
-					plugin.panel.setPlayerStats(gson.fromJson(response.body().string(),
-						PlayerStats.class));
+					//plugin.panel.setPlayerStats(gson.fromJson(response.body().string(),
+					//	PlayerStats.class));
 				}
 				else
 				{
@@ -312,7 +310,7 @@ public class BotDetectorHTTP
 			public void onFailure(Call call, IOException e)
 			{
 				plugin.sendChatNotification("Report Failed");
-				SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
+				//SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
 			}
 
 			@Override
@@ -326,13 +324,12 @@ public class BotDetectorHTTP
 					plugin.addNumNamesSubmitted(playersToSubmit.size());
 					//plugin.addSeenDetectedPlayer(rsn);
 
-					plugin.panel.updatePlayerStats();
+					//plugin.panel.updatePlayerStats();
 
 					playersToSubmit.clear();
 				}
 
-				// TODO: Cache player location on our own for better success rates.
-				SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
+				//SwingUtilities.invokeLater(plugin.panel::removeReportButtons);
 				response.close();
 			}
 		});
@@ -352,7 +349,7 @@ public class BotDetectorHTTP
 			public void onFailure(Call call, IOException e)
 			{
 				plugin.sendChatNotification("Report Failed");
-				SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
+				//SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
 			}
 
 			@Override
@@ -368,7 +365,7 @@ public class BotDetectorHTTP
 
 				}
 
-				SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
+				//SwingUtilities.invokeLater(plugin.panel::removeFeedbackButtons);
 				response.close();
 			}
 		});

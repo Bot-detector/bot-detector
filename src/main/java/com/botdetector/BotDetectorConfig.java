@@ -61,7 +61,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 10,
+		position = 5,
 		keyName = ANONYMOUS_REPORTING_KEY,
 		name = "Anonymous Reporting",
 		description = "Your RSN will not be sent with reports. Disable if you'd like to track your contributions."
@@ -72,7 +72,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 11,
+		position = 6,
 		keyName = "authToken",
 		name = "Authentication Token",
 		description = "If you have an auth token from the devs, enter it here for special features!."

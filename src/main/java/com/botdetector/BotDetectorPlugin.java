@@ -26,7 +26,6 @@ import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.Notifier;
 import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatMessageBuilder;
 import net.runelite.client.chat.ChatMessageManager;
@@ -55,18 +54,13 @@ import net.runelite.client.util.ImageUtil;
 )
 public class BotDetectorPlugin extends Plugin
 {
-
 	private static final String DETECT = "Detect";
-	private static final String MASS_DETECT = "Mass Detect";
 	private static final String KICK_OPTION = "Kick";
 	private static final ImmutableList<String> AFTER_OPTIONS =
 		ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
 
 	@Inject
 	private Client client;
-
-	@Inject
-	private Notifier notifier;
 
 	@Inject
 	private MenuManager menuManager;
@@ -83,8 +77,8 @@ public class BotDetectorPlugin extends Plugin
 	@Inject
 	private BotDetectorClient detectorClient;
 
-	public static BotDetectorHTTP http;
-	public BotDetectorPanel panel;
+	private BotDetectorHTTP http;
+	private BotDetectorPanel panel;
 	private NavigationButton navButton;
 
 	@Provides
@@ -122,7 +116,7 @@ public class BotDetectorPlugin extends Plugin
 	protected void startUp()
 	{
 		panel = injector.getInstance(BotDetectorPanel.class);
-		panel.init();
+		//panel.initMasterPanel();
 		http = injector.getInstance(BotDetectorHTTP.class);
 
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
@@ -185,7 +179,7 @@ public class BotDetectorPlugin extends Plugin
 
 		if (event.getKey().equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
 		{
-			SwingUtilities.invokeLater(panel::toggleAnonymousWarning);
+			//SwingUtilities.invokeLater(panel::toggleAnonymousWarning);
 		}
 
 		if (event.getKey().equals(BotDetectorConfig.AUTO_SEND_MINUTES))
@@ -235,7 +229,7 @@ public class BotDetectorPlugin extends Plugin
 				playerLoggedIn = false;
 				tickCount = 0;
 
-				SwingUtilities.invokeLater(panel::resetPlayerStats);
+				//SwingUtilities.invokeLater(panel::resetPlayerStats);
 
 				if (detectedPlayers.size() > 0)
 				{
@@ -406,7 +400,7 @@ public class BotDetectorPlugin extends Plugin
 	public void addNumNamesSubmitted(int n)
 	{
 		numNamesSubmitted += n;
-		SwingUtilities.invokeLater(panel::updateUploads);
+		//SwingUtilities.invokeLater(panel::updateUploads);
 	}
 
 	private void updatePlayerData(String playerName)
@@ -418,7 +412,7 @@ public class BotDetectorPlugin extends Plugin
 				navButton.getOnSelect().run();
 			}
 
-			panel.lookupPlayer(playerName, false);
+			//panel.lookupPlayer(playerName, false);
 		});
 	}
 
@@ -431,7 +425,7 @@ public class BotDetectorPlugin extends Plugin
 				navButton.getOnSelect().run();
 			}
 
-			panel.lookupPlayer(player.getName(), true);
+			//panel.lookupPlayer(player.getName(), true);
 		});
 	}
 
