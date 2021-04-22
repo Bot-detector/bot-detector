@@ -1,27 +1,27 @@
 package com.botdetector;
 
 import com.botdetector.http.BotDetectorClient;
-import com.botdetector.http.BotDetectorHTTP;
-import com.botdetector.model.Prediction;
+import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Set;
+import com.google.common.collect.Table;
+import java.awt.image.BufferedImage;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.SwingUtilities;
-import lombok.Getter;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
-import net.runelite.api.GameState;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.Player;
 import net.runelite.api.WorldType;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
@@ -37,14 +37,12 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.events.ConfigChanged;
 import javax.inject.Inject;
+import net.runelite.client.task.Schedule;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
-import java.awt.image.BufferedImage;
-import java.util.List;
-import java.util.stream.Collectors;
-import net.runelite.client.util.ImageUtil;
 
 @PluginDescriptor(
 	name = "Bot Detector",
@@ -58,6 +56,12 @@ public class BotDetectorPlugin extends Plugin
 	private static final String KICK_OPTION = "Kick";
 	private static final ImmutableList<String> AFTER_OPTIONS =
 		ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
+
+	private static final char CODE_COMMAND_INDICATOR = '!';
+	private static final String CODE_COMMAND_STRING = "code";
+
+	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
+	private static final int REFRESH_PLAYER_STATS_SCHEDULE_SECONDS = 300;
 
 	@Inject
 	private Client client;
@@ -77,8 +81,10 @@ public class BotDetectorPlugin extends Plugin
 	@Inject
 	private BotDetectorClient detectorClient;
 
-	private BotDetectorHTTP http;
-	private BotDetectorPanel panel;
+	// TODO: Public temporarily so this compiles (because of BotDetectorHTTP)
+	@Inject
+	public BotDetectorPanel panel;
+
 	private NavigationButton navButton;
 
 	@Provides
@@ -87,38 +93,15 @@ public class BotDetectorPlugin extends Plugin
 		return configManager.getConfig(BotDetectorConfig.class);
 	}
 
-	@Getter
-	private int numNamesSubmitted = 0;
-	@Getter
-	private int worldIsMembers;
-	@Getter
-	private Prediction currPrediction;
+	private Instant timeToAutoSend;
+	private String loggedPlayerName;
 
-	@Getter
-	private final List<Player> detectedPlayers = new ArrayList<>();
-	@Getter
-	private final List<Player> freshPlayers = new ArrayList<>();
-	@Getter
-	private final Set<String> detectedPlayerNames = new HashSet<>();
-
-	@Getter
-	private boolean playerLoggedIn = false;
-
-	@Getter
-	private String currPlayer = "";
-	@Getter
-	private int currPlayerID;
-
-	private int tickCount = 0;
-	private int ticksToSend;
+	private final Table<String, Integer, PlayerSighting> sightingTable = HashBasedTable.create();
+	private final Map<String, PlayerSighting> persistentSightings = new HashMap<>();
 
 	@Override
 	protected void startUp()
 	{
-		panel = injector.getInstance(BotDetectorPanel.class);
-		//panel.initMasterPanel();
-		http = injector.getInstance(BotDetectorHTTP.class);
-
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
 
 		navButton = NavigationButton.builder()
@@ -135,19 +118,16 @@ public class BotDetectorPlugin extends Plugin
 			menuManager.addPlayerMenuItem(DETECT);
 		}
 
-		setTicksToSend(config.autoSendMinutes());
+		updateTimeToAutoSend();
 	}
 
 	@Override
 	protected void shutDown()
 	{
-		if (detectedPlayers.size() > 0)
-		{
-			//http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
-			detectedPlayers.clear();
-			freshPlayers.clear();
-			detectedPlayerNames.clear();
-		}
+		// TODO: Send to client
+		System.out.println("SHOULD SEND! (SHUTDOWN)");
+
+		// TODO: Also reset everything here
 
 		if (config.addDetectOption() && client != null)
 		{
@@ -157,23 +137,57 @@ public class BotDetectorPlugin extends Plugin
 		clientToolbar.removeNavigation(navButton);
 	}
 
+	private void updateTimeToAutoSend()
+	{
+		timeToAutoSend = Instant.now().plusSeconds(config.autoSendMinutes() * 60);
+	}
+
+	@Schedule(period = AUTO_SEND_SCHEDULE_SECONDS,
+		unit = ChronoUnit.SECONDS, asynchronous = true)
+	public void sendPlayersToClient()
+	{
+		if (loggedPlayerName == null || Instant.now().isBefore(timeToAutoSend))
+		{
+			return;
+		}
+
+		updateTimeToAutoSend();
+
+		// TODO: Send the stuff here!
+		System.out.println("SHOULD SEND! (AUTO)");
+
+		// TODO: Also reset table
+	}
+
+	@Schedule(period = REFRESH_PLAYER_STATS_SCHEDULE_SECONDS,
+		unit = ChronoUnit.SECONDS, asynchronous = true)
+	public void refreshPlayerStats()
+	{
+		if (loggedPlayerName == null)
+		{
+			return;
+		}
+
+		// TODO: Update panel with player stats
+		System.out.println("SHOULD UPDATE STATS!");
+	}
+
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals(BotDetectorConfig.CONFIG_GROUP))
 		{
 			return;
 		}
 
-		if (event.getKey().equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
+		if (client != null && event.getKey().equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
 		{
+
+			menuManager.removePlayerMenuItem(DETECT);
+
 			if (config.addDetectOption())
 			{
 				menuManager.addPlayerMenuItem(DETECT);
-			}
-			else
-			{
-				menuManager.removePlayerMenuItem(DETECT);
 			}
 		}
 
@@ -184,127 +198,90 @@ public class BotDetectorPlugin extends Plugin
 
 		if (event.getKey().equals(BotDetectorConfig.AUTO_SEND_MINUTES))
 		{
-
+			updateTimeToAutoSend();
 		}
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
-		if (config.sendAtLogout())
+		switch (event.getGameState())
 		{
-			return;
-		}
-
-		tickCount++;
-
-		if (tickCount > ticksToSend)
-		{
-			if (detectedPlayers.size() > 0)
-			{
-				//http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
-				freshPlayers.clear();
-			}
-
-			tickCount = 0;
-		}
-	}
-
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
-	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
-		{
-			playerLoggedIn = true;
-		}
-		else if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
-		{
-			// If player was previously logged in and is now back at the login screen
-			// (not hopping, loading, etc..)
-			// then that means they have logged out.
-			if (playerLoggedIn)
-			{
-				currPlayer = "";
-				currPlayerID = 0;
-				playerLoggedIn = false;
-				tickCount = 0;
-
-				//SwingUtilities.invokeLater(panel::resetPlayerStats);
-
-				if (detectedPlayers.size() > 0)
+			case LOGGED_IN:
+				if (loggedPlayerName == null)
 				{
-					//http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
-					freshPlayers.clear();
-					detectedPlayers.clear();
+					loggedPlayerName = client.getUsername();
+					updateTimeToAutoSend();
+					refreshPlayerStats();
 				}
-			}
+				break;
+			case LOGIN_SCREEN:
+				if (loggedPlayerName != null)
+				{
+					// TODO: Send the stuff here!
+					System.out.println("SHOULD SEND! (LOGOUT)");
+
+					// TODO: Also reset everything
+
+					loggedPlayerName = null;
+				}
+				break;
 		}
 	}
 
 	@Subscribe
-	public void onPlayerSpawned(PlayerSpawned event)
+	private void onPlayerSpawned(PlayerSpawned event)
 	{
 		Player player = event.getPlayer();
-		if (player == null)
+		if (player == null || player == client.getLocalPlayer())
 		{
 			return;
 		}
 
-		Player localPlayer = client.getLocalPlayer();
-		if (localPlayer == null)
+		String playerName = normalizePlayerName(player.getName());
+		if (playerName == null)
 		{
 			return;
 		}
 
-		String playerName = player.getName();
-		currPlayer = localPlayer.getName();
+		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
+		PlayerSighting p = new PlayerSighting(playerName,
+			wp, isCurrentWorldMembers(), Instant.now().getEpochSecond());
 
-		if (playerName == null || currPlayer == null)
-		{
-			return;
-		}
-
-		if (playerName.equals(currPlayer))
-		{
-			http.getPlayerID(currPlayer);
-			http.getPlayerStats(currPlayer);
-			setWorldType();
-		}
-		else
-		{
-			int listSize = detectedPlayerNames.size();
-			detectedPlayerNames.add(playerName);
-
-			if (detectedPlayerNames.size() == (listSize + 1))
-			{
-				detectedPlayers.add(player);
-				freshPlayers.add(player);
-			}
-		}
+		// Table.put does replace
+		sightingTable.put(playerName, p.getRegionID(), p);
+		persistentSightings.replace(playerName, p);
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage msgEvent)
+	private void onChatMessage(ChatMessage event)
 	{
-		String contents = msgEvent.getMessage();
+		String msg = event.getMessage();
 
-		if (contents.charAt(0) == '!')
+		if (msg.charAt(0) != CODE_COMMAND_INDICATOR)
 		{
-			String[] split_contents = contents.split(" ");
+			return;
+		}
 
-			//Discord Linking Command
-			if (split_contents[0].toLowerCase().equals("!code"))
-			{
-				String author = msgEvent.getName();
-				String code = split_contents[1];
+		String[] split = msg.split(" +");
+		if (split.length != 2)
+		{
+			return;
+		}
 
-				http.verifyDiscordUser(author, code);
-			}
+		//Discord Linking Command
+		if (split[0].substring(1).toLowerCase().equals(CODE_COMMAND_STRING))
+		{
+			String author = event.getName();
+			String code = split[1];
+
+			// TODO: Verify Discord
+			System.out.println("VERIFY DISCORD!");
 		}
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	private void onMenuEntryAdded(MenuEntryAdded event)
 	{
 		if (!config.addDetectOption())
 		{
@@ -342,6 +319,7 @@ public class BotDetectorPlugin extends Plugin
 		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
 			&& event.getMenuOption().equals(DETECT))
 		{
+			String name;
 			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
 			{
 				Player player = client.getCachedPlayers()[event.getId()];
@@ -351,43 +329,17 @@ public class BotDetectorPlugin extends Plugin
 					return;
 				}
 
-				updatePlayerData(player);
+				name = player.getName();
 			}
 			else
 			{
-				//Checks to see if player selected from chat has been on screen recently
-				//If they have then we have their approximate location that we can report with.
-				String targetRSN = Text.removeTags(event.getMenuTarget());
-
-				Player target = findPlayerInCache(targetRSN);
-
-				if (target == null)
-				{
-					updatePlayerData(targetRSN);
-				}
-				else
-				{
-					updatePlayerData(target);
-				}
+				name = event.getMenuTarget();
 			}
-		}
-	}
 
-	private Player findPlayerInCache(String rsn)
-	{
-		List<Player> currPlayers = client.getPlayers();
-
-		List<Player> matches = currPlayers.stream()
-			.filter(p -> p != null && p.getName() != null && p.getName().contains(rsn))
-			.collect(Collectors.toList());
-
-		try
-		{
-			return matches.get(0);
-		}
-		catch (IndexOutOfBoundsException exception)
-		{
-			return null;
+			if (name != null)
+			{
+				detectPlayer(normalizePlayerName(name));
+			}
 		}
 	}
 
@@ -397,13 +349,7 @@ public class BotDetectorPlugin extends Plugin
 		client.setMenuEntries(newMenu);
 	}
 
-	public void addNumNamesSubmitted(int n)
-	{
-		numNamesSubmitted += n;
-		//SwingUtilities.invokeLater(panel::updateUploads);
-	}
-
-	private void updatePlayerData(String playerName)
+	public void detectPlayer(String playerName)
 	{
 		SwingUtilities.invokeLater(() ->
 		{
@@ -412,26 +358,18 @@ public class BotDetectorPlugin extends Plugin
 				navButton.getOnSelect().run();
 			}
 
-			//panel.lookupPlayer(playerName, false);
-		});
-	}
+			// Most recent sighting of the target
+			// If null, cannot report!
+			PlayerSighting ps = persistentSightings.get(playerName);
 
-	private void updatePlayerData(Player player)
-	{
-		SwingUtilities.invokeLater(() ->
-		{
-			if (!navButton.isSelected())
-			{
-				navButton.getOnSelect().run();
-			}
-
-			//panel.lookupPlayer(player.getName(), true);
+			// TODO: Perform panel lookup detect thing
+			System.out.println("DETECT/LOOKUP!");
 		});
 	}
 
 	public void sendChatNotification(String msg)
 	{
-		if (config.enableChatNotificatiions() && playerLoggedIn)
+		if (config.enableChatNotificatiions() && loggedPlayerName != null)
 		{
 			final String message = new ChatMessageBuilder()
 				.append(ChatColorType.HIGHLIGHT)
@@ -446,29 +384,18 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
-	public void setCurrPlayerID(int id)
+	public String normalizePlayerName(String playerName)
 	{
-		currPlayerID = id;
+		if (playerName == null)
+		{
+			return null;
+		}
+
+		return Text.toJagexName(playerName);
 	}
 
-	public void setTicksToSend(int ticks)
+	public boolean isCurrentWorldMembers()
 	{
-		ticksToSend =  100 * Math.max(ticks, 5);
-	}
-
-	public void setCurrPrediction(Hashtable<String, String> predData)
-	{
-		Prediction pred = new Prediction(Integer.parseInt(predData.get("player_id")),
-			predData.get("player_name"),
-			predData.get("prediction_label"),
-			Double.parseDouble(predData.get("prediction_confidence")),
-			null);
-
-		currPrediction = pred;
-	}
-
-	public void setWorldType()
-	{
-		worldIsMembers = client.getWorldType().contains(WorldType.MEMBERS) ? 1 : 0;
+		return client.getWorldType().contains(WorldType.MEMBERS);
 	}
 }

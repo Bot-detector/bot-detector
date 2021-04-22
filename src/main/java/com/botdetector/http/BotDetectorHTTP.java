@@ -130,7 +130,7 @@ public class BotDetectorHTTP
 					JsonObject jObject = responseJSON.getAsJsonObject();
 
 					Hashtable<String, String> primaryPredictionData = getPrimaryPrediction(jObject);
-					plugin.setCurrPrediction(primaryPredictionData);
+					//plugin.setCurrPrediction(primaryPredictionData);
 
 					LinkedHashMap<String, String> secondaryPredictionData =
 						getSecondaryPredictions(
@@ -141,7 +141,7 @@ public class BotDetectorHTTP
 					//SwingUtilities.invokeLater(() -> plugin.panel.updatePlayerData(primaryPredictionData, false));
 					//SwingUtilities.invokeLater(() -> plugin.panel.updateAdditionalPredictions(secondaryPredictionData, false));
 
-					if (!config.enableAnonymousReporting() && plugin.isPlayerLoggedIn())
+					if (!config.enableAnonymousReporting() && /* plugin.isPlayerLoggedIn() */ true)
 					{
 						if ((jObject.get("player_id").getAsInt() > 0))
 						{
@@ -201,7 +201,7 @@ public class BotDetectorHTTP
 					JsonObject jObject = responseJSON.getAsJsonObject();
 					int player_id = jObject.get("id").getAsInt();
 
-					plugin.setCurrPlayerID(player_id);
+					//plugin.setCurrPlayerID(player_id);
 				}
 				else
 				{
@@ -321,7 +321,7 @@ public class BotDetectorHTTP
 
 					plugin.sendChatNotification("Player reported successfully!");
 
-					plugin.addNumNamesSubmitted(playersToSubmit.size());
+					//plugin.addNumNamesSubmitted(playersToSubmit.size());
 					//plugin.addSeenDetectedPlayer(rsn);
 
 					//plugin.panel.updatePlayerStats();
@@ -414,7 +414,8 @@ public class BotDetectorHTTP
 
 	private String buildFeebackString(int vote)
 	{
-		Prediction pred = plugin.getCurrPrediction();
+		//Prediction pred = plugin.getCurrPrediction();
+		Prediction pred = new Prediction(0, "a", "a", 0, null);
 
 		String feedbackString = "{";
 
@@ -423,7 +424,8 @@ public class BotDetectorHTTP
 			+ "\",";
 
 		feedbackString += "\"voter_id\":"
-			+ plugin.getCurrPlayerID()
+			//+ plugin.getCurrPlayerID()
+			+ -1
 			+ ",";
 
 		feedbackString += "\"subject_id\":"
@@ -490,7 +492,8 @@ public class BotDetectorHTTP
 			+ ",";
 
 		playerString += "\"on_members_world\":\""
-			+ plugin.getWorldIsMembers()
+			//+ plugin.getWorldIsMembers()
+			+ "0"
 			+ "\",";
 
 		playerString += "\"ts\" :"
