@@ -83,7 +83,7 @@ public class BotDetectorPanel extends PluginPanel
 		this.plugin = plugin;
 		this.detectorClient = detectorClient;
 
-		setBorder(new EmptyBorder(10, 10, 10, 10));
+		setBorder(new EmptyBorder(18, 10, 0, 10));
 		setBackground(BACKGROUND_COLOR);
 		setLayout(new GridBagLayout());
 
@@ -149,7 +149,7 @@ public class BotDetectorPanel extends PluginPanel
 		JLabel label;
 
 		JPanel reportingStatsPanel = new JPanel();
-		reportingStatsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		reportingStatsPanel.setBackground(SUB_BACKGROUND_COLOR);
 		reportingStatsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
 		reportingStatsPanel.setLayout(new GridBagLayout());
@@ -287,7 +287,7 @@ public class BotDetectorPanel extends PluginPanel
 		JLabel label;
 
 		JPanel predictionBreakdownPanel = new JPanel();
-		predictionBreakdownPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		predictionBreakdownPanel.setBackground(SUB_BACKGROUND_COLOR);
 		predictionBreakdownPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 		predictionBreakdownPanel.setLayout(new GridLayout(0, 1));
 

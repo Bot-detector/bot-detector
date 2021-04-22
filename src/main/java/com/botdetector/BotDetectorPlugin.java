@@ -88,9 +88,7 @@ public class BotDetectorPlugin extends Plugin
 	private BotDetectorClient detectorClient;
 
 	// TODO: Public temporarily so this compiles (because of BotDetectorHTTP)
-	@Inject
 	public BotDetectorPanel panel;
-
 	private NavigationButton navButton;
 
 	@Provides
@@ -108,6 +106,8 @@ public class BotDetectorPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		panel = injector.getInstance(BotDetectorPanel.class);
+
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
 
 		navButton = NavigationButton.builder()
