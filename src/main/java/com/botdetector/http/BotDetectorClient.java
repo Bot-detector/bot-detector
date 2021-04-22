@@ -41,7 +41,7 @@ import okhttp3.Response;
 public class BotDetectorClient
 {
 	public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-	private static final String BASE_URL = "https://www.osrsbotdetector.com/api";
+	private static final String BASE_URL = "https://www.osrsbotdetector.com/dev";
 
 	private static final String DETECTION_URL = BASE_URL + "/plugin/detect/";
 	private static final String PLAYER_STATS_URL = BASE_URL + "/stats/contributions/";
@@ -97,15 +97,43 @@ public class BotDetectorClient
 		return future;
 	}
 
+	public CompletableFuture<Boolean> verifyDiscord(String token, String nameToVerify, String code)
+	{
+		Gson gson = gsonBuilder.create();
+
+		Request request = new Request.Builder()
+			.url(VERIFY_DISCORD_URL + token)
+			.post(RequestBody.create(JSON, gson.toJson(new DiscordVerification(nameToVerify, code))))
+			.build();
+
+		CompletableFuture<Boolean> future = new CompletableFuture<>();
+		okHttpClient.newCall(request).enqueue(new Callback()
+		{
+			@Override
+			public void onFailure(Call call, IOException e)
+			{
+				log.error("Error verifying discord user.", e);
+				future.complete(false);
+			}
+
+			@Override
+			public void onResponse(Call call, Response response)
+			{
+				future.complete(response.isSuccessful());
+				response.close();
+			}
+		});
+
+		return future;
+	}
+
 	public CompletableFuture<Prediction> requestPrediction(String displayName)
 	{
 		Type predictionMapType = new TypeToken<Map<String, Double>>()
 		{
 		}.getType();
 
-		Gson gson = gsonBuilder
-			.registerTypeAdapter(predictionMapType, new StringDoubleListToMapDeserializer())
-			.create();
+		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
 			.url(PREDICTION_URL + displayName.replace(" ", "%20"))
@@ -218,6 +246,7 @@ public class BotDetectorClient
 		}
 	}
 
+	@Deprecated
 	private static class StringDoubleListToMapDeserializer implements JsonDeserializer<Map<String, Double>>
 	{
 		@Override
@@ -234,5 +263,13 @@ public class BotDetectorClient
 
 			return map;
 		}
+	}
+
+	@Value
+	private static class DiscordVerification
+	{
+		@SerializedName("player_name")
+		String nameToVerify;
+		String code;
 	}
 }

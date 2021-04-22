@@ -7,9 +7,12 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
 import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.SwingUtilities;
@@ -21,6 +24,7 @@ import net.runelite.api.Player;
 import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
@@ -63,6 +67,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
 	private static final int REFRESH_PLAYER_STATS_SCHEDULE_SECONDS = 300;
 
+	private static final String ANONYMOUS_USER_NAME = "AnonymousUser";
+
 	@Inject
 	private Client client;
 
@@ -96,7 +102,7 @@ public class BotDetectorPlugin extends Plugin
 	private Instant timeToAutoSend;
 	private String loggedPlayerName;
 
-	private final Table<String, Integer, PlayerSighting> sightingTable = HashBasedTable.create();
+	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	private final Map<String, PlayerSighting> persistentSightings = new HashMap<>();
 
 	@Override
@@ -124,10 +130,7 @@ public class BotDetectorPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
-		// TODO: Send to client
-		System.out.println("SHOULD SEND! (SHUTDOWN)");
-
-		// TODO: Also reset everything here
+		sendPlayersToClient();
 
 		if (config.addDetectOption() && client != null)
 		{
@@ -144,19 +147,60 @@ public class BotDetectorPlugin extends Plugin
 
 	@Schedule(period = AUTO_SEND_SCHEDULE_SECONDS,
 		unit = ChronoUnit.SECONDS, asynchronous = true)
-	public void sendPlayersToClient()
+	public void autoSendPlayersToClient()
 	{
 		if (loggedPlayerName == null || Instant.now().isBefore(timeToAutoSend))
 		{
 			return;
 		}
 
+		sendPlayersToClient();
+	}
+
+	public void sendPlayersToClient()
+	{
+		if (loggedPlayerName == null)
+		{
+			return;
+		}
+
 		updateTimeToAutoSend();
 
-		// TODO: Send the stuff here!
-		System.out.println("SHOULD SEND! (AUTO)");
+		int uniqueNames;
+		Collection<PlayerSighting> sightings;
+		int numReports;
+		synchronized (sightingTable)
+		{
+			uniqueNames = sightingTable.rowKeySet().size();
+			if (uniqueNames <= 0)
+			{
+				return;
+			}
 
-		// TODO: Also reset table
+			sightings = new ArrayList<>(sightingTable.values());
+			sightingTable.clear();
+			numReports = sightings.size();
+		}
+
+
+		detectorClient.sendSightings(sightings, getReporterName(), false)
+			.whenComplete((b, ex) ->
+			{
+				if (b)
+				{
+					sendChatNotification("Successfully sent " + numReports +
+						" reports for " + uniqueNames + " different players.");
+				}
+				else
+				{
+					sendChatNotification("Error sending player sightings!");
+					// Put the sightings back
+					synchronized (sightingTable)
+					{
+						sightings.forEach(s -> sightingTable.put(s.getDisplayName(), s.getRegionID(), s));
+					}
+				}
+			});
 	}
 
 	@Schedule(period = REFRESH_PLAYER_STATS_SCHEDULE_SECONDS,
@@ -218,11 +262,7 @@ public class BotDetectorPlugin extends Plugin
 			case LOGIN_SCREEN:
 				if (loggedPlayerName != null)
 				{
-					// TODO: Send the stuff here!
-					System.out.println("SHOULD SEND! (LOGOUT)");
-
-					// TODO: Also reset everything
-
+					sendPlayersToClient();
 					loggedPlayerName = null;
 				}
 				break;
@@ -248,14 +288,31 @@ public class BotDetectorPlugin extends Plugin
 		PlayerSighting p = new PlayerSighting(playerName,
 			wp, isCurrentWorldMembers(), Instant.now().getEpochSecond());
 
-		// Table.put does replace
-		sightingTable.put(playerName, p.getRegionID(), p);
-		persistentSightings.replace(playerName, p);
+		synchronized (sightingTable)
+		{
+			sightingTable.put(playerName, p.getRegionID(), p);
+		}
+		persistentSightings.put(playerName, p);
+	}
+
+	@Subscribe
+	private void onCommandExecuted(CommandExecuted event)
+	{
+		// TODO: Remove/hide this debug command
+		if (event.getCommand().equals("flushbots"))
+		{
+			sendPlayersToClient();
+		}
 	}
 
 	@Subscribe
 	private void onChatMessage(ChatMessage event)
 	{
+		if (config.authToken() == null || config.authToken().isEmpty())
+		{
+			return;
+		}
+
 		String msg = event.getMessage();
 
 		if (msg.charAt(0) != CODE_COMMAND_INDICATOR)
@@ -275,8 +332,18 @@ public class BotDetectorPlugin extends Plugin
 			String author = event.getName();
 			String code = split[1];
 
-			// TODO: Verify Discord
-			System.out.println("VERIFY DISCORD!");
+			detectorClient.verifyDiscord(config.authToken().trim(), normalizePlayerName(author), code)
+				.whenComplete((b, ex) ->
+				{
+					if (b)
+					{
+						sendChatNotification("Verified " + author + "!");
+					}
+					else
+					{
+						sendChatNotification("Could not verify " + author + ".");
+					}
+				});
 		}
 	}
 
@@ -338,7 +405,7 @@ public class BotDetectorPlugin extends Plugin
 
 			if (name != null)
 			{
-				detectPlayer(normalizePlayerName(name));
+				detectPlayer(name);
 			}
 		}
 	}
@@ -353,17 +420,32 @@ public class BotDetectorPlugin extends Plugin
 	{
 		SwingUtilities.invokeLater(() ->
 		{
+			/*
 			if (!navButton.isSelected())
 			{
 				navButton.getOnSelect().run();
 			}
+			*/
 
 			// Most recent sighting of the target
 			// If null, cannot report!
-			PlayerSighting ps = persistentSightings.get(playerName);
+			String name = normalizePlayerName(playerName);
+			PlayerSighting ps = persistentSightings.get(name);
 
 			// TODO: Perform panel lookup detect thing
-			System.out.println("DETECT/LOOKUP!");
+			detectorClient.requestPrediction(name)
+				.whenComplete((pred, ex) ->
+				{
+					if (pred != null)
+					{
+						System.out.println(pred);
+
+						if (ps != null)
+						{
+							System.out.println(ps);
+						}
+					}
+				});
 		});
 	}
 
@@ -397,5 +479,15 @@ public class BotDetectorPlugin extends Plugin
 	public boolean isCurrentWorldMembers()
 	{
 		return client.getWorldType().contains(WorldType.MEMBERS);
+	}
+
+	public String getReporterName()
+	{
+		if (loggedPlayerName == null || config.enableAnonymousReporting())
+		{
+			return ANONYMOUS_USER_NAME;
+		}
+
+		return loggedPlayerName;
 	}
 }
