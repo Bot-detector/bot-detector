@@ -130,7 +130,8 @@ public class BotDetectorPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
-		sendPlayersToClient();
+		flushPlayersToClient(false);
+		persistentSightings.clear();
 
 		if (config.addDetectOption() && client != null)
 		{
@@ -147,17 +148,17 @@ public class BotDetectorPlugin extends Plugin
 
 	@Schedule(period = AUTO_SEND_SCHEDULE_SECONDS,
 		unit = ChronoUnit.SECONDS, asynchronous = true)
-	public void autoSendPlayersToClient()
+	public void autoFlushPlayersToClient()
 	{
 		if (loggedPlayerName == null || Instant.now().isBefore(timeToAutoSend))
 		{
 			return;
 		}
 
-		sendPlayersToClient();
+		flushPlayersToClient(true);
 	}
 
-	public void sendPlayersToClient()
+	public void flushPlayersToClient(boolean restoreOnFailure)
 	{
 		if (loggedPlayerName == null)
 		{
@@ -195,9 +196,12 @@ public class BotDetectorPlugin extends Plugin
 				{
 					sendChatNotification("Error sending player sightings!");
 					// Put the sightings back
-					synchronized (sightingTable)
+					if (restoreOnFailure)
 					{
-						sightings.forEach(s -> sightingTable.put(s.getDisplayName(), s.getRegionID(), s));
+						synchronized (sightingTable)
+						{
+							sightings.forEach(s -> sightingTable.put(s.getDisplayName(), s.getRegionID(), s));
+						}
 					}
 				}
 			});
@@ -262,7 +266,8 @@ public class BotDetectorPlugin extends Plugin
 			case LOGIN_SCREEN:
 				if (loggedPlayerName != null)
 				{
-					sendPlayersToClient();
+					flushPlayersToClient(false);
+					persistentSightings.clear();
 					loggedPlayerName = null;
 				}
 				break;
@@ -301,7 +306,7 @@ public class BotDetectorPlugin extends Plugin
 		// TODO: Remove/hide this debug command
 		if (event.getCommand().equals("flushbots"))
 		{
-			sendPlayersToClient();
+			flushPlayersToClient(true);
 		}
 	}
 
