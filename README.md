@@ -13,8 +13,7 @@
 
 Identifies bots by sending nearby players' information to a third-party machine learning algorithm, trained with data provided by Jagex Moderators. 
 
---README--
-1. The files within this repo are used in conjunction with https://github.com/Bot-detector/Bot-Detector-Core-Files. 
+The files within this repo are used in conjunction with https://github.com/Bot-detector/Bot-Detector-Core-Files. 
 
 FAQ:
 
