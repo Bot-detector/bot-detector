@@ -227,7 +227,8 @@ public class BotDetectorPlugin extends Plugin
 		unit = ChronoUnit.SECONDS, asynchronous = true)
 	public void refreshPlayerStats()
 	{
-		refreshPlayerStats(false);
+		if (loggedPlayerName == null)
+			refreshPlayerStats(false);
 	}
 
 	public void refreshPlayerStats(boolean refreshIfAnon)
@@ -236,12 +237,6 @@ public class BotDetectorPlugin extends Plugin
 		{
 			return;
 		}
-
-		if(config.enableAnonymousReporting())
-		{
-			return;
-		}
-
 		detectorClient.requestPlayerStats(loggedPlayerName)
 			.whenComplete((ps, ex) ->
 			{
