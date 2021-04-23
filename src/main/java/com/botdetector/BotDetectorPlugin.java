@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.SwingUtilities;
+import lombok.Getter;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -70,6 +71,8 @@ public class BotDetectorPlugin extends Plugin
 
 	private static final String ANONYMOUS_USER_NAME = "AnonymousUser";
 
+	private static final String CHAT_MESSAGE_HEADER = "[Bot Detector]: ";
+
 	@Inject
 	private Client client;
 
@@ -98,8 +101,9 @@ public class BotDetectorPlugin extends Plugin
 		return configManager.getConfig(BotDetectorConfig.class);
 	}
 
-	private Instant timeToAutoSend;
+	@Getter
 	private String loggedPlayerName;
+	private Instant timeToAutoSend;
 	private int namesUploaded;
 
 	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
@@ -485,7 +489,7 @@ public class BotDetectorPlugin extends Plugin
 		{
 			final String message = new ChatMessageBuilder()
 				.append(ChatColorType.HIGHLIGHT)
-				.append(msg)
+				.append(CHAT_MESSAGE_HEADER + msg)
 				.build();
 
 			chatMessageManager.queue(
