@@ -420,7 +420,7 @@ public class BotDetectorHTTP
 		String feedbackString = "{";
 
 		feedbackString += "\"rsn\":\""
-			+ pred.getDisplayName()
+			+ pred.getPlayerName()
 			+ "\",";
 
 		feedbackString += "\"voter_id\":"

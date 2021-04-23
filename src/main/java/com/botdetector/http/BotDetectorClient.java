@@ -130,7 +130,7 @@ public class BotDetectorClient
 		return future;
 	}
 
-	public CompletableFuture<Prediction> requestPrediction(String displayName)
+	public CompletableFuture<Prediction> requestPrediction(String playerName)
 	{
 		Type predictionMapType = new TypeToken<Map<String, Double>>()
 		{
@@ -139,7 +139,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(PREDICTION_URL + displayName.replace(" ", "%20"))
+			.url(PREDICTION_URL + playerName.replace(" ", "%20"))
 			.build();
 
 		CompletableFuture<Prediction> future = new CompletableFuture<>();
@@ -164,12 +164,12 @@ public class BotDetectorClient
 		return future;
 	}
 
-	public CompletableFuture<PlayerStats> requestPlayerStats(String displayName)
+	public CompletableFuture<PlayerStats> requestPlayerStats(String playerName)
 	{
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(PLAYER_STATS_URL + displayName.replace(" ", "%20"))
+			.url(PLAYER_STATS_URL + playerName.replace(" ", "%20"))
 			.build();
 
 		CompletableFuture<PlayerStats> future = new CompletableFuture<>();

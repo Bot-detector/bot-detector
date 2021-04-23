@@ -9,9 +9,9 @@ import net.runelite.api.coords.WorldPoint;
 @AllArgsConstructor
 public class PlayerSighting
 {
-	public PlayerSighting(String displayName, WorldPoint wp, boolean inMembersWorld, long timestamp)
+	public PlayerSighting(String playerName, WorldPoint wp, boolean inMembersWorld, long timestamp)
 	{
-		this(displayName,
+		this(playerName,
 			wp.getRegionID(),
 			wp.getX(),
 			wp.getY(),
@@ -21,7 +21,7 @@ public class PlayerSighting
 	}
 
 	@SerializedName("reported")
-	String displayName;
+	String playerName;
 
 	@SerializedName("region_id")
 	int regionID;

@@ -10,11 +10,11 @@ public class Prediction
 	@SerializedName("player_id")
 	int playerId;
 	@SerializedName("player_name")
-	String displayName;
+	String playerName;
 	@SerializedName("prediction_label")
 	String predictionLabel;
 	@SerializedName("prediction_confidence")
 	double confidence;
 	@SerializedName("predictions_breakdown")
-	Map<String, Double> secondaryPredictions;
+	Map<String, Double> predictionBreakdown;
 }
