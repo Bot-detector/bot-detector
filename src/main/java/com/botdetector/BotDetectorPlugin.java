@@ -70,6 +70,8 @@ public class BotDetectorPlugin extends Plugin
 
 	private static final String ANONYMOUS_USER_NAME = "AnonymousUser";
 
+	private static final String CHAT_MESSAGE_HEADER = "[Bot Detector]: ";
+
 	@Inject
 	private Client client;
 
@@ -485,7 +487,7 @@ public class BotDetectorPlugin extends Plugin
 		{
 			final String message = new ChatMessageBuilder()
 				.append(ChatColorType.HIGHLIGHT)
-				.append(msg)
+				.append(CHAT_MESSAGE_HEADER + msg)
 				.build();
 
 			chatMessageManager.queue(
