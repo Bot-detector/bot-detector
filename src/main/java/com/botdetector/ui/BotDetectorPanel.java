@@ -115,6 +115,7 @@ public class BotDetectorPanel extends PluginPanel
 		reportingStatsPanel = reportingStatsPanel();
 		primaryPredictionPanel = primaryPredictionPanel();
 		predictionBreakdownPanel = predictionBreakdownPanel();
+		predictionBreakdownPanel.setVisible(false);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
@@ -469,6 +470,7 @@ public class BotDetectorPanel extends PluginPanel
 			predictionConfidenceLabel.setText(getPercentString(pred.getConfidence()));
 			predictionConfidenceLabel.setForeground(getPredictionColor(pred.getConfidence()));
 			predictionBreakdownLabel.setText(getPredictionBreakdownString(pred.getPredictionBreakdown()));
+			predictionBreakdownPanel.setVisible(true);
 		}
 		else
 		{
@@ -478,6 +480,7 @@ public class BotDetectorPanel extends PluginPanel
 			predictionTypeLabel.setText("");
 			predictionConfidenceLabel.setText("");
 			predictionBreakdownLabel.setText("");
+			predictionBreakdownPanel.setVisible(false);
 		}
 	}
 
