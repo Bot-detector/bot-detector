@@ -232,6 +232,11 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		if(config.enableAnonymousReporting())
+		{
+			return;
+		}
+
 		detectorClient.requestPlayerStats(loggedPlayerName)
 			.whenComplete((ps, ex) ->
 			{
