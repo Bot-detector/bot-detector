@@ -227,7 +227,7 @@ public class BotDetectorPlugin extends Plugin
 		unit = ChronoUnit.SECONDS, asynchronous = true)
 	public void refreshPlayerStats()
 	{
-			refreshPlayerStats(false);
+		refreshPlayerStats(false);
 	}
 
 	public void refreshPlayerStats(boolean refreshIfAnon)
