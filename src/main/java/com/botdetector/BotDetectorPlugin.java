@@ -503,7 +503,7 @@ public class BotDetectorPlugin extends Plugin
 			return null;
 		}
 
-		return Text.toJagexName(playerName);
+		return Text.removeTags(Text.toJagexName(playerName)).toLowerCase();
 	}
 
 	public boolean isCurrentWorldMembers()
