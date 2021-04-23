@@ -119,13 +119,6 @@ public class BotDetectorPlugin extends Plugin
 			panel.setNamesUploaded(0);
 		});
 
-
-		if (client.getGameState() == GameState.LOGGED_IN)
-		{
-			loggedPlayerName = client.getUsername();
-			refreshPlayerStats();
-		}
-
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
 
 		navButton = NavigationButton.builder()
@@ -159,6 +152,7 @@ public class BotDetectorPlugin extends Plugin
 		clientToolbar.removeNavigation(navButton);
 
 		namesUploaded = 0;
+		loggedPlayerName = null;
 	}
 
 	private void updateTimeToAutoSend()
@@ -222,7 +216,7 @@ public class BotDetectorPlugin extends Plugin
 					{
 						synchronized (sightingTable)
 						{
-							sightings.forEach(s -> sightingTable.put(s.getDisplayName(), s.getRegionID(), s));
+							sightings.forEach(s -> sightingTable.put(s.getPlayerName(), s.getRegionID(), s));
 						}
 					}
 				}
@@ -281,25 +275,15 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onGameStateChanged(GameStateChanged event)
 	{
-		switch (event.getGameState())
+		if (event.getGameState() == GameState.LOGIN_SCREEN)
 		{
-			case LOGGED_IN:
-				if (loggedPlayerName == null)
-				{
-					loggedPlayerName = client.getUsername();
-					updateTimeToAutoSend();
-					refreshPlayerStats();
-				}
-				break;
-			case LOGIN_SCREEN:
-				if (loggedPlayerName != null)
-				{
-					flushPlayersToClient(false);
-					persistentSightings.clear();
-					loggedPlayerName = null;
-					SwingUtilities.invokeLater(() -> panel.setPlayerStats(null));
-				}
-				break;
+			if (loggedPlayerName != null)
+			{
+				flushPlayersToClient(false);
+				persistentSightings.clear();
+				loggedPlayerName = null;
+				SwingUtilities.invokeLater(() -> panel.setPlayerStats(null));
+			}
 		}
 	}
 
@@ -307,8 +291,19 @@ public class BotDetectorPlugin extends Plugin
 	private void onPlayerSpawned(PlayerSpawned event)
 	{
 		Player player = event.getPlayer();
-		if (player == null || player == client.getLocalPlayer())
+		if (player == null)
 		{
+			return;
+		}
+
+		if (player == client.getLocalPlayer())
+		{
+			if (loggedPlayerName == null || !player.getName().equals(loggedPlayerName))
+			{
+				loggedPlayerName = player.getName();
+				updateTimeToAutoSend();
+				refreshPlayerStats();
+			}
 			return;
 		}
 
@@ -336,6 +331,21 @@ public class BotDetectorPlugin extends Plugin
 		if (event.getCommand().equals("flushbots"))
 		{
 			flushPlayersToClient(true);
+		}
+		else if (event.getCommand().equals("showplayerid"))
+		{
+			if (event.getArguments().length > 0)
+			{
+				String arg = event.getArguments()[0];
+				if (arg.equals("1"))
+				{
+					panel.setPlayerIdVisible(true);
+				}
+				else if (arg.equals("0"))
+				{
+					panel.setPlayerIdVisible(false);
+				}
+			}
 		}
 	}
 
@@ -439,7 +449,7 @@ public class BotDetectorPlugin extends Plugin
 
 			if (name != null)
 			{
-				detectPlayer(name);
+				detectPlayer(Text.removeTags(name));
 			}
 		}
 	}
@@ -454,33 +464,19 @@ public class BotDetectorPlugin extends Plugin
 	{
 		SwingUtilities.invokeLater(() ->
 		{
-			/*
 			if (!navButton.isSelected())
 			{
 				navButton.getOnSelect().run();
 			}
-			*/
 
-			// Most recent sighting of the target
-			// If null, cannot report!
-			String name = normalizePlayerName(playerName);
-			PlayerSighting ps = persistentSightings.get(name);
-
-			// TODO: Perform panel lookup detect thing
-			detectorClient.requestPrediction(name)
-				.whenComplete((pred, ex) ->
-				{
-					if (pred != null)
-					{
-						System.out.println(pred);
-
-						if (ps != null)
-						{
-							System.out.println(ps);
-						}
-					}
-				});
+			panel.detectPlayer(playerName);
 		});
+	}
+
+	public PlayerSighting getMostRecentPlayerSighting(String playerName)
+	{
+		String name = normalizePlayerName(playerName);
+		return persistentSightings.get(name);
 	}
 
 	public void sendChatNotification(String msg)
