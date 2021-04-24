@@ -1,6 +1,7 @@
 package com.botdetector.model;
 
 import com.google.gson.annotations.SerializedName;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import net.runelite.api.coords.WorldPoint;
@@ -9,7 +10,7 @@ import net.runelite.api.coords.WorldPoint;
 @AllArgsConstructor
 public class PlayerSighting
 {
-	public PlayerSighting(String playerName, WorldPoint wp, boolean inMembersWorld, long timestamp)
+	public PlayerSighting(String playerName, WorldPoint wp, boolean inMembersWorld, Instant timestamp)
 	{
 		this(playerName,
 			wp.getRegionID(),
@@ -39,6 +40,5 @@ public class PlayerSighting
 	boolean inMembersWorld;
 
 	@SerializedName("ts")
-	long timestamp;
-
+	Instant timestamp;
 }

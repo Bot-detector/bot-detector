@@ -321,7 +321,7 @@ public class BotDetectorPlugin extends Plugin
 
 		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
 		PlayerSighting p = new PlayerSighting(playerName,
-			wp, isCurrentWorldMembers(), Instant.now().getEpochSecond());
+			wp, isCurrentWorldMembers(), Instant.now());
 
 		synchronized (sightingTable)
 		{
