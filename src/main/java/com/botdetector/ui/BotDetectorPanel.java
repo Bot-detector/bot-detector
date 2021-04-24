@@ -679,7 +679,7 @@ public class BotDetectorPanel extends PluginPanel
 
 		String openingTags = "<html><body style='margin:0;padding:0;color:" + ColorUtil.toHexColor(TEXT_COLOR) + "'>" +
 			"<table border='0' cellspacing='0' cellpadding='0'>";
-		String closingTags = "</table></html>";
+		String closingTags = "</table></body></html>";
 
 		StringBuilder sb = new StringBuilder();
 		sb.append(openingTags);
