@@ -1,15 +1,20 @@
 package com.botdetector.model;
 
 import com.google.gson.annotations.SerializedName;
-import lombok.Data;
+import java.util.Map;
+import lombok.Value;
 
-@Data
+@Value
 public class Prediction
 {
 	@SerializedName("player_id")
-	private int playerId;
-	@SerializedName("rsn")
-	private String displayName;
-	private String predictionLabel;
-	private double confidence;
+	int playerId;
+	@SerializedName("player_name")
+	String playerName;
+	@SerializedName("prediction_label")
+	String predictionLabel;
+	@SerializedName("prediction_confidence")
+	double confidence;
+	@SerializedName("predictions_breakdown")
+	Map<String, Double> predictionBreakdown;
 }
