@@ -7,7 +7,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
@@ -16,13 +20,13 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Call;
@@ -68,6 +72,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder
 			.registerTypeAdapter(PlayerSightingWrapper.class, new PlayerSightingWrapperSerializer())
 			.registerTypeAdapter(Boolean.class, new BooleanToZeroOneSerializer())
+			.registerTypeAdapter(Instant.class, new InstantSecondsConverter())
 			.create();
 
 		Request request = new Request.Builder()
@@ -179,7 +184,7 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error obtaining player sighting data.", e);
+				log.error("Error obtaining player prediction data.", e);
 				future.complete(null);
 			}
 
@@ -252,32 +257,11 @@ public class BotDetectorClient
 	}
 
 	@Value
-	@AllArgsConstructor
 	private static class PlayerSightingWrapper
 	{
 		String reporter;
 		@SerializedName("sighting_data")
 		PlayerSighting sightingData;
-	}
-
-	private static class PlayerSightingWrapperSerializer implements JsonSerializer<PlayerSightingWrapper>
-	{
-		@Override
-		public JsonElement serialize(PlayerSightingWrapper src, Type typeOfSrc, JsonSerializationContext context)
-		{
-			JsonElement json = context.serialize(src.getSightingData());
-			json.getAsJsonObject().addProperty("reporter", src.getReporter());
-			return json;
-		}
-	}
-
-	private static class BooleanToZeroOneSerializer implements JsonSerializer<Boolean>
-	{
-		@Override
-		public JsonElement serialize(Boolean src, Type typeOfSrc, JsonSerializationContext context)
-		{
-			return context.serialize(src ? 1 : 0);
-		}
 	}
 
 	@Value
@@ -300,5 +284,41 @@ public class BotDetectorClient
 		double predictionConfidence;
 		@SerializedName("subject_id")
 		int targetId;
+	}
+
+	private static class PlayerSightingWrapperSerializer implements JsonSerializer<PlayerSightingWrapper>
+	{
+		@Override
+		public JsonElement serialize(PlayerSightingWrapper src, Type typeOfSrc, JsonSerializationContext context)
+		{
+			JsonElement json = context.serialize(src.getSightingData());
+			json.getAsJsonObject().addProperty("reporter", src.getReporter());
+			return json;
+		}
+	}
+
+	private static class BooleanToZeroOneSerializer implements JsonSerializer<Boolean>
+	{
+		@Override
+		public JsonElement serialize(Boolean src, Type typeOfSrc, JsonSerializationContext context)
+		{
+			return context.serialize(src ? 1 : 0);
+		}
+	}
+
+	private static class InstantSecondsConverter implements JsonSerializer<Instant>, JsonDeserializer<Instant>
+	{
+		@Override
+		public JsonElement serialize(Instant src, Type srcType, JsonSerializationContext context)
+		{
+			return new JsonPrimitive(src.getEpochSecond());
+		}
+
+		@Override
+		public Instant deserialize(JsonElement json, Type type, JsonDeserializationContext context)
+			throws JsonParseException
+		{
+			return Instant.ofEpochSecond(json.getAsLong());
+		}
 	}
 }
