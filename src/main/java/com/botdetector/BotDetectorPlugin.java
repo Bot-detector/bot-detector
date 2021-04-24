@@ -91,8 +91,7 @@ public class BotDetectorPlugin extends Plugin
 	@Inject
 	private BotDetectorClient detectorClient;
 
-	// TODO: Public temporarily so this compiles (because of BotDetectorHTTP)
-	public BotDetectorPanel panel;
+	private BotDetectorPanel panel;
 	private NavigationButton navButton;
 
 	@Provides
@@ -205,12 +204,12 @@ public class BotDetectorPlugin extends Plugin
 				{
 					namesUploaded += uniqueNames;
 					SwingUtilities.invokeLater(() -> panel.setNamesUploaded(namesUploaded));
-					sendChatNotification("Successfully sent " + numReports +
+					sendChatStatusMessage("Successfully sent " + numReports +
 						" reports for " + uniqueNames + " different players.");
 				}
 				else
 				{
-					sendChatNotification("Error sending player sightings!");
+					sendChatStatusMessage("Error sending player sightings!");
 					// Put the sightings back
 					if (restoreOnFailure)
 					{
@@ -256,7 +255,6 @@ public class BotDetectorPlugin extends Plugin
 
 		if (client != null && event.getKey().equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
 		{
-
 			menuManager.removePlayerMenuItem(DETECT);
 
 			if (config.addDetectOption())
@@ -267,7 +265,11 @@ public class BotDetectorPlugin extends Plugin
 
 		if (event.getKey().equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
 		{
-			SwingUtilities.invokeLater(() -> panel.setAnonymousWarning(config.enableAnonymousReporting()));
+			SwingUtilities.invokeLater(() ->
+			{
+				panel.setAnonymousWarning(config.enableAnonymousReporting());
+				panel.setPrediction(null);
+			});
 		}
 
 		if (event.getKey().equals(BotDetectorConfig.AUTO_SEND_MINUTES))
@@ -302,7 +304,7 @@ public class BotDetectorPlugin extends Plugin
 
 		if (player == client.getLocalPlayer())
 		{
-			if (loggedPlayerName == null || !player.getName().equals(loggedPlayerName))
+			if (loggedPlayerName == null || !loggedPlayerName.equals(player.getName()))
 			{
 				loggedPlayerName = player.getName();
 				updateTimeToAutoSend();
@@ -331,7 +333,6 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onCommandExecuted(CommandExecuted event)
 	{
-		// TODO: Remove/hide this debug command
 		if (event.getCommand().equals("flushbots"))
 		{
 			flushPlayersToClient(true);
@@ -385,11 +386,11 @@ public class BotDetectorPlugin extends Plugin
 				{
 					if (b)
 					{
-						sendChatNotification("Verified " + author + "!");
+						sendChatStatusMessage("Verified " + author + "!");
 					}
 					else
 					{
-						sendChatNotification("Could not verify " + author + ".");
+						sendChatStatusMessage("Could not verify " + author + ".");
 					}
 				});
 		}
@@ -483,9 +484,9 @@ public class BotDetectorPlugin extends Plugin
 		return persistentSightings.get(name);
 	}
 
-	public void sendChatNotification(String msg)
+	public void sendChatStatusMessage(String msg)
 	{
-		if (config.enableChatNotificatiions() && loggedPlayerName != null)
+		if (config.enableChatStatusMessages() && loggedPlayerName != null)
 		{
 			final String message = new ChatMessageBuilder()
 				.append(ChatColorType.HIGHLIGHT)

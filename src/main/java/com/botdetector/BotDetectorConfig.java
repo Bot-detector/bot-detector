@@ -41,10 +41,10 @@ public interface BotDetectorConfig extends Config
 	@ConfigItem(
 		position = 3,
 		keyName = "enableChatNotifications",
-		name = "Enable Chat Notifications",
-		description = "Toggle notifications for when player names are submitted."
+		name = "Enable Chat Status Messages",
+		description = "Show various plugin status messages in chat."
 	)
-	default boolean enableChatNotificatiions()
+	default boolean enableChatStatusMessages()
 	{
 		return false;
 	}

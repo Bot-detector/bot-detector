@@ -1,7 +1,9 @@
 package com.botdetector.ui;
 
+import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
 import com.botdetector.http.BotDetectorClient;
+import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
 import com.google.common.collect.ImmutableList;
@@ -16,16 +18,15 @@ import java.awt.event.MouseEvent;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import net.runelite.api.Client;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
@@ -73,11 +74,13 @@ public class BotDetectorPanel extends PluginPanel
 	private final JPanel linksPanel;
 	private final JPanel reportingStatsPanel;
 	private final JPanel primaryPredictionPanel;
+	private final JPanel predictionFeedbackPanel;
+	private final JPanel predictionReportPanel;
 	private final JPanel predictionBreakdownPanel;
 
-	private final Client client;
 	private final BotDetectorPlugin plugin;
 	private final BotDetectorClient detectorClient;
+	private final BotDetectorConfig config;
 
 	private boolean searchBarLoading;
 
@@ -90,6 +93,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	// Primary Prediction
 	private Prediction lastPrediction;
+	private PlayerSighting predictionPlayerSighting;
 	private JLabel predictionPlayerIdTextLabel;
 	private JLabel predictionPlayerIdLabel;
 	private JLabel predictionPlayerNameLabel;
@@ -100,11 +104,11 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel predictionBreakdownLabel;
 
 	@Inject
-	public BotDetectorPanel(@Nullable Client client, BotDetectorPlugin plugin, BotDetectorClient detectorClient)
+	public BotDetectorPanel(BotDetectorPlugin plugin, BotDetectorClient detectorClient, BotDetectorConfig config)
 	{
-		this.client = client;
 		this.plugin = plugin;
 		this.detectorClient = detectorClient;
+		this.config = config;
 
 		setBorder(new EmptyBorder(18, 10, 0, 10));
 		setBackground(BACKGROUND_COLOR);
@@ -114,6 +118,10 @@ public class BotDetectorPanel extends PluginPanel
 		linksPanel = linksPanel();
 		reportingStatsPanel = reportingStatsPanel();
 		primaryPredictionPanel = primaryPredictionPanel();
+		predictionFeedbackPanel = predictionFeedbackPanel();
+		predictionFeedbackPanel.setVisible(false);
+		predictionReportPanel = predictionReportPanel();
+		predictionReportPanel.setVisible(false);
 		predictionBreakdownPanel = predictionBreakdownPanel();
 		predictionBreakdownPanel.setVisible(false);
 
@@ -132,6 +140,10 @@ public class BotDetectorPanel extends PluginPanel
 		add(searchBar, c);
 		c.gridy++;
 		add(primaryPredictionPanel, c);
+		c.gridy++;
+		add(predictionFeedbackPanel, c);
+		c.gridy++;
+		add(predictionReportPanel, c);
 		c.gridy++;
 		add(predictionBreakdownPanel, c);
 		c.gridy++;
@@ -398,6 +410,88 @@ public class BotDetectorPanel extends PluginPanel
 		return primaryPredictionPanel;
 	}
 
+	private JPanel predictionFeedbackPanel()
+	{
+		JPanel panel = new JPanel();
+		panel.setBackground(SUB_BACKGROUND_COLOR);
+		panel.setLayout(new GridBagLayout());
+		panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
+
+		JLabel label = new JLabel("Is this prediction correct?");
+		label.setFont(NORMAL_FONT);
+		label.setForeground(HEADER_COLOR);
+		c.gridx = 0;
+		c.gridy = 0;
+		c.ipady = 5;
+		c.gridwidth = 2;
+		c.weightx = 1;
+		panel.add(label, c);
+
+		JButton button;
+
+		button = new JButton("Looks fine!");
+		button.setForeground(HEADER_COLOR);
+		button.setFont(SMALL_FONT);
+		button.addActionListener(l -> sendFeedbackToClient(true));
+		c.gridy++;
+		c.weightx = 0.5;
+		c.gridwidth = 1;
+		panel.add(button, c);
+
+		button = new JButton("Not sure...");
+		button.setForeground(HEADER_COLOR);
+		button.setFont(SMALL_FONT);
+		button.addActionListener(l -> sendFeedbackToClient(false));
+		c.gridx++;
+		panel.add(button, c);
+
+		return panel;
+	}
+
+	private JPanel predictionReportPanel()
+	{
+		JPanel panel = new JPanel();
+		panel.setBackground(SUB_BACKGROUND_COLOR);
+		panel.setLayout(new GridBagLayout());
+		panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
+
+		JLabel label = new JLabel("Report this player as a bot?");
+		label.setFont(NORMAL_FONT);
+		label.setForeground(HEADER_COLOR);
+		c.gridx = 0;
+		c.gridy = 0;
+		c.ipady = 5;
+		c.gridwidth = 2;
+		c.weightx = 1;
+		panel.add(label, c);
+
+		JButton button;
+
+		button = new JButton("Yes");
+		button.setForeground(HEADER_COLOR);
+		button.setFont(SMALL_FONT);
+		button.addActionListener(l -> sendReportToClient(true));
+		c.gridy++;
+		c.weightx = 0.5;
+		c.gridwidth = 1;
+		panel.add(button, c);
+
+		button = new JButton("No");
+		button.setForeground(HEADER_COLOR);
+		button.setFont(SMALL_FONT);
+		button.addActionListener(l -> sendReportToClient(false));
+		c.gridx++;
+		panel.add(button, c);
+
+		return panel;
+	}
+
 	private JPanel predictionBreakdownPanel()
 	{
 		JPanel predictionBreakdownPanel = new JPanel();
@@ -461,26 +555,51 @@ public class BotDetectorPanel extends PluginPanel
 
 	public void setPrediction(Prediction pred)
 	{
+		setPrediction(pred, null);
+	}
+
+	public void setPrediction(Prediction pred, PlayerSighting sighting)
+	{
 		if (pred != null)
 		{
 			lastPrediction = pred;
+			predictionPlayerSighting = sighting;
 			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
 			predictionPlayerNameLabel.setText(pred.getPlayerName());
 			predictionTypeLabel.setText(normalizeLabel(pred.getPredictionLabel()));
 			predictionConfidenceLabel.setText(getPercentString(pred.getConfidence()));
 			predictionConfidenceLabel.setForeground(getPredictionColor(pred.getConfidence()));
-			predictionBreakdownLabel.setText(getPredictionBreakdownString(pred.getPredictionBreakdown()));
-			predictionBreakdownPanel.setVisible(true);
+
+			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
+			{
+				predictionBreakdownLabel.setText("");
+				predictionBreakdownPanel.setVisible(false);
+			}
+			else
+			{
+				predictionBreakdownLabel.setText(getPredictionBreakdownString(pred.getPredictionBreakdown()));
+				predictionBreakdownPanel.setVisible(true);
+			}
+
+			if (!config.enableAnonymousReporting() && pred.getPlayerId() > 0)
+			{
+				predictionFeedbackPanel.setVisible(true);
+				predictionReportPanel.setVisible(sighting != null);
+			}
 		}
 		else
 		{
 			lastPrediction = null;
+			predictionPlayerSighting = null;
 			predictionPlayerIdLabel.setText("");
 			predictionPlayerNameLabel.setText("");
 			predictionTypeLabel.setText("");
 			predictionConfidenceLabel.setText("");
 			predictionBreakdownLabel.setText("");
+
 			predictionBreakdownPanel.setVisible(false);
+			predictionFeedbackPanel.setVisible(false);
+			predictionReportPanel.setVisible(false);
 		}
 	}
 
@@ -510,6 +629,8 @@ public class BotDetectorPanel extends PluginPanel
 		searchBar.setEditable(false);
 		searchBarLoading = true;
 
+		setPrediction(null);
+
 		detectorClient.requestPrediction(target).whenCompleteAsync((pred, ex) ->
 			SwingUtilities.invokeLater(() ->
 			{
@@ -527,15 +648,12 @@ public class BotDetectorPanel extends PluginPanel
 					return;
 				}
 
-				// TODO: Grab this and use it to enable the manual report buttons if not null
-				//PlayerSighting lastSighting = plugin.getMostRecentPlayerSighting(target);
-
 				// Successful player prediction
 				searchBar.setIcon(IconTextField.Icon.SEARCH);
 				searchBar.setEditable(true);
 				searchBarLoading = false;
 
-				setPrediction(pred);
+				setPrediction(pred, plugin.getMostRecentPlayerSighting(target));
 			}));
 	}
 
@@ -584,5 +702,49 @@ public class BotDetectorPanel extends PluginPanel
 	private String getPercentString(double percent)
 	{
 		return String.format("%.2f%%", percent * 100);
+	}
+
+	private void sendFeedbackToClient(boolean feedback)
+	{
+		predictionFeedbackPanel.setVisible(false);
+		if (lastPrediction == null)
+		{
+			return;
+		}
+
+		detectorClient.sendFeedback(lastPrediction, plugin.getReporterName(), true)
+			.whenComplete((b, ex) ->
+			{
+				if (b)
+				{
+					plugin.sendChatStatusMessage("Thank you for your feedback!");
+				}
+				else
+				{
+					plugin.sendChatStatusMessage("Error sending your feedback.");
+				}
+			});
+	}
+
+	private void sendReportToClient(boolean doReport)
+	{
+		predictionReportPanel.setVisible(false);
+		if (predictionPlayerSighting == null || !doReport)
+		{
+			return;
+		}
+
+		detectorClient.sendSighting(predictionPlayerSighting, plugin.getReporterName(), true)
+			.whenComplete((b, ex) ->
+			{
+				if (b)
+				{
+					plugin.sendChatStatusMessage("Thank you for your report!");
+				}
+				else
+				{
+					plugin.sendChatStatusMessage("Error sending your report.");
+				}
+			});
 	}
 }

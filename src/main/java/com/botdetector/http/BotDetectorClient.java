@@ -7,9 +7,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
@@ -20,7 +17,6 @@ import com.google.inject.Singleton;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -42,12 +38,12 @@ import okhttp3.Response;
 public class BotDetectorClient
 {
 	public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+	// TODO: Change this back to /api/
 	private static final String BASE_URL = "https://www.osrsbotdetector.com/dev";
 
 	private static final String DETECTION_URL = BASE_URL + "/plugin/detect/";
 	private static final String PLAYER_STATS_URL = BASE_URL + "/stats/contributions/";
 	private static final String PREDICTION_URL = BASE_URL + "/site/prediction/";
-	private static final String REPORTS_URL = BASE_URL + "/plugin/detect/";
 	private static final String FEEDBACK_URL = BASE_URL + "/plugin/predictionfeedback/";
 	private static final String VERIFY_DISCORD_URL = BASE_URL + "/site/discord_user/";
 
@@ -116,6 +112,41 @@ public class BotDetectorClient
 			public void onFailure(Call call, IOException e)
 			{
 				log.error("Error verifying discord user.", e);
+				future.complete(false);
+			}
+
+			@Override
+			public void onResponse(Call call, Response response)
+			{
+				future.complete(response.isSuccessful());
+				response.close();
+			}
+		});
+
+		return future;
+	}
+
+	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String reporterName, boolean feedback)
+	{
+		Gson gson = gsonBuilder.create();
+
+		Request request = new Request.Builder()
+			.url(FEEDBACK_URL)
+			.post(RequestBody.create(JSON, gson.toJson(new PredictionFeedback(
+				reporterName,
+				feedback ? 1 : -1,
+				pred.getPredictionLabel(),
+				pred.getConfidence(),
+				pred.getPlayerId()
+			)))).build();
+
+		CompletableFuture<Boolean> future = new CompletableFuture<>();
+		okHttpClient.newCall(request).enqueue(new Callback()
+		{
+			@Override
+			public void onFailure(Call call, IOException e)
+			{
+				log.error("Error sending prediction feedback.", e);
 				future.complete(false);
 			}
 
@@ -245,26 +276,7 @@ public class BotDetectorClient
 		@Override
 		public JsonElement serialize(Boolean src, Type typeOfSrc, JsonSerializationContext context)
 		{
-			return context.serialize(src ? "1" : "0");
-		}
-	}
-
-	@Deprecated
-	private static class StringDoubleListToMapDeserializer implements JsonDeserializer<Map<String, Double>>
-	{
-		@Override
-		public Map<String, Double> deserialize(
-			JsonElement elem, Type type, JsonDeserializationContext jsonDeserializationContext)
-		{
-			HashMap<String, Double> map = new HashMap<>();
-
-			elem.getAsJsonArray().forEach(e ->
-			{
-				JsonArray elems = e.getAsJsonArray();
-				map.put(elems.get(0).getAsString(), elems.get(1).getAsDouble());
-			});
-
-			return map;
+			return context.serialize(src ? 1 : 0);
 		}
 	}
 
@@ -274,5 +286,19 @@ public class BotDetectorClient
 		@SerializedName("player_name")
 		String nameToVerify;
 		String code;
+	}
+
+	@Value
+	private static class PredictionFeedback
+	{
+		@SerializedName("player_name")
+		String playerName;
+		int vote;
+		@SerializedName("prediction")
+		String predictionLabel;
+		@SerializedName("confidence")
+		double predictionConfidence;
+		@SerializedName("subject_id")
+		int targetId;
 	}
 }
