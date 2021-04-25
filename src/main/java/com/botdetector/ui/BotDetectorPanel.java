@@ -93,7 +93,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	// Primary Prediction
 	private Prediction lastPrediction;
-	private PlayerSighting predictionPlayerSighting;
+	private PlayerSighting lastPredictionPlayerSighting;
 	private JLabel predictionPlayerIdTextLabel;
 	private JLabel predictionPlayerIdLabel;
 	private JLabel predictionPlayerNameLabel;
@@ -573,7 +573,7 @@ public class BotDetectorPanel extends PluginPanel
 		if (pred != null)
 		{
 			lastPrediction = pred;
-			predictionPlayerSighting = sighting;
+			lastPredictionPlayerSighting = sighting;
 			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
 			predictionPlayerNameLabel.setText(pred.getPlayerName());
 			predictionTypeLabel.setText(normalizeLabel(pred.getPredictionLabel()));
@@ -600,7 +600,7 @@ public class BotDetectorPanel extends PluginPanel
 		else
 		{
 			lastPrediction = null;
-			predictionPlayerSighting = null;
+			lastPredictionPlayerSighting = null;
 			predictionPlayerIdLabel.setText("");
 			predictionPlayerNameLabel.setText("");
 			predictionTypeLabel.setText("");
@@ -745,7 +745,7 @@ public class BotDetectorPanel extends PluginPanel
 	private void sendReportToClient(boolean doReport)
 	{
 		predictionReportPanel.setVisible(false);
-		if (predictionPlayerSighting == null || !doReport)
+		if (lastPredictionPlayerSighting == null || !doReport)
 		{
 			return;
 		}
@@ -756,7 +756,7 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		detectorClient.sendSighting(predictionPlayerSighting, reporter, true)
+		detectorClient.sendSighting(lastPredictionPlayerSighting, reporter, true)
 			.whenComplete((b, ex) ->
 			{
 				if (b)
