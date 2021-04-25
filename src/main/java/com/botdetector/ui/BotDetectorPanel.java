@@ -132,21 +132,25 @@ public class BotDetectorPanel extends PluginPanel
 		c.weightx = 1;
 		c.weighty = 0;
 		c.insets = new Insets(0, 0, 10, 0);
-
 		add(linksPanel, c);
+
 		c.gridy++;
 		add(reportingStatsPanel, c);
+		
 		c.gridy++;
 		add(searchBar, c);
+
 		c.gridy++;
 		add(primaryPredictionPanel, c);
-		c.gridy++;
-		add(predictionFeedbackPanel, c);
-		c.gridy++;
-		add(predictionReportPanel, c);
+
 		c.gridy++;
 		add(predictionBreakdownPanel, c);
+
 		c.gridy++;
+		add(predictionFeedbackPanel, c);
+
+		c.gridy++;
+		add(predictionReportPanel, c);
 
 		setPlayerIdVisible(false);
 	}
