@@ -9,6 +9,7 @@ import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import java.awt.image.BufferedImage;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -65,6 +66,11 @@ public class BotDetectorPlugin extends Plugin
 
 	private static final char CODE_COMMAND_INDICATOR = '!';
 	private static final String CODE_COMMAND_STRING = "code";
+	private static final String MANUAL_FLUSH_COMMAND = "FlushPlayers";
+	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
+	private static final String MANUAL_SIGHT_COMMAND = "SnapPlayers";
+	private static final String SHOW_HIDE_ID_COMMAND = "ShowPlayerId";
+
 
 	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
 	private static final int REFRESH_PLAYER_STATS_SCHEDULE_SECONDS = 60;
@@ -107,6 +113,8 @@ public class BotDetectorPlugin extends Plugin
 
 	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	private final Map<String, PlayerSighting> persistentSightings = new HashMap<>();
+
+	private Instant lastFlush = Instant.MIN;
 
 	@Override
 	protected void startUp()
@@ -152,6 +160,7 @@ public class BotDetectorPlugin extends Plugin
 
 		namesUploaded = 0;
 		loggedPlayerName = null;
+		lastFlush = Instant.MIN;
 	}
 
 	private void updateTimeToAutoSend()
@@ -178,6 +187,7 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		lastFlush = Instant.now();
 		updateTimeToAutoSend();
 
 		int uniqueNames;
@@ -296,7 +306,11 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onPlayerSpawned(PlayerSpawned event)
 	{
-		Player player = event.getPlayer();
+		processPlayer(event.getPlayer());
+	}
+
+	private void processPlayer(Player player)
+	{
 		if (player == null)
 		{
 			return;
@@ -333,11 +347,22 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onCommandExecuted(CommandExecuted event)
 	{
-		if (event.getCommand().equals("flushbots"))
+		String command = event.getCommand();
+		if (command.equalsIgnoreCase(MANUAL_FLUSH_COMMAND))
 		{
-			flushPlayersToClient(true);
+			Instant canFlush = lastFlush.plusSeconds(MANUAL_FLUSH_COOLDOWN_SECONDS);
+			Instant now = Instant.now();
+			if (now.isAfter(canFlush))
+			{
+				flushPlayersToClient(true);
+			}
+			else
+			{
+				long secs = Duration.between(now, canFlush).toMillis() / 1000;
+				sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players.");
+			}
 		}
-		else if (event.getCommand().equals("showplayerid"))
+		else if (command.equalsIgnoreCase(SHOW_HIDE_ID_COMMAND))
 		{
 			if (event.getArguments().length > 0)
 			{
@@ -351,6 +376,11 @@ public class BotDetectorPlugin extends Plugin
 					panel.setPlayerIdVisible(false);
 				}
 			}
+		}
+		else if (command.equalsIgnoreCase(MANUAL_SIGHT_COMMAND))
+		{
+			client.getPlayers().forEach(this::processPlayer);
+			sendChatStatusMessage("Player sightings refreshed.");
 		}
 	}
 
