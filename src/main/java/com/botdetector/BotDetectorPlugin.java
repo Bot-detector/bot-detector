@@ -171,7 +171,7 @@ public class BotDetectorPlugin extends Plugin
 		unit = ChronoUnit.SECONDS, asynchronous = true)
 	public void autoFlushPlayersToClient()
 	{
-		if (loggedPlayerName == null || Instant.now().isBefore(timeToAutoSend))
+		if (loggedPlayerName == null || config.onlySendAtLogout() || Instant.now().isBefore(timeToAutoSend))
 		{
 			return;
 		}
@@ -224,7 +224,16 @@ public class BotDetectorPlugin extends Plugin
 					{
 						synchronized (sightingTable)
 						{
-							sightings.forEach(s -> sightingTable.put(s.getPlayerName(), s.getRegionID(), s));
+							sightings.forEach(s ->
+							{
+								String name = s.getPlayerName();
+								int region = s.getRegionID();
+								// Don't replace if new sightings were added to the table during the request
+								if (!sightingTable.contains(name, region))
+								{
+									sightingTable.put(name, region, s);
+								}
+							});
 						}
 					}
 				}
@@ -244,10 +253,12 @@ public class BotDetectorPlugin extends Plugin
 		{
 			return;
 		}
-		detectorClient.requestPlayerStats(loggedPlayerName)
+
+		String nameAtRequest = loggedPlayerName;
+		detectorClient.requestPlayerStats(nameAtRequest)
 			.whenComplete((ps, ex) ->
 			{
-				if (ps != null)
+				if (ps != null && nameAtRequest.equals(loggedPlayerName))
 				{
 					SwingUtilities.invokeLater(() -> panel.setPlayerStats(ps));
 				}
@@ -262,7 +273,9 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		if (client != null && event.getKey().equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
+		String eventKey = event.getKey();
+
+		if (client != null && eventKey.equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
 		{
 			menuManager.removePlayerMenuItem(DETECT);
 
@@ -272,7 +285,7 @@ public class BotDetectorPlugin extends Plugin
 			}
 		}
 
-		if (event.getKey().equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
+		if (eventKey.equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
 		{
 			SwingUtilities.invokeLater(() ->
 			{
@@ -282,7 +295,8 @@ public class BotDetectorPlugin extends Plugin
 			});
 		}
 
-		if (event.getKey().equals(BotDetectorConfig.AUTO_SEND_MINUTES))
+		if (eventKey.equals(BotDetectorConfig.AUTO_SEND_MINUTES_KEY)
+			|| eventKey.equals(BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY))
 		{
 			updateTimeToAutoSend();
 		}
