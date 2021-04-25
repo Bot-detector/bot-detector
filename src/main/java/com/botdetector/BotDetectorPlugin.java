@@ -65,18 +65,18 @@ public class BotDetectorPlugin extends Plugin
 		ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
 
 	private static final char CODE_COMMAND_INDICATOR = '!';
-	private static final String CODE_COMMAND_STRING = "code";
-	private static final String MANUAL_FLUSH_COMMAND = "FlushPlayers";
+	private static final String CODE_COMMAND = "code";
+
+	private static final String COMMAND_PREFIX = "bd";
+	private static final String MANUAL_FLUSH_COMMAND = COMMAND_PREFIX + "Flush";
+	private static final String MANUAL_SIGHT_COMMAND = COMMAND_PREFIX + "Snap";
+	private static final String SHOW_HIDE_ID_COMMAND = COMMAND_PREFIX + "ShowId";
+
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
-	private static final String MANUAL_SIGHT_COMMAND = "SnapPlayers";
-	private static final String SHOW_HIDE_ID_COMMAND = "ShowPlayerId";
-
-
 	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
 	private static final int REFRESH_PLAYER_STATS_SCHEDULE_SECONDS = 60;
 
 	private static final String ANONYMOUS_USER_NAME = "AnonymousUser";
-
 	private static final String CHAT_MESSAGE_HEADER = "[Bot Detector]: ";
 
 	@Inject
@@ -110,11 +110,10 @@ public class BotDetectorPlugin extends Plugin
 	private String loggedPlayerName;
 	private Instant timeToAutoSend;
 	private int namesUploaded;
+	private Instant lastFlush = Instant.MIN;
 
 	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	private final Map<String, PlayerSighting> persistentSightings = new HashMap<>();
-
-	private Instant lastFlush = Instant.MIN;
 
 	@Override
 	protected void startUp()
@@ -412,7 +411,7 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		//Discord Linking Command
-		if (split[0].substring(1).toLowerCase().equals(CODE_COMMAND_STRING))
+		if (split[0].substring(1).toLowerCase().equals(CODE_COMMAND))
 		{
 			String author = event.getName();
 			String code = split[1];
