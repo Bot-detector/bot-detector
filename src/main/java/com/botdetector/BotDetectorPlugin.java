@@ -171,7 +171,7 @@ public class BotDetectorPlugin extends Plugin
 		unit = ChronoUnit.SECONDS, asynchronous = true)
 	public void autoFlushPlayersToClient()
 	{
-		if (loggedPlayerName == null || Instant.now().isBefore(timeToAutoSend))
+		if (loggedPlayerName == null || config.onlySendAtLogout() || Instant.now().isBefore(timeToAutoSend))
 		{
 			return;
 		}
@@ -273,7 +273,9 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		if (client != null && event.getKey().equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
+		String eventKey = event.getKey();
+
+		if (client != null && eventKey.equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
 		{
 			menuManager.removePlayerMenuItem(DETECT);
 
@@ -283,7 +285,7 @@ public class BotDetectorPlugin extends Plugin
 			}
 		}
 
-		if (event.getKey().equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
+		if (eventKey.equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
 		{
 			SwingUtilities.invokeLater(() ->
 			{
@@ -293,7 +295,8 @@ public class BotDetectorPlugin extends Plugin
 			});
 		}
 
-		if (event.getKey().equals(BotDetectorConfig.AUTO_SEND_MINUTES))
+		if (eventKey.equals(BotDetectorConfig.AUTO_SEND_MINUTES_KEY)
+			|| eventKey.equals(BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY))
 		{
 			updateTimeToAutoSend();
 		}

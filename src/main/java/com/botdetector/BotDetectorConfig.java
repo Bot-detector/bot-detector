@@ -10,24 +10,25 @@ import net.runelite.client.config.Units;
 public interface BotDetectorConfig extends Config
 {
 	String CONFIG_GROUP = "botdetector";
-	String AUTO_SEND_MINUTES = "autoSendMinutes";
+	String ONLY_SEND_AT_LOGOUT_KEY = "sendAtLogout";
+	String AUTO_SEND_MINUTES_KEY = "autoSendMinutes";
 	String ADD_DETECT_OPTION_KEY = "addDetectOption";
 	String ANONYMOUS_REPORTING_KEY = "enableAnonymousReporting";
 
 	@ConfigItem(
 		position = 1,
-		keyName = "sendAtLogout",
+		keyName = ONLY_SEND_AT_LOGOUT_KEY,
 		name = "Send Names Only After Logout",
 		description = "Waits to upload names until you've logged out.<br>Use this if you have a poor connection."
 	)
-	default boolean sendAtLogout()
+	default boolean onlySendAtLogout()
 	{
 		return false;
 	}
 
 	@ConfigItem(
 		position = 2,
-		keyName = AUTO_SEND_MINUTES,
+		keyName = AUTO_SEND_MINUTES_KEY,
 		name = "Send Names Every",
 		description = "Sets the amount of time between automatic name uploads."
 	)
