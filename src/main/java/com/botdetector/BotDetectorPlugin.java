@@ -114,7 +114,7 @@ public class BotDetectorPlugin extends Plugin
 	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	private final Map<String, PlayerSighting> persistentSightings = new HashMap<>();
 
-	private Instant lastManualFlush;
+	private Instant lastFlush;
 
 	@Override
 	protected void startUp()
@@ -160,7 +160,7 @@ public class BotDetectorPlugin extends Plugin
 
 		namesUploaded = 0;
 		loggedPlayerName = null;
-		lastManualFlush = null;
+		lastFlush = null;
 	}
 
 	private void updateTimeToAutoSend()
@@ -187,6 +187,7 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		lastFlush = Instant.now();
 		updateTimeToAutoSend();
 
 		int uniqueNames;
@@ -349,18 +350,17 @@ public class BotDetectorPlugin extends Plugin
 		String command = event.getCommand();
 		if (command.equalsIgnoreCase(MANUAL_FLUSH_COMMAND))
 		{
-			Instant canFlush = (lastManualFlush != null ? lastManualFlush : Instant.MIN)
+			Instant canFlush = (lastFlush != null ? lastFlush : Instant.MIN)
 				.plusSeconds(MANUAL_FLUSH_COOLDOWN_SECONDS);
 			Instant now = Instant.now();
 			if (now.isAfter(canFlush))
 			{
-				lastManualFlush = now;
 				flushPlayersToClient(true);
 			}
 			else
 			{
 				long secs = Duration.between(now, canFlush).toMillis() / 1000;
-				sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players again.");
+				sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players.");
 			}
 		}
 		else if (command.equalsIgnoreCase(SHOW_HIDE_ID_COMMAND))
