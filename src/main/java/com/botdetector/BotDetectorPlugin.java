@@ -224,7 +224,16 @@ public class BotDetectorPlugin extends Plugin
 					{
 						synchronized (sightingTable)
 						{
-							sightings.forEach(s -> sightingTable.put(s.getPlayerName(), s.getRegionID(), s));
+							sightings.forEach(s ->
+							{
+								String name = s.getPlayerName();
+								int region = s.getRegionID();
+								// Don't replace if new sightings were added to the table during the request
+								if (!sightingTable.contains(name, region))
+								{
+									sightingTable.put(name, region, s);
+								}
+							});
 						}
 					}
 				}
