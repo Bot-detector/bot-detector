@@ -253,10 +253,12 @@ public class BotDetectorPlugin extends Plugin
 		{
 			return;
 		}
-		detectorClient.requestPlayerStats(loggedPlayerName)
+
+		String nameAtRequest = loggedPlayerName;
+		detectorClient.requestPlayerStats(nameAtRequest)
 			.whenComplete((ps, ex) ->
 			{
-				if (ps != null)
+				if (ps != null && nameAtRequest.equals(loggedPlayerName))
 				{
 					SwingUtilities.invokeLater(() -> panel.setPlayerStats(ps));
 				}
