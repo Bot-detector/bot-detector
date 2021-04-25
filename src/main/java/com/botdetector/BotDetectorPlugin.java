@@ -278,7 +278,8 @@ public class BotDetectorPlugin extends Plugin
 			SwingUtilities.invokeLater(() ->
 			{
 				panel.setAnonymousWarning(config.enableAnonymousReporting());
-				panel.setPrediction(null);
+				panel.forceHideFeedbackPanel();
+				panel.forceHideReportPanel();
 			});
 		}
 
@@ -298,7 +299,12 @@ public class BotDetectorPlugin extends Plugin
 				flushPlayersToClient(false);
 				persistentSightings.clear();
 				loggedPlayerName = null;
-				SwingUtilities.invokeLater(() -> panel.setPlayerStats(null));
+				SwingUtilities.invokeLater(() ->
+				{
+					panel.setPlayerStats(null);
+					panel.forceHideFeedbackPanel();
+					panel.forceHideReportPanel();
+				});
 			}
 		}
 	}
@@ -362,6 +368,11 @@ public class BotDetectorPlugin extends Plugin
 				sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players.");
 			}
 		}
+		else if (command.equalsIgnoreCase(MANUAL_SIGHT_COMMAND))
+		{
+			client.getPlayers().forEach(this::processPlayer);
+			sendChatStatusMessage("Player sightings refreshed.");
+		}
 		else if (command.equalsIgnoreCase(SHOW_HIDE_ID_COMMAND))
 		{
 			if (event.getArguments().length > 0)
@@ -376,11 +387,6 @@ public class BotDetectorPlugin extends Plugin
 					panel.setPlayerIdVisible(false);
 				}
 			}
-		}
-		else if (command.equalsIgnoreCase(MANUAL_SIGHT_COMMAND))
-		{
-			client.getPlayers().forEach(this::processPlayer);
-			sendChatStatusMessage("Player sightings refreshed.");
 		}
 	}
 

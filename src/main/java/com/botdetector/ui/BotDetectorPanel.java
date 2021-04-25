@@ -553,6 +553,16 @@ public class BotDetectorPanel extends PluginPanel
 		predictionPlayerIdLabel.setVisible(visible);
 	}
 
+	public void forceHideFeedbackPanel()
+	{
+		predictionFeedbackPanel.setVisible(false);
+	}
+
+	public void forceHideReportPanel()
+	{
+		predictionReportPanel.setVisible(false);
+	}
+
 	public void setPrediction(Prediction pred)
 	{
 		setPrediction(pred, null);
@@ -712,7 +722,13 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		detectorClient.sendFeedback(lastPrediction, plugin.getReporterName(), true)
+		String reporter = plugin.getReporterName();
+		if (reporter == null)
+		{
+			return;
+		}
+
+		detectorClient.sendFeedback(lastPrediction, reporter, true)
 			.whenComplete((b, ex) ->
 			{
 				if (b)
@@ -734,7 +750,13 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		detectorClient.sendSighting(predictionPlayerSighting, plugin.getReporterName(), true)
+		String reporter = plugin.getReporterName();
+		if (reporter == null)
+		{
+			return;
+		}
+
+		detectorClient.sendSighting(predictionPlayerSighting, reporter, true)
 			.whenComplete((b, ex) ->
 			{
 				if (b)
