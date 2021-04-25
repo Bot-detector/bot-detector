@@ -42,8 +42,7 @@ import okhttp3.Response;
 public class BotDetectorClient
 {
 	public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-	// TODO: Change this back to /api/
-	private static final String BASE_URL = "https://www.osrsbotdetector.com/dev";
+	private static final String BASE_URL = System.getProperty("BotDetectorAPIPath", "https://www.osrsbotdetector.com/api");
 
 	private static final String DETECTION_URL = BASE_URL + "/plugin/detect/";
 	private static final String PLAYER_STATS_URL = BASE_URL + "/stats/contributions/";
