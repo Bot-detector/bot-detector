@@ -114,7 +114,7 @@ public class BotDetectorPlugin extends Plugin
 	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	private final Map<String, PlayerSighting> persistentSightings = new HashMap<>();
 
-	private Instant lastFlush;
+	private Instant lastFlush = Instant.MIN;
 
 	@Override
 	protected void startUp()
@@ -160,7 +160,7 @@ public class BotDetectorPlugin extends Plugin
 
 		namesUploaded = 0;
 		loggedPlayerName = null;
-		lastFlush = null;
+		lastFlush = Instant.MIN;
 	}
 
 	private void updateTimeToAutoSend()
@@ -350,8 +350,7 @@ public class BotDetectorPlugin extends Plugin
 		String command = event.getCommand();
 		if (command.equalsIgnoreCase(MANUAL_FLUSH_COMMAND))
 		{
-			Instant canFlush = (lastFlush != null ? lastFlush : Instant.MIN)
-				.plusSeconds(MANUAL_FLUSH_COOLDOWN_SECONDS);
+			Instant canFlush = lastFlush.plusSeconds(MANUAL_FLUSH_COOLDOWN_SECONDS);
 			Instant now = Instant.now();
 			if (now.isAfter(canFlush))
 			{
