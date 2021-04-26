@@ -268,37 +268,36 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onConfigChanged(ConfigChanged event)
 	{
-		if (!event.getGroup().equals(BotDetectorConfig.CONFIG_GROUP))
+		if (!event.getGroup().equals(BotDetectorConfig.CONFIG_GROUP) || event.getKey() == null)
 		{
 			return;
 		}
 
-		String eventKey = event.getKey();
-
-		if (client != null && eventKey.equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
+		switch (event.getKey())
 		{
-			menuManager.removePlayerMenuItem(DETECT);
+			case BotDetectorConfig.ADD_DETECT_OPTION_KEY:
+				if (client != null)
+				{
+					menuManager.removePlayerMenuItem(DETECT);
 
-			if (config.addDetectOption())
-			{
-				menuManager.addPlayerMenuItem(DETECT);
-			}
-		}
-
-		if (eventKey.equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
-		{
-			SwingUtilities.invokeLater(() ->
-			{
-				panel.setAnonymousWarning(config.enableAnonymousReporting());
-				panel.forceHideFeedbackPanel();
-				panel.forceHideReportPanel();
-			});
-		}
-
-		if (eventKey.equals(BotDetectorConfig.AUTO_SEND_MINUTES_KEY)
-			|| eventKey.equals(BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY))
-		{
-			updateTimeToAutoSend();
+					if (config.addDetectOption())
+					{
+						menuManager.addPlayerMenuItem(DETECT);
+					}
+				}
+				break;
+			case BotDetectorConfig.ANONYMOUS_REPORTING_KEY:
+				SwingUtilities.invokeLater(() ->
+				{
+					panel.setAnonymousWarning(config.enableAnonymousReporting());
+					panel.forceHideFeedbackPanel();
+					panel.forceHideReportPanel();
+				});
+				break;
+			case BotDetectorConfig.AUTO_SEND_MINUTES_KEY:
+			case BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY:
+				updateTimeToAutoSend();
+				break;
 		}
 	}
 
@@ -425,7 +424,7 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		//Discord Linking Command
-		if (split[0].substring(1).toLowerCase().equals(CODE_COMMAND))
+		if (split[0].substring(1).equalsIgnoreCase(CODE_COMMAND))
 		{
 			String author = event.getName();
 			String code = split[1];
@@ -435,11 +434,11 @@ public class BotDetectorPlugin extends Plugin
 				{
 					if (b)
 					{
-						sendChatStatusMessage("Verified " + author + "!");
+						sendChatStatusMessage("Discord verified for " + author + "!");
 					}
 					else
 					{
-						sendChatStatusMessage("Could not verify " + author + ".");
+						sendChatStatusMessage("Could not verify Discord for " + author + ".");
 					}
 				});
 		}
