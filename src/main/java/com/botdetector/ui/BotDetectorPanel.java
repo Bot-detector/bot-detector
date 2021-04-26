@@ -619,6 +619,8 @@ public class BotDetectorPanel extends PluginPanel
 			predictionPlayerNameLabel.setText(EMPTY_LABEL);
 			predictionTypeLabel.setText(EMPTY_LABEL);
 			predictionConfidenceLabel.setText(EMPTY_LABEL);
+			// Don't forget to reset this color!
+			predictionConfidenceLabel.setForeground(VALUE_COLOR);
 			predictionBreakdownLabel.setText(EMPTY_LABEL);
 
 			predictionBreakdownPanel.setVisible(false);
