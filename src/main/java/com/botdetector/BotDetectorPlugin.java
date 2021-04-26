@@ -164,7 +164,8 @@ public class BotDetectorPlugin extends Plugin
 
 	private void updateTimeToAutoSend()
 	{
-		timeToAutoSend = Instant.now().plusSeconds(config.autoSendMinutes() * 60);
+		timeToAutoSend = Instant.now().plusSeconds(
+			Math.max(config.autoSendMinutes(), BotDetectorConfig.AUTO_SEND_MINIMUM_MINUTES) * 60);
 	}
 
 	@Schedule(period = AUTO_SEND_SCHEDULE_SECONDS,
