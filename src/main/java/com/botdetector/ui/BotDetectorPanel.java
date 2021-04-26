@@ -595,9 +595,11 @@ public class BotDetectorPanel extends PluginPanel
 				predictionBreakdownPanel.setVisible(true);
 			}
 
-			if (!config.enableAnonymousReporting() && pred.getPlayerId() > 0)
+			if (!config.enableAnonymousReporting()
+				&& pred.getPlayerId() > 0
+				&& plugin.getLoggedPlayerName() != null)
 			{
-				predictionFeedbackPanel.setVisible(plugin.getLoggedPlayerName() != null);
+				predictionFeedbackPanel.setVisible(true);
 				predictionReportPanel.setVisible(sighting != null);
 			}
 		}
