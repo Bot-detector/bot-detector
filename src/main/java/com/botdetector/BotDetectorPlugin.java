@@ -245,12 +245,13 @@ public class BotDetectorPlugin extends Plugin
 		unit = ChronoUnit.SECONDS, asynchronous = true)
 	public void refreshPlayerStats()
 	{
-		refreshPlayerStats(false);
-	}
+		if (config.enableAnonymousReporting())
+		{
+			SwingUtilities.invokeLater(() -> panel.setPlayerStats(null));
+			return;
+		}
 
-	public void refreshPlayerStats(boolean refreshIfAnon)
-	{
-		if (loggedPlayerName == null || (config.enableAnonymousReporting() && !refreshIfAnon))
+		if (loggedPlayerName == null)
 		{
 			return;
 		}
@@ -288,6 +289,7 @@ public class BotDetectorPlugin extends Plugin
 				}
 				break;
 			case BotDetectorConfig.ANONYMOUS_REPORTING_KEY:
+				refreshPlayerStats();
 				SwingUtilities.invokeLater(() ->
 				{
 					panel.setAnonymousWarning(config.enableAnonymousReporting());
@@ -341,7 +343,7 @@ public class BotDetectorPlugin extends Plugin
 			{
 				loggedPlayerName = player.getName();
 				updateTimeToAutoSend();
-				refreshPlayerStats(true);
+				refreshPlayerStats();
 			}
 			return;
 		}

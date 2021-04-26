@@ -64,6 +64,8 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Color TEXT_COLOR = ColorScheme.LIGHT_GRAY_COLOR;
 	private static final Color VALUE_COLOR = Color.WHITE;
 
+	private static final String EMPTY_LABEL = "---";
+
 	private static final List<WebLink> LINKS = ImmutableList.of(
 		WebLink.WEBSITE,
 		WebLink.DISCORD,
@@ -156,6 +158,8 @@ public class BotDetectorPanel extends PluginPanel
 		add(predictionReportPanel, c);
 
 		setPlayerIdVisible(false);
+		setPrediction(null);
+		setPlayerStats(null);
 	}
 
 	private JPanel linksPanel()
@@ -543,9 +547,9 @@ public class BotDetectorPanel extends PluginPanel
 		}
 		else
 		{
-			playerStatsReportsLabel.setText("");
-			playerStatsConfirmedBansLabel.setText("");
-			playerStatsPossibleBansLabel.setText("");
+			playerStatsReportsLabel.setText(EMPTY_LABEL);
+			playerStatsConfirmedBansLabel.setText(EMPTY_LABEL);
+			playerStatsPossibleBansLabel.setText(EMPTY_LABEL);
 		}
 	}
 
@@ -590,7 +594,7 @@ public class BotDetectorPanel extends PluginPanel
 
 			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
 			{
-				predictionBreakdownLabel.setText("");
+				predictionBreakdownLabel.setText(EMPTY_LABEL);
 				predictionBreakdownPanel.setVisible(false);
 			}
 			else
@@ -611,11 +615,11 @@ public class BotDetectorPanel extends PluginPanel
 			lastPrediction = null;
 			lastPredictionPlayerSighting = null;
 			lastPredictionReporterName = null;
-			predictionPlayerIdLabel.setText("");
-			predictionPlayerNameLabel.setText("");
-			predictionTypeLabel.setText("");
-			predictionConfidenceLabel.setText("");
-			predictionBreakdownLabel.setText("");
+			predictionPlayerIdLabel.setText(EMPTY_LABEL);
+			predictionPlayerNameLabel.setText(EMPTY_LABEL);
+			predictionTypeLabel.setText(EMPTY_LABEL);
+			predictionConfidenceLabel.setText(EMPTY_LABEL);
+			predictionBreakdownLabel.setText(EMPTY_LABEL);
 
 			predictionBreakdownPanel.setVisible(false);
 			predictionFeedbackPanel.setVisible(false);
