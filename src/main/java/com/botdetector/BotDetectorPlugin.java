@@ -76,8 +76,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
 	private static final int REFRESH_PLAYER_STATS_SCHEDULE_SECONDS = 60;
 
-	private static final String ANONYMOUS_USER_NAME = "AnonymousUser";
 	private static final String CHAT_MESSAGE_HEADER = "[Bot Detector]: ";
+	public static final String ANONYMOUS_USER_NAME = "AnonymousUser";
 
 	@Inject
 	private Client client;
