@@ -92,8 +92,6 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel playerStatsAnonymousWarningLabel;
 
 	// Primary Prediction
-	private Prediction lastPrediction;
-	private PlayerSighting lastPredictionPlayerSighting;
 	private JLabel predictionPlayerIdTextLabel;
 	private JLabel predictionPlayerIdLabel;
 	private JLabel predictionPlayerNameLabel;
@@ -102,6 +100,11 @@ public class BotDetectorPanel extends PluginPanel
 
 	// Prediction Breakdown
 	private JLabel predictionBreakdownLabel;
+
+	// For feedback/report
+	private Prediction lastPrediction;
+	private PlayerSighting lastPredictionPlayerSighting;
+	private String lastPredictionReporterName;
 
 	@Inject
 	public BotDetectorPanel(BotDetectorPlugin plugin, BotDetectorClient detectorClient, BotDetectorConfig config)
@@ -578,6 +581,7 @@ public class BotDetectorPanel extends PluginPanel
 		{
 			lastPrediction = pred;
 			lastPredictionPlayerSighting = sighting;
+			lastPredictionReporterName = plugin.getReporterName();
 			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
 			predictionPlayerNameLabel.setText(pred.getPlayerName());
 			predictionTypeLabel.setText(normalizeLabel(pred.getPredictionLabel()));
@@ -595,9 +599,8 @@ public class BotDetectorPanel extends PluginPanel
 				predictionBreakdownPanel.setVisible(true);
 			}
 
-			if (!config.enableAnonymousReporting()
-				&& pred.getPlayerId() > 0
-				&& plugin.getLoggedPlayerName() != null)
+			if (shouldAllowFeedbackOrReport()
+				&& pred.getPlayerId() > 0)
 			{
 				predictionFeedbackPanel.setVisible(true);
 				predictionReportPanel.setVisible(sighting != null);
@@ -607,6 +610,7 @@ public class BotDetectorPanel extends PluginPanel
 		{
 			lastPrediction = null;
 			lastPredictionPlayerSighting = null;
+			lastPredictionReporterName = null;
 			predictionPlayerIdLabel.setText("");
 			predictionPlayerNameLabel.setText("");
 			predictionTypeLabel.setText("");
@@ -723,18 +727,13 @@ public class BotDetectorPanel extends PluginPanel
 	private void sendFeedbackToClient(boolean feedback)
 	{
 		predictionFeedbackPanel.setVisible(false);
-		if (lastPrediction == null)
+		if (lastPrediction == null
+			|| !shouldAllowFeedbackOrReport())
 		{
 			return;
 		}
 
-		String reporter = plugin.getReporterName();
-		if (reporter == null)
-		{
-			return;
-		}
-
-		detectorClient.sendFeedback(lastPrediction, reporter, true)
+		detectorClient.sendFeedback(lastPrediction, lastPredictionReporterName, true)
 			.whenComplete((b, ex) ->
 			{
 				if (b)
@@ -751,18 +750,13 @@ public class BotDetectorPanel extends PluginPanel
 	private void sendReportToClient(boolean doReport)
 	{
 		predictionReportPanel.setVisible(false);
-		if (lastPredictionPlayerSighting == null || !doReport)
+		if (lastPredictionPlayerSighting == null
+			|| !doReport || !shouldAllowFeedbackOrReport())
 		{
 			return;
 		}
 
-		String reporter = plugin.getReporterName();
-		if (reporter == null)
-		{
-			return;
-		}
-
-		detectorClient.sendSighting(lastPredictionPlayerSighting, reporter, true)
+		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionReporterName, true)
 			.whenComplete((b, ex) ->
 			{
 				if (b)
@@ -774,5 +768,11 @@ public class BotDetectorPanel extends PluginPanel
 					plugin.sendChatStatusMessage("Error sending your report.");
 				}
 			});
+	}
+
+	private boolean shouldAllowFeedbackOrReport()
+	{
+		return lastPredictionReporterName != null
+			&& !lastPredictionReporterName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
 	}
 }

@@ -15,6 +15,8 @@ public interface BotDetectorConfig extends Config
 	String ADD_DETECT_OPTION_KEY = "addDetectOption";
 	String ANONYMOUS_REPORTING_KEY = "enableAnonymousReporting";
 
+	int AUTO_SEND_MINIMUM_MINUTES = 5;
+
 	@ConfigItem(
 		position = 1,
 		keyName = ONLY_SEND_AT_LOGOUT_KEY,
@@ -32,7 +34,7 @@ public interface BotDetectorConfig extends Config
 		name = "Send Names Every",
 		description = "Sets the amount of time between automatic name uploads."
 	)
-	@Range(min = 5)
+	@Range(min = AUTO_SEND_MINIMUM_MINUTES)
 	@Units(Units.MINUTES)
 	default int autoSendMinutes()
 	{
