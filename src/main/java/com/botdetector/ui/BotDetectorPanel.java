@@ -141,7 +141,7 @@ public class BotDetectorPanel extends PluginPanel
 
 		c.gridy++;
 		add(reportingStatsPanel, c);
-		
+
 		c.gridy++;
 		add(searchBar, c);
 
@@ -216,8 +216,8 @@ public class BotDetectorPanel extends PluginPanel
 		c.weightx = 1;
 		reportingStatsPanel.add(label, c);
 
-		label = new JLabel("Names Uploaded: ");
-		label.setToolTipText("How many names uploaded during the current session.");
+		label = new JLabel("Current Uploads: ");
+		label.setToolTipText("How many names uploaded during the current Runelite session.");
 		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 
@@ -235,8 +235,8 @@ public class BotDetectorPanel extends PluginPanel
 		c.weightx = 1;
 		reportingStatsPanel.add(playerStatsUploadedNamesLabel, c);
 
-		label = new JLabel("Reports Made: ");
-		label.setToolTipText("How many names/locations you've sent to us.");
+		label = new JLabel("Total Uploads: ");
+		label.setToolTipText("How many names sent to us that were attributed to you, both passively and manually reported.");
 		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
@@ -252,7 +252,7 @@ public class BotDetectorPanel extends PluginPanel
 		reportingStatsPanel.add(playerStatsReportsLabel, c);
 
 		label = new JLabel("Confirmed Bans: ");
-		label.setToolTipText("How many of your reported names lead to confirmed bans by Jagex.");
+		label.setToolTipText("How many of your uploaded names were confirmed to have been banned by Jagex.");
 		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
@@ -268,7 +268,9 @@ public class BotDetectorPanel extends PluginPanel
 		reportingStatsPanel.add(playerStatsConfirmedBansLabel, c);
 
 		label = new JLabel("Probable Bans: ");
-		label.setToolTipText("How many of your reported names may have been banned (e.g. Names that no longer appear on the Hiscores).");
+		label.setToolTipText(
+			"<html>How many of your uploaded names may have been banned." +
+			"<br>For example: Names that no longer appear on the Hiscores.</html>");
 		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
@@ -284,7 +286,9 @@ public class BotDetectorPanel extends PluginPanel
 		reportingStatsPanel.add(playerStatsPossibleBansLabel, c);
 
 		playerStatsAnonymousWarningLabel = new JLabel(" Anonymous Reporting Active");
-		playerStatsAnonymousWarningLabel.setToolTipText("Your reports will not be added to your tallies.");
+		playerStatsAnonymousWarningLabel.setToolTipText(
+			"<html>Your name will not be included in your reports and your tallies will not increase." +
+			"<br>Prediction feedback and manual reporting are also disabled.</html>");
 		playerStatsAnonymousWarningLabel.setIcon(Icons.WARNING_ICON);
 		playerStatsAnonymousWarningLabel.setFont(NORMAL_FONT);
 		playerStatsAnonymousWarningLabel.setForeground(HEADER_COLOR);
@@ -432,6 +436,9 @@ public class BotDetectorPanel extends PluginPanel
 		c.fill = GridBagConstraints.HORIZONTAL;
 
 		JLabel label = new JLabel("Is this prediction correct?");
+		label.setToolTipText(
+			"<html>Please tell us if this prediction seems correct to you!" +
+			"<br>Doing so will help us improve our model.</html>");
 		label.setFont(NORMAL_FONT);
 		label.setForeground(HEADER_COLOR);
 		c.gridx = 0;
@@ -472,7 +479,7 @@ public class BotDetectorPanel extends PluginPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 
-		JLabel label = new JLabel("Report this player as a bot?");
+		JLabel label = new JLabel("Report this player to us as a bot?");
 		label.setFont(NORMAL_FONT);
 		label.setForeground(HEADER_COLOR);
 		c.gridx = 0;
@@ -485,6 +492,9 @@ public class BotDetectorPanel extends PluginPanel
 		JButton button;
 
 		button = new JButton("Yes");
+		button.setToolTipText(
+			"<html>This is <span style='color:red'>NOT</span> the same as reporting the player in-game!" +
+			"<br>Reporting a player to us as a bot tells us to pay more attention to them when training our model.</html>");
 		button.setForeground(HEADER_COLOR);
 		button.setFont(SMALL_FONT);
 		button.addActionListener(l -> sendReportToClient(true));
