@@ -47,7 +47,8 @@ public class BotDetectorPanel extends PluginPanel
 		WEBSITE(Icons.WEB_ICON, "Our website", "https://www.osrsbotdetector.com/"),
 		DISCORD(Icons.DISCORD_ICON, "Join our Discord!", "https://discord.com/invite/JCAGpcjbfP"),
 		GITHUB(Icons.GITHUB_ICON, "Check out the project's source code", "https://github.com/Bot-detector"),
-		PATREON(Icons.PATREON_ICON, "Help keep us going!", "https://www.patreon.com/bot_detector")
+		PATREON(Icons.PATREON_ICON, "Help keep us going!", "https://www.patreon.com/bot_detector"),
+		TWITTER(Icons.TWITTER_ICON, "Follow us on Twitter!", "https://www.twitter.com/OSRSBotDetector")
 		;
 
 		private final ImageIcon image;
@@ -71,6 +72,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	private static final List<WebLink> LINKS = ImmutableList.of(
 		WebLink.WEBSITE,
+		WebLink.TWITTER,
 		WebLink.DISCORD,
 		WebLink.GITHUB,
 		WebLink.PATREON);
