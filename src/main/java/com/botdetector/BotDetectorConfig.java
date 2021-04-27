@@ -45,7 +45,7 @@ public interface BotDetectorConfig extends Config
 		position = 3,
 		keyName = "enableChatNotifications",
 		name = "Enable Chat Status Messages",
-		description = "Show various plugin status messages in chat."
+		description = "Show various plugin status messages in the game chat."
 	)
 	default boolean enableChatStatusMessages()
 	{
@@ -55,8 +55,8 @@ public interface BotDetectorConfig extends Config
 	@ConfigItem(
 		position = 4,
 		keyName = ADD_DETECT_OPTION_KEY,
-		name = "Right-click 'Detect' players",
-		description = "Adds a menu entry to player menus that allows you to see what a player is classified as."
+		name = "Right-click 'Detect' Players",
+		description = "Adds an entry to player menus to quickly check them in the prediction panel."
 	)
 	default boolean addDetectOption()
 	{
@@ -67,7 +67,7 @@ public interface BotDetectorConfig extends Config
 		position = 5,
 		keyName = ANONYMOUS_REPORTING_KEY,
 		name = "Anonymous Reporting",
-		description = "Your RSN will not be sent with reports. Disable if you'd like to track your contributions."
+		description = "Your name will not be sent with reports.<br>Disable if you'd like to track your contributions."
 	)
 	default boolean enableAnonymousReporting()
 	{
@@ -77,7 +77,7 @@ public interface BotDetectorConfig extends Config
 	@ConfigItem(
 		position = 6,
 		keyName = "authToken",
-		name = "Authentication Token",
+		name = "Developer Authentication Token",
 		description = "If you have an auth token from the devs, enter it here for special features!."
 	)
 	default String authToken()
