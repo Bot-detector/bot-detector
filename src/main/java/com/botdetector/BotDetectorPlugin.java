@@ -61,8 +61,9 @@ public class BotDetectorPlugin extends Plugin
 {
 	private static final String DETECT = "Detect";
 	private static final String KICK_OPTION = "Kick";
+	private static final String DELETE_OPTION = "Delete";
 	private static final ImmutableSet<String> AFTER_OPTIONS =
-		ImmutableSet.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
+		ImmutableSet.of("Message", "Add ignore", "Remove friend", DELETE_OPTION, KICK_OPTION);
 
 	private static final char CODE_COMMAND_INDICATOR = '!';
 	private static final String CODE_COMMAND = "code";
@@ -463,7 +464,7 @@ public class BotDetectorPlugin extends Plugin
 			groupId == WidgetInfo.RAIDING_PARTY.getGroupId() || groupId == WidgetInfo.PRIVATE_CHAT_MESSAGE.getGroupId() ||
 			groupId == WidgetInfo.IGNORE_LIST.getGroupId())
 		{
-			if (!AFTER_OPTIONS.contains(option) || (option.equals("Delete") && groupId != WidgetInfo.IGNORE_LIST.getGroupId()))
+			if (!AFTER_OPTIONS.contains(option) || (option.equals(DELETE_OPTION) && groupId != WidgetInfo.IGNORE_LIST.getGroupId()))
 			{
 				return;
 			}
