@@ -616,8 +616,9 @@ public class BotDetectorPanel extends PluginPanel
 			if (shouldAllowFeedbackOrReport()
 				&& pred.getPlayerId() > 0)
 			{
-				predictionFeedbackPanel.setVisible(true);
-				predictionReportPanel.setVisible(sighting != null);
+				String name = plugin.normalizePlayerName(pred.getPlayerName());
+				predictionFeedbackPanel.setVisible(!plugin.getFeedbackedPlayers().containsKey(name));
+				predictionReportPanel.setVisible(sighting != null && !plugin.getReportedPlayers().containsKey(name));
 			}
 		}
 		else
@@ -689,7 +690,7 @@ public class BotDetectorPanel extends PluginPanel
 				searchBar.setEditable(true);
 				searchBarLoading = false;
 
-				setPrediction(pred, plugin.getMostRecentPlayerSighting(target));
+				setPrediction(pred, plugin.getPersistentSightings().get(plugin.normalizePlayerName(target)));
 			}));
 	}
 
@@ -755,6 +756,8 @@ public class BotDetectorPanel extends PluginPanel
 				if (b)
 				{
 					plugin.sendChatStatusMessage("Thank you for your feedback!");
+					plugin.getFeedbackedPlayers().put(
+						plugin.normalizePlayerName(lastPrediction.getPlayerName()), feedback);
 				}
 				else
 				{
@@ -767,8 +770,16 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		predictionReportPanel.setVisible(false);
 		if (lastPredictionPlayerSighting == null
-			|| !doReport || !shouldAllowFeedbackOrReport())
+			|| !shouldAllowFeedbackOrReport())
 		{
+			return;
+		}
+
+		String name = plugin.normalizePlayerName(lastPredictionPlayerSighting.getPlayerName());
+
+		if (!doReport)
+		{
+			plugin.getReportedPlayers().put(name, false);
 			return;
 		}
 
@@ -778,6 +789,7 @@ public class BotDetectorPanel extends PluginPanel
 				if (b)
 				{
 					plugin.sendChatStatusMessage("Thank you for your report!");
+					plugin.getReportedPlayers().put(name, true);
 				}
 				else
 				{

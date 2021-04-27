@@ -114,7 +114,14 @@ public class BotDetectorPlugin extends Plugin
 	private Instant lastFlush = Instant.MIN;
 
 	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
+
+	// Current login maps, clear on logout/shutdown. Feedback/Report map to selected value in panel.
+	@Getter
 	private final Map<String, PlayerSighting> persistentSightings = new HashMap<>();
+	@Getter
+	private final Map<String, Boolean> feedbackedPlayers = new HashMap<>();
+	@Getter
+	private final Map<String, Boolean> reportedPlayers = new HashMap<>();
 
 	@Override
 	protected void startUp()
@@ -150,6 +157,8 @@ public class BotDetectorPlugin extends Plugin
 	{
 		flushPlayersToClient(false);
 		persistentSightings.clear();
+		feedbackedPlayers.clear();
+		reportedPlayers.clear();
 
 		if (config.addDetectOption() && client != null)
 		{
@@ -314,6 +323,8 @@ public class BotDetectorPlugin extends Plugin
 			{
 				flushPlayersToClient(false);
 				persistentSightings.clear();
+				feedbackedPlayers.clear();
+				reportedPlayers.clear();
 				loggedPlayerName = null;
 				SwingUtilities.invokeLater(() ->
 				{
@@ -523,12 +534,6 @@ public class BotDetectorPlugin extends Plugin
 
 			panel.detectPlayer(playerName);
 		});
-	}
-
-	public PlayerSighting getMostRecentPlayerSighting(String playerName)
-	{
-		String name = normalizePlayerName(playerName);
-		return persistentSightings.get(name);
 	}
 
 	public void sendChatStatusMessage(String msg)
