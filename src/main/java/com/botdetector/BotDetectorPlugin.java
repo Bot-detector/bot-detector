@@ -5,7 +5,6 @@ import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import java.awt.image.BufferedImage;
@@ -50,6 +49,7 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
+import org.apache.commons.lang3.ArrayUtils;
 
 @PluginDescriptor(
 	name = "Bot Detector",
@@ -476,7 +476,8 @@ public class BotDetectorPlugin extends Plugin
 			detect.setParam1(event.getActionParam1());
 			detect.setIdentifier(event.getIdentifier());
 
-			insertMenuEntry(detect, client.getMenuEntries());
+			// Menu entries are added in-game in reverse order
+			client.setMenuEntries(ArrayUtils.insert(1, client.getMenuEntries(), detect));
 		}
 	}
 
@@ -508,12 +509,6 @@ public class BotDetectorPlugin extends Plugin
 				detectPlayer(Text.removeTags(name));
 			}
 		}
-	}
-
-	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
-	{
-		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
-		client.setMenuEntries(newMenu);
 	}
 
 	public void detectPlayer(String playerName)
