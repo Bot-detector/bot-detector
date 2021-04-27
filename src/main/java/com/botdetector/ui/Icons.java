@@ -17,6 +17,7 @@ public class Icons
 	public static final ImageIcon DISCORD_ICON;
 	public static final ImageIcon PATREON_ICON;
 	public static final ImageIcon WEB_ICON;
+	public static final ImageIcon TWITTER_ICON;
 	public static final ImageIcon WARNING_ICON;
 
 	static
@@ -32,6 +33,9 @@ public class Icons
 
 		final BufferedImage webIcon = ImageUtil.loadImageResource(BotDetectorPlugin.class, "/web.png");
 		WEB_ICON = new ImageIcon(webIcon);
+
+		final BufferedImage twitterIcon = ImageUtil.loadImageResource(BotDetectorPlugin.class, "/twitter.png");
+		TWITTER_ICON = new ImageIcon(twitterIcon);
 
 		final BufferedImage warningIcon = ImageUtil.loadImageResource(BotDetectorPlugin.class, "/warning.png");
 		WARNING_ICON = new ImageIcon(warningIcon);
