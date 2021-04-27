@@ -1,5 +1,6 @@
 package com.botdetector;
 
+import com.botdetector.ui.PanelFontType;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -14,6 +15,7 @@ public interface BotDetectorConfig extends Config
 	String AUTO_SEND_MINUTES_KEY = "autoSendMinutes";
 	String ADD_DETECT_OPTION_KEY = "addDetectOption";
 	String ANONYMOUS_REPORTING_KEY = "enableAnonymousReporting";
+	String PANEL_FONT_TYPE_KEY = "panelFontType";
 
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
 
@@ -65,6 +67,17 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 5,
+		keyName = PANEL_FONT_TYPE_KEY,
+		name = "Panel Font Size",
+		description = "Sets the size of the label fields in the prediction panel."
+	)
+	default PanelFontType panelFontType()
+	{
+		return PanelFontType.NORMAL;
+	}
+
+	@ConfigItem(
+		position = 6,
 		keyName = ANONYMOUS_REPORTING_KEY,
 		name = "Anonymous Reporting",
 		description = "Your name will not be sent with reports.<br>Disable if you'd like to track your contributions."
@@ -75,7 +88,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 6,
+		position = 7,
 		keyName = "authToken",
 		name = "Developer Authentication Token",
 		description = "If you have an auth token from the devs, enter it here for special features!."

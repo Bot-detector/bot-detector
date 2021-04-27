@@ -16,11 +16,14 @@ import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -85,6 +88,8 @@ public class BotDetectorPanel extends PluginPanel
 	private final BotDetectorConfig config;
 
 	private boolean searchBarLoading;
+
+	private Set<JComponent> switchableFontComponents = new HashSet<>();
 
 	// Player Stats
 	private JLabel playerStatsUploadedNamesLabel;
@@ -160,6 +165,7 @@ public class BotDetectorPanel extends PluginPanel
 		setPlayerIdVisible(false);
 		setPrediction(null);
 		setPlayerStats(null);
+		setFontType(config.panelFontType());
 	}
 
 	private JPanel linksPanel()
@@ -218,7 +224,6 @@ public class BotDetectorPanel extends PluginPanel
 
 		label = new JLabel("Current Uploads: ");
 		label.setToolTipText("How many names uploaded during the current Runelite session.");
-		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 
 		c.gridy = 1;
@@ -227,63 +232,64 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridwidth = 1;
 		c.weightx = 0;
 		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
 
 		playerStatsUploadedNamesLabel = new JLabel();
-		playerStatsUploadedNamesLabel.setFont(SMALL_FONT);
 		playerStatsUploadedNamesLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		reportingStatsPanel.add(playerStatsUploadedNamesLabel, c);
+		switchableFontComponents.add(playerStatsUploadedNamesLabel);
 
 		label = new JLabel("Total Uploads: ");
 		label.setToolTipText("How many names sent to us that were attributed to you, both passively and manually reported.");
-		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 0;
 		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
 
 		playerStatsReportsLabel = new JLabel();
-		playerStatsReportsLabel.setFont(SMALL_FONT);
 		playerStatsReportsLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		reportingStatsPanel.add(playerStatsReportsLabel, c);
+		switchableFontComponents.add(playerStatsReportsLabel);
 
 		label = new JLabel("Confirmed Bans: ");
 		label.setToolTipText("How many of your uploaded names were confirmed to have been banned by Jagex.");
-		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 0;
 		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
 
 		playerStatsConfirmedBansLabel = new JLabel();
-		playerStatsConfirmedBansLabel.setFont(SMALL_FONT);
 		playerStatsConfirmedBansLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		reportingStatsPanel.add(playerStatsConfirmedBansLabel, c);
+		switchableFontComponents.add(playerStatsConfirmedBansLabel);
 
 		label = new JLabel("Probable Bans: ");
 		label.setToolTipText(
 			"<html>How many of your uploaded names may have been banned." +
 			"<br>For example: Names that no longer appear on the Hiscores.</html>");
-		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 0;
 		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
 
 		playerStatsPossibleBansLabel = new JLabel();
-		playerStatsPossibleBansLabel.setFont(SMALL_FONT);
 		playerStatsPossibleBansLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		reportingStatsPanel.add(playerStatsPossibleBansLabel, c);
+		switchableFontComponents.add(playerStatsPossibleBansLabel);
 
 		playerStatsAnonymousWarningLabel = new JLabel(" Anonymous Reporting Active");
 		playerStatsAnonymousWarningLabel.setToolTipText(
@@ -361,7 +367,6 @@ public class BotDetectorPanel extends PluginPanel
 		primaryPredictionPanel.add(label, c);
 
 		predictionPlayerIdTextLabel = new JLabel("Player ID: ");
-		predictionPlayerIdTextLabel.setFont(SMALL_FONT);
 		predictionPlayerIdTextLabel.setForeground(TEXT_COLOR);
 		c.gridy = 1;
 		c.gridy++;
@@ -369,58 +374,59 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridwidth = 1;
 		c.weightx = 0;
 		primaryPredictionPanel.add(predictionPlayerIdTextLabel, c);
+		switchableFontComponents.add(predictionPlayerIdTextLabel);
 
 		predictionPlayerIdLabel = new JLabel();
-		predictionPlayerIdLabel.setFont(SMALL_FONT);
 		predictionPlayerIdLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		primaryPredictionPanel.add(predictionPlayerIdLabel, c);
+		switchableFontComponents.add(predictionPlayerIdLabel);
 
 		label = new JLabel("Player Name: ");
-		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		c.gridx = 0;
 		c.weightx = 0;
 		c.gridy++;
 		primaryPredictionPanel.add(label, c);
+		switchableFontComponents.add(label);
 
 		predictionPlayerNameLabel = new JLabel();
-		predictionPlayerNameLabel.setFont(SMALL_FONT);
 		predictionPlayerNameLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		primaryPredictionPanel.add(predictionPlayerNameLabel, c);
+		switchableFontComponents.add(predictionPlayerNameLabel);
 
 		label = new JLabel("Prediction: ");
-		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		c.gridx = 0;
 		c.weightx = 0;
 		c.gridy++;
 		primaryPredictionPanel.add(label, c);
+		switchableFontComponents.add(label);
 
 		predictionTypeLabel = new JLabel();
-		predictionTypeLabel.setFont(SMALL_FONT);
 		predictionTypeLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		primaryPredictionPanel.add(predictionTypeLabel, c);
+		switchableFontComponents.add(predictionTypeLabel);
 
 		label = new JLabel("Confidence: ");
-		label.setFont(SMALL_FONT);
 		label.setForeground(TEXT_COLOR);
 		c.gridx = 0;
 		c.weightx = 0;
 		c.gridy++;
 		primaryPredictionPanel.add(label, c);
+		switchableFontComponents.add(label);
 
 		predictionConfidenceLabel = new JLabel();
-		predictionConfidenceLabel.setFont(SMALL_FONT);
 		predictionConfidenceLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		primaryPredictionPanel.add(predictionConfidenceLabel, c);
+		switchableFontComponents.add(predictionConfidenceLabel);
 
 		return primaryPredictionPanel;
 	}
@@ -435,10 +441,10 @@ public class BotDetectorPanel extends PluginPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 
+		String tooltip = "<html>Please tell us if this prediction seems correct to you!" +
+			"<br>Doing so will help us improve our model.</html>";
+
 		JLabel label = new JLabel("Is this prediction correct?");
-		label.setToolTipText(
-			"<html>Please tell us if this prediction seems correct to you!" +
-			"<br>Doing so will help us improve our model.</html>");
 		label.setFont(NORMAL_FONT);
 		label.setForeground(HEADER_COLOR);
 		c.gridx = 0;
@@ -451,6 +457,7 @@ public class BotDetectorPanel extends PluginPanel
 		JButton button;
 
 		button = new JButton("Looks fine!");
+		button.setToolTipText(tooltip);
 		button.setForeground(HEADER_COLOR);
 		button.setFont(SMALL_FONT);
 		button.addActionListener(l -> sendFeedbackToClient(true));
@@ -460,6 +467,7 @@ public class BotDetectorPanel extends PluginPanel
 		panel.add(button, c);
 
 		button = new JButton("Not sure...");
+		button.setToolTipText(tooltip);
 		button.setForeground(HEADER_COLOR);
 		button.setFont(SMALL_FONT);
 		button.addActionListener(l -> sendFeedbackToClient(false));
@@ -533,11 +541,11 @@ public class BotDetectorPanel extends PluginPanel
 		predictionBreakdownPanel.add(label, c);
 
 		predictionBreakdownLabel = new JLabel();
-		predictionBreakdownLabel.setFont(SMALL_FONT);
 		predictionBreakdownLabel.setForeground(TEXT_COLOR);
 		c.anchor = GridBagConstraints.PAGE_END;
 		c.gridy++;
 		predictionBreakdownPanel.add(predictionBreakdownLabel, c);
+		switchableFontComponents.add(predictionBreakdownLabel);
 
 		return predictionBreakdownPanel;
 	}
@@ -802,5 +810,25 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		return lastPredictionReporterName != null
 			&& !lastPredictionReporterName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
+	}
+
+	public void setFontType(PanelFontType fontType)
+	{
+		Font f;
+
+		switch (fontType)
+		{
+			case SMALL:
+				f = SMALL_FONT;
+				break;
+			case BOLD:
+				f = BOLD_FONT;
+				break;
+			default:
+				f = NORMAL_FONT;
+				break;
+		}
+
+		switchableFontComponents.forEach(c -> c.setFont(f));
 	}
 }
