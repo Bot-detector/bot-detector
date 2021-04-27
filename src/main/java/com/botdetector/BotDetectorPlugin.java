@@ -4,7 +4,7 @@ import com.botdetector.http.BotDetectorClient;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import java.awt.image.BufferedImage;
@@ -61,8 +61,8 @@ public class BotDetectorPlugin extends Plugin
 {
 	private static final String DETECT = "Detect";
 	private static final String KICK_OPTION = "Kick";
-	private static final ImmutableList<String> AFTER_OPTIONS =
-		ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
+	private static final ImmutableSet<String> AFTER_OPTIONS =
+		ImmutableSet.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
 
 	private static final char CODE_COMMAND_INDICATOR = '!';
 	private static final String CODE_COMMAND = "code";
