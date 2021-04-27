@@ -307,6 +307,9 @@ public class BotDetectorPlugin extends Plugin
 					panel.forceHideReportPanel();
 				});
 				break;
+			case BotDetectorConfig.PANEL_FONT_TYPE_KEY:
+				SwingUtilities.invokeLater(() -> panel.setFontType(config.panelFontType()));
+				break;
 			case BotDetectorConfig.AUTO_SEND_MINUTES_KEY:
 			case BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY:
 				updateTimeToAutoSend();
