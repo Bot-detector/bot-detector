@@ -59,7 +59,7 @@ import org.apache.commons.lang3.ArrayUtils;
 )
 public class BotDetectorPlugin extends Plugin
 {
-	private static final String DETECT = "Detect";
+	private static final String PREDICT_OPTION = "Predict";
 	private static final String KICK_OPTION = "Kick";
 	private static final String DELETE_OPTION = "Delete";
 	private static final ImmutableSet<String> AFTER_OPTIONS =
@@ -144,9 +144,9 @@ public class BotDetectorPlugin extends Plugin
 
 		clientToolbar.addNavigation(navButton);
 
-		if (config.addDetectOption() && client != null)
+		if (config.addPredictOption() && client != null)
 		{
-			menuManager.addPlayerMenuItem(DETECT);
+			menuManager.addPlayerMenuItem(PREDICT_OPTION);
 		}
 
 		updateTimeToAutoSend();
@@ -160,9 +160,9 @@ public class BotDetectorPlugin extends Plugin
 		feedbackedPlayers.clear();
 		reportedPlayers.clear();
 
-		if (config.addDetectOption() && client != null)
+		if (config.addPredictOption() && client != null)
 		{
-			menuManager.removePlayerMenuItem(DETECT);
+			menuManager.removePlayerMenuItem(PREDICT_OPTION);
 		}
 
 		clientToolbar.removeNavigation(navButton);
@@ -287,14 +287,14 @@ public class BotDetectorPlugin extends Plugin
 
 		switch (event.getKey())
 		{
-			case BotDetectorConfig.ADD_DETECT_OPTION_KEY:
+			case BotDetectorConfig.ADD_PREDICT_OPTION_KEY:
 				if (client != null)
 				{
-					menuManager.removePlayerMenuItem(DETECT);
+					menuManager.removePlayerMenuItem(PREDICT_OPTION);
 
-					if (config.addDetectOption())
+					if (config.addPredictOption())
 					{
-						menuManager.addPlayerMenuItem(DETECT);
+						menuManager.addPlayerMenuItem(PREDICT_OPTION);
 					}
 				}
 				break;
@@ -465,7 +465,7 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		if (!config.addDetectOption())
+		if (!config.addPredictOption())
 		{
 			return;
 		}
@@ -483,16 +483,16 @@ public class BotDetectorPlugin extends Plugin
 				return;
 			}
 
-			final MenuEntry detect = new MenuEntry();
-			detect.setOption(DETECT);
-			detect.setTarget(event.getTarget());
-			detect.setType(MenuAction.RUNELITE.getId());
-			detect.setParam0(event.getActionParam0());
-			detect.setParam1(event.getActionParam1());
-			detect.setIdentifier(event.getIdentifier());
+			final MenuEntry predict = new MenuEntry();
+			predict.setOption(PREDICT_OPTION);
+			predict.setTarget(event.getTarget());
+			predict.setType(MenuAction.RUNELITE.getId());
+			predict.setParam0(event.getActionParam0());
+			predict.setParam1(event.getActionParam1());
+			predict.setIdentifier(event.getIdentifier());
 
 			// Menu entries are added in-game in reverse order
-			client.setMenuEntries(ArrayUtils.insert(1, client.getMenuEntries(), detect));
+			client.setMenuEntries(ArrayUtils.insert(1, client.getMenuEntries(), predict));
 		}
 	}
 
@@ -500,7 +500,7 @@ public class BotDetectorPlugin extends Plugin
 	public void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-			&& event.getMenuOption().equals(DETECT))
+			&& event.getMenuOption().equals(PREDICT_OPTION))
 		{
 			String name;
 			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
@@ -521,12 +521,12 @@ public class BotDetectorPlugin extends Plugin
 
 			if (name != null)
 			{
-				detectPlayer(Text.removeTags(name));
+				predictPlayer(Text.removeTags(name));
 			}
 		}
 	}
 
-	public void detectPlayer(String playerName)
+	public void predictPlayer(String playerName)
 	{
 		SwingUtilities.invokeLater(() ->
 		{
@@ -535,7 +535,7 @@ public class BotDetectorPlugin extends Plugin
 				navButton.getOnSelect().run();
 			}
 
-			panel.detectPlayer(playerName);
+			panel.predictPlayer(playerName);
 		});
 	}
 

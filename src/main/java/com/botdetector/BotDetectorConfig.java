@@ -13,7 +13,7 @@ public interface BotDetectorConfig extends Config
 	String CONFIG_GROUP = "botdetector";
 	String ONLY_SEND_AT_LOGOUT_KEY = "sendAtLogout";
 	String AUTO_SEND_MINUTES_KEY = "autoSendMinutes";
-	String ADD_DETECT_OPTION_KEY = "addDetectOption";
+	String ADD_PREDICT_OPTION_KEY = "addDetectOption"; // I know it says detect, don't change it.
 	String ANONYMOUS_REPORTING_KEY = "enableAnonymousReporting";
 	String PANEL_FONT_TYPE_KEY = "panelFontType";
 
@@ -56,11 +56,11 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 4,
-		keyName = ADD_DETECT_OPTION_KEY,
-		name = "Right-click 'Detect' Players",
+		keyName = ADD_PREDICT_OPTION_KEY,
+		name = "Right-click 'Predict' Players",
 		description = "Adds an entry to player menus to quickly check them in the prediction panel."
 	)
-	default boolean addDetectOption()
+	default boolean addPredictOption()
 	{
 		return false;
 	}
