@@ -318,7 +318,7 @@ public class BotDetectorPanel extends PluginPanel
 		searchBar.setBackground(SUB_BACKGROUND_COLOR);
 		searchBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
 		searchBar.setMinimumSize(new Dimension(0, 30));
-		searchBar.addActionListener(e -> detectPlayer());
+		searchBar.addActionListener(e -> predictPlayer());
 		searchBar.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -332,7 +332,7 @@ public class BotDetectorPanel extends PluginPanel
 				String name = plugin.getLoggedPlayerName();
 				if (name != null)
 				{
-					detectPlayer(name);
+					predictPlayer(name);
 				}
 			}
 		});
@@ -650,13 +650,13 @@ public class BotDetectorPanel extends PluginPanel
 		}
 	}
 
-	public void detectPlayer(String rsn)
+	public void predictPlayer(String playerName)
 	{
-		searchBar.setText(rsn);
-		detectPlayer();
+		searchBar.setText(playerName);
+		predictPlayer();
 	}
 
-	private void detectPlayer()
+	private void predictPlayer()
 	{
 		String target = Text.sanitize(searchBar.getText());
 
