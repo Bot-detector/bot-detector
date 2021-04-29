@@ -79,8 +79,8 @@ public interface BotDetectorConfig extends Config
 	@ConfigItem(
 		position = 6,
 		keyName = ANONYMOUS_REPORTING_KEY,
-		name = "Anonymous Reporting",
-		description = "Your name will not be sent with reports.<br>Disable if you'd like to track your contributions."
+		name = "Anonymous Uploading",
+		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."
 	)
 	default boolean enableAnonymousReporting()
 	{
