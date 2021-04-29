@@ -10,7 +10,12 @@ import net.runelite.api.coords.WorldPoint;
 @AllArgsConstructor
 public class PlayerSighting
 {
-	public PlayerSighting(String playerName, WorldPoint wp, boolean inMembersWorld, Instant timestamp)
+	public PlayerSighting(
+		String playerName,
+		WorldPoint wp,
+		boolean inMembersWorld,
+		boolean inPVPWorld,
+		Instant timestamp)
 	{
 		this(playerName,
 			wp.getRegionID(),
@@ -18,6 +23,7 @@ public class PlayerSighting
 			wp.getY(),
 			wp.getPlane(),
 			inMembersWorld,
+			inPVPWorld,
 			timestamp);
 	}
 
@@ -38,6 +44,9 @@ public class PlayerSighting
 
 	@SerializedName("on_members_world")
 	boolean inMembersWorld;
+
+	@SerializedName("on_pvp_world")
+	boolean inPVPWorld;
 
 	@SerializedName("ts")
 	Instant timestamp;
