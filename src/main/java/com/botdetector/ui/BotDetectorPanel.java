@@ -777,19 +777,26 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		detectorClient.sendFeedback(lastPrediction, lastPredictionReporterName, true)
+		CaseInsensitiveString wrappedName = plugin.normalizeAndWrapPlayerName(lastPrediction.getPlayerName());
+		Map<CaseInsensitiveString, Boolean> feedbackMap = plugin.getFeedbackedPlayers();
+		feedbackMap.put(wrappedName, feedback);
+
+		detectorClient.sendFeedback(lastPrediction, lastPredictionReporterName, feedback)
 			.whenComplete((b, ex) ->
 			{
+				String message;
 				if (b)
 				{
-					plugin.sendChatStatusMessage("Thank you for your feedback!");
-					plugin.getFeedbackedPlayers().put(
-						plugin.normalizeAndWrapPlayerName(lastPrediction.getPlayerName()), feedback);
+					message = "Thank you for your feedback for '%s'!";
 				}
 				else
 				{
-					plugin.sendChatStatusMessage("Error sending your feedback.");
+					message = "Error sending your feedback for '%s'.";
+					// Didn't work so remove from feedback map
+					feedbackMap.remove(wrappedName);
 				}
+
+				plugin.sendChatStatusMessage(String.format(message, wrappedName));
 			});
 	}
 
@@ -802,26 +809,32 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		CaseInsensitiveString name = plugin.normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
+		CaseInsensitiveString wrappedName = plugin.normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
+		Map<CaseInsensitiveString, Boolean> reportMap = plugin.getReportedPlayers();
+		reportMap.put(wrappedName, doReport);
 
+		// Didn't want to report? Work is done!
 		if (!doReport)
 		{
-			plugin.getReportedPlayers().put(name, false);
 			return;
 		}
 
 		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionReporterName, true)
 			.whenComplete((b, ex) ->
 			{
+				String message;
 				if (b)
 				{
-					plugin.sendChatStatusMessage("Thank you for your report!");
-					plugin.getReportedPlayers().put(name, true);
+					message = "Thank you for your report for '%s'!";
 				}
 				else
 				{
-					plugin.sendChatStatusMessage("Error sending your report.");
+					message = "Error sending your report '%s'.";
+					// Didn't work so remove from report map
+					reportMap.remove(wrappedName);
 				}
+
+				plugin.sendChatStatusMessage(String.format(message, wrappedName));
 			});
 	}
 
