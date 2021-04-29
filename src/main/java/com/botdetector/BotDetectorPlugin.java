@@ -237,8 +237,8 @@ public class BotDetectorPlugin extends Plugin
 				{
 					namesUploaded += uniqueNames;
 					SwingUtilities.invokeLater(() -> panel.setNamesUploaded(namesUploaded));
-					sendChatStatusMessage("Successfully sent " + numReports +
-						" reports for " + uniqueNames + " different players.");
+					sendChatStatusMessage("Successfully uploaded " + numReports +
+						" locations for " + uniqueNames + " unique players.");
 				}
 				else
 				{
