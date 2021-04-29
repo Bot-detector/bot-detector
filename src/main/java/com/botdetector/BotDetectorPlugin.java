@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.SwingUtilities;
@@ -31,6 +32,7 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
+import net.runelite.api.events.WorldChanged;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatMessageBuilder;
@@ -59,6 +61,14 @@ import org.apache.commons.lang3.ArrayUtils;
 )
 public class BotDetectorPlugin extends Plugin
 {
+	private static final ImmutableSet<WorldType> BLOCKED_WORLD_TYPES =
+		ImmutableSet.of(
+			WorldType.LEAGUE,
+			WorldType.DEADMAN,
+			WorldType.DEADMAN_TOURNAMENT,
+			WorldType.TOURNAMENT
+		);
+
 	private static final String PREDICT_OPTION = "Predict";
 	private static final String KICK_OPTION = "Kick";
 	private static final String DELETE_OPTION = "Delete";
@@ -112,6 +122,8 @@ public class BotDetectorPlugin extends Plugin
 	private Instant timeToAutoSend;
 	private int namesUploaded;
 	private Instant lastFlush = Instant.MIN;
+	private boolean isCurrentWorldMembers;
+	private boolean isCurrentWorldBlocked;
 
 	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 
@@ -132,6 +144,8 @@ public class BotDetectorPlugin extends Plugin
 			panel.setAnonymousWarning(config.enableAnonymousReporting());
 			panel.setNamesUploaded(0);
 		});
+
+		processCurrentWorld();
 
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
 
@@ -190,14 +204,13 @@ public class BotDetectorPlugin extends Plugin
 		flushPlayersToClient(true);
 	}
 
-	public void flushPlayersToClient(boolean restoreOnFailure)
+	public boolean flushPlayersToClient(boolean restoreOnFailure)
 	{
 		if (loggedPlayerName == null)
 		{
-			return;
+			return false;
 		}
 
-		lastFlush = Instant.now();
 		updateTimeToAutoSend();
 
 		int uniqueNames;
@@ -208,7 +221,7 @@ public class BotDetectorPlugin extends Plugin
 			uniqueNames = sightingTable.rowKeySet().size();
 			if (uniqueNames <= 0)
 			{
-				return;
+				return false;
 			}
 
 			sightings = new ArrayList<>(sightingTable.values());
@@ -216,7 +229,7 @@ public class BotDetectorPlugin extends Plugin
 			numReports = sightings.size();
 		}
 
-
+		lastFlush = Instant.now();
 		detectorClient.sendSightings(sightings, getReporterName(), false)
 			.whenComplete((b, ex) ->
 			{
@@ -249,6 +262,8 @@ public class BotDetectorPlugin extends Plugin
 					}
 				}
 			});
+
+		return true;
 	}
 
 	@Schedule(period = REFRESH_PLAYER_STATS_SCHEDULE_SECONDS,
@@ -363,6 +378,12 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		// Block processing AFTER local player check
+		if (isCurrentWorldBlocked)
+		{
+			return;
+		}
+
 		String playerName = normalizePlayerName(player.getName());
 		if (playerName == null)
 		{
@@ -371,7 +392,7 @@ public class BotDetectorPlugin extends Plugin
 
 		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
 		PlayerSighting p = new PlayerSighting(playerName,
-			wp, isCurrentWorldMembers(), Instant.now());
+			wp, isCurrentWorldMembers, Instant.now());
 
 		synchronized (sightingTable)
 		{
@@ -390,7 +411,10 @@ public class BotDetectorPlugin extends Plugin
 			Instant now = Instant.now();
 			if (now.isAfter(canFlush))
 			{
-				flushPlayersToClient(true);
+				if (!flushPlayersToClient(true))
+				{
+					sendChatStatusMessage("No player sightings to flush!");
+				}
 			}
 			else
 			{
@@ -400,8 +424,15 @@ public class BotDetectorPlugin extends Plugin
 		}
 		else if (command.equalsIgnoreCase(MANUAL_SIGHT_COMMAND))
 		{
-			client.getPlayers().forEach(this::processPlayer);
-			sendChatStatusMessage("Player sightings refreshed.");
+			if (isCurrentWorldBlocked)
+			{
+				sendChatStatusMessage("Cannot refresh player sightings on a blocked world.");
+			}
+			else
+			{
+				client.getPlayers().forEach(this::processPlayer);
+				sendChatStatusMessage("Player sightings refreshed.");
+			}
 		}
 		else if (command.equalsIgnoreCase(SHOW_HIDE_ID_COMMAND))
 		{
@@ -526,6 +557,12 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
+	@Subscribe
+	private void onWorldChanged(WorldChanged event)
+	{
+		processCurrentWorld();
+	}
+
 	public void predictPlayer(String playerName)
 	{
 		SwingUtilities.invokeLater(() ->
@@ -566,9 +603,12 @@ public class BotDetectorPlugin extends Plugin
 		return Text.removeTags(Text.toJagexName(playerName)).toLowerCase();
 	}
 
-	public boolean isCurrentWorldMembers()
+	public void processCurrentWorld()
 	{
-		return client.getWorldType().contains(WorldType.MEMBERS);
+		EnumSet<WorldType> types = client.getWorldType();
+		isCurrentWorldMembers = types.contains(WorldType.MEMBERS);
+		isCurrentWorldBlocked = BLOCKED_WORLD_TYPES.stream().anyMatch(types::contains);
+		SwingUtilities.invokeLater(() -> panel.setBlockedWorldWarning(isCurrentWorldBlocked));
 	}
 
 	public String getReporterName()

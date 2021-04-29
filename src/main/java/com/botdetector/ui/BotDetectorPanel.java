@@ -99,6 +99,7 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel playerStatsPossibleBansLabel;
 	private JLabel playerStatsConfirmedBansLabel;
 	private JLabel playerStatsAnonymousWarningLabel;
+	private JLabel playerStatsBlockedWorldWarningLabel;
 
 	// Primary Prediction
 	private JLabel predictionPlayerIdTextLabel;
@@ -306,6 +307,16 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridwidth = 2;
 		c.ipady = 5;
 		reportingStatsPanel.add(playerStatsAnonymousWarningLabel, c);
+
+		playerStatsBlockedWorldWarningLabel = new JLabel(" No Reporting For Current World");
+		playerStatsBlockedWorldWarningLabel.setToolTipText(
+			"<html>You are currently logged into a world where player sightings are not being collected." +
+				"<br>Your tallies will not increase from seeing players in this world.</html>");
+		playerStatsBlockedWorldWarningLabel.setIcon(Icons.WARNING_ICON);
+		playerStatsBlockedWorldWarningLabel.setFont(NORMAL_FONT);
+		playerStatsBlockedWorldWarningLabel.setForeground(HEADER_COLOR);
+		c.gridy++;
+		reportingStatsPanel.add(playerStatsBlockedWorldWarningLabel, c);
 
 		return reportingStatsPanel;
 	}
@@ -576,6 +587,11 @@ public class BotDetectorPanel extends PluginPanel
 	public void setAnonymousWarning(boolean warn)
 	{
 		playerStatsAnonymousWarningLabel.setVisible(warn);
+	}
+
+	public void setBlockedWorldWarning(boolean warn)
+	{
+		playerStatsBlockedWorldWarningLabel.setVisible(warn);
 	}
 
 	public void setPlayerIdVisible(boolean visible)
