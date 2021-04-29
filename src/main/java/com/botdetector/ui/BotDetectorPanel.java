@@ -245,7 +245,7 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.add(playerStatsUploadedNamesLabel);
 
 		label = new JLabel("Total Uploads: ");
-		label.setToolTipText("How many names sent to us that were attributed to you, both passively and manually reported.");
+		label.setToolTipText("How many unique names sent to us that were attributed to you, both passively and manually reported.");
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
 		c.gridx = 0;
@@ -294,9 +294,9 @@ public class BotDetectorPanel extends PluginPanel
 		reportingStatsPanel.add(playerStatsPossibleBansLabel, c);
 		switchableFontComponents.add(playerStatsPossibleBansLabel);
 
-		playerStatsAnonymousWarningLabel = new JLabel(" Anonymous Reporting Active");
+		playerStatsAnonymousWarningLabel = new JLabel(" Anonymous Uploading Active");
 		playerStatsAnonymousWarningLabel.setToolTipText(
-			"<html>Your name will not be included in your reports and your tallies will not increase." +
+			"<html>Your name will not be included with your uploads and your tallies will not increase." +
 			"<br>Prediction feedback and manual reporting are also disabled.</html>");
 		playerStatsAnonymousWarningLabel.setIcon(Icons.WARNING_ICON);
 		playerStatsAnonymousWarningLabel.setFont(NORMAL_FONT);
@@ -308,7 +308,7 @@ public class BotDetectorPanel extends PluginPanel
 		c.ipady = 5;
 		reportingStatsPanel.add(playerStatsAnonymousWarningLabel, c);
 
-		playerStatsBlockedWorldWarningLabel = new JLabel(" No Reporting For Current World");
+		playerStatsBlockedWorldWarningLabel = new JLabel(" No Uploading For Current World");
 		playerStatsBlockedWorldWarningLabel.setToolTipText(
 			"<html>You are currently logged into a world where player sightings are not being collected." +
 				"<br>Your tallies will not increase from seeing players in this world.</html>");
