@@ -475,7 +475,7 @@ public class BotDetectorPlugin extends Plugin
 		//Discord Linking Command
 		if (split[0].substring(1).equalsIgnoreCase(CODE_COMMAND))
 		{
-			String author = event.getName();
+			String author = Text.removeTags(event.getName());
 			String code = split[1];
 
 			detectorClient.verifyDiscord(config.authToken().trim(), normalizePlayerName(author), code)
