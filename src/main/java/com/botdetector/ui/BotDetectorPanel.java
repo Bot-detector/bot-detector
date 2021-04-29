@@ -787,11 +787,11 @@ public class BotDetectorPanel extends PluginPanel
 				String message;
 				if (b)
 				{
-					message = "Thank you for your feedback for '%s'!";
+					message = "Thank you for your prediction feedback for '%s'!";
 				}
 				else
 				{
-					message = "Error sending your feedback for '%s'.";
+					message = "Error sending your prediction feedback for '%s'.";
 					// Didn't work so remove from feedback map
 					feedbackMap.remove(wrappedName);
 				}
