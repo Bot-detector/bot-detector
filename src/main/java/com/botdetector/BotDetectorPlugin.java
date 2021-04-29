@@ -1,6 +1,7 @@
 package com.botdetector;
 
 import com.botdetector.http.BotDetectorClient;
+import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
 import com.google.common.collect.HashBasedTable;
@@ -52,6 +53,7 @@ import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
 import org.apache.commons.lang3.ArrayUtils;
+import static com.botdetector.model.CaseInsensitiveString.wrap;
 
 @PluginDescriptor(
 	name = "Bot Detector",
@@ -125,15 +127,15 @@ public class BotDetectorPlugin extends Plugin
 	private boolean isCurrentWorldMembers;
 	private boolean isCurrentWorldBlocked;
 
-	private final Table<String, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
-
 	// Current login maps, clear on logout/shutdown. Feedback/Report map to selected value in panel.
+	// All map keys should get handled with normalizePlayerName() followed by toLowerCase()
+	private final Table<CaseInsensitiveString, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	@Getter
-	private final Map<String, PlayerSighting> persistentSightings = new HashMap<>();
+	private final Map<CaseInsensitiveString, PlayerSighting> persistentSightings = new HashMap<>();
 	@Getter
-	private final Map<String, Boolean> feedbackedPlayers = new HashMap<>();
+	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new HashMap<>();
 	@Getter
-	private final Map<String, Boolean> reportedPlayers = new HashMap<>();
+	private final Map<CaseInsensitiveString, Boolean> reportedPlayers = new HashMap<>();
 
 	@Override
 	protected void startUp()
@@ -250,7 +252,7 @@ public class BotDetectorPlugin extends Plugin
 						{
 							sightings.forEach(s ->
 							{
-								String name = s.getPlayerName();
+								CaseInsensitiveString name = wrap(s.getPlayerName());
 								int region = s.getRegionID();
 								// Don't replace if new sightings were added to the table during the request
 								if (!sightingTable.contains(name, region))
@@ -385,6 +387,7 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		String playerName = normalizePlayerName(player.getName());
+		CaseInsensitiveString wrappedName = wrap(playerName);
 		if (playerName == null)
 		{
 			return;
@@ -396,9 +399,9 @@ public class BotDetectorPlugin extends Plugin
 
 		synchronized (sightingTable)
 		{
-			sightingTable.put(playerName, p.getRegionID(), p);
+			sightingTable.put(wrappedName, p.getRegionID(), p);
 		}
-		persistentSightings.put(playerName, p);
+		persistentSightings.put(wrappedName, p);
 	}
 
 	@Subscribe
@@ -475,10 +478,10 @@ public class BotDetectorPlugin extends Plugin
 		//Discord Linking Command
 		if (split[0].substring(1).equalsIgnoreCase(CODE_COMMAND))
 		{
-			String author = Text.removeTags(event.getName());
+			String author = normalizePlayerName(event.getName());
 			String code = split[1];
 
-			detectorClient.verifyDiscord(config.authToken().trim(), normalizePlayerName(author), code)
+			detectorClient.verifyDiscord(config.authToken().trim(), author, code)
 				.whenComplete((b, ex) ->
 				{
 					if (b)
@@ -600,7 +603,12 @@ public class BotDetectorPlugin extends Plugin
 			return null;
 		}
 
-		return Text.removeTags(Text.toJagexName(playerName)).toLowerCase();
+		return Text.removeTags(Text.toJagexName(playerName));
+	}
+
+	public CaseInsensitiveString normalizeAndWrapPlayerName(String playerName)
+	{
+		return wrap(normalizePlayerName(playerName));
 	}
 
 	public void processCurrentWorld()

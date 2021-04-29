@@ -3,6 +3,7 @@ package com.botdetector.ui;
 import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
 import com.botdetector.http.BotDetectorClient;
+import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
@@ -89,9 +90,9 @@ public class BotDetectorPanel extends PluginPanel
 	private final BotDetectorClient detectorClient;
 	private final BotDetectorConfig config;
 
-	private boolean searchBarLoading;
+	private final Set<JComponent> switchableFontComponents = new HashSet<>();
 
-	private Set<JComponent> switchableFontComponents = new HashSet<>();
+	private boolean searchBarLoading;
 
 	// Player Stats
 	private JLabel playerStatsUploadedNamesLabel;
@@ -642,7 +643,7 @@ public class BotDetectorPanel extends PluginPanel
 			if (shouldAllowFeedbackOrReport()
 				&& pred.getPlayerId() > 0)
 			{
-				String name = plugin.normalizePlayerName(pred.getPlayerName());
+				CaseInsensitiveString name = plugin.normalizeAndWrapPlayerName(pred.getPlayerName());
 				predictionFeedbackPanel.setVisible(!plugin.getFeedbackedPlayers().containsKey(name));
 				predictionReportPanel.setVisible(sighting != null && !plugin.getReportedPlayers().containsKey(name));
 			}
@@ -716,7 +717,7 @@ public class BotDetectorPanel extends PluginPanel
 				searchBar.setEditable(true);
 				searchBarLoading = false;
 
-				setPrediction(pred, plugin.getPersistentSightings().get(plugin.normalizePlayerName(target)));
+				setPrediction(pred, plugin.getPersistentSightings().get(plugin.normalizeAndWrapPlayerName(target)));
 			}));
 	}
 
@@ -783,7 +784,7 @@ public class BotDetectorPanel extends PluginPanel
 				{
 					plugin.sendChatStatusMessage("Thank you for your feedback!");
 					plugin.getFeedbackedPlayers().put(
-						plugin.normalizePlayerName(lastPrediction.getPlayerName()), feedback);
+						plugin.normalizeAndWrapPlayerName(lastPrediction.getPlayerName()), feedback);
 				}
 				else
 				{
@@ -801,7 +802,7 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		String name = plugin.normalizePlayerName(lastPredictionPlayerSighting.getPlayerName());
+		CaseInsensitiveString name = plugin.normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
 
 		if (!doReport)
 		{
