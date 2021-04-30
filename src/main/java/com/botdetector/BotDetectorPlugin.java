@@ -8,7 +8,12 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -16,9 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -55,6 +62,7 @@ import com.google.inject.Provides;
 import org.apache.commons.lang3.ArrayUtils;
 import static com.botdetector.model.CaseInsensitiveString.wrap;
 
+@Slf4j
 @PluginDescriptor(
 	name = "Bot Detector",
 	description = "This plugin sends encountered Player Names to a server in order to detect Botting Behavior.",
@@ -84,6 +92,11 @@ public class BotDetectorPlugin extends Plugin
 	private static final String MANUAL_FLUSH_COMMAND = COMMAND_PREFIX + "Flush";
 	private static final String MANUAL_SIGHT_COMMAND = COMMAND_PREFIX + "Snap";
 	private static final String SHOW_HIDE_ID_COMMAND = COMMAND_PREFIX + "ShowId";
+	private static final String GET_DEV_TOKEN_COMMAND = COMMAND_PREFIX + "GetToken";
+	private static final String SET_DEV_TOKEN_COMMAND = COMMAND_PREFIX + "SetToken";
+	private static final String CLEAR_DEV_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
+
+	private static final Pattern DEV_TOKEN_PATTERN = Pattern.compile("^[\\w\\-]{12,32}$");
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
 	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
@@ -417,25 +430,25 @@ public class BotDetectorPlugin extends Plugin
 			{
 				if (!flushPlayersToClient(true))
 				{
-					sendChatStatusMessage("No player sightings to flush!");
+					sendChatStatusMessage("No player sightings to flush!", true);
 				}
 			}
 			else
 			{
 				long secs = Duration.between(now, canFlush).toMillis() / 1000;
-				sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players.");
+				sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players.", true);
 			}
 		}
 		else if (command.equalsIgnoreCase(MANUAL_SIGHT_COMMAND))
 		{
 			if (isCurrentWorldBlocked)
 			{
-				sendChatStatusMessage("Cannot refresh player sightings on a blocked world.");
+				sendChatStatusMessage("Cannot refresh player sightings on a blocked world.", true);
 			}
 			else
 			{
 				client.getPlayers().forEach(this::processPlayer);
-				sendChatStatusMessage("Player sightings refreshed.");
+				sendChatStatusMessage("Player sightings refreshed.", true);
 			}
 		}
 		else if (command.equalsIgnoreCase(SHOW_HIDE_ID_COMMAND))
@@ -452,6 +465,51 @@ public class BotDetectorPlugin extends Plugin
 					panel.setPlayerIdVisible(false);
 				}
 			}
+		}
+		else if (command.equalsIgnoreCase(GET_DEV_TOKEN_COMMAND))
+		{
+			String token = config.authToken();
+			if (token == null || token.isEmpty())
+			{
+				sendChatStatusMessage("No dev token currently set.", true);
+			}
+			else
+			{
+				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(token), null);
+				sendChatStatusMessage("Dev token copied to clipboard.", true);
+			}
+		}
+		else if (command.equalsIgnoreCase(SET_DEV_TOKEN_COMMAND))
+		{
+			final String clipboardText;
+			try
+			{
+				clipboardText = Toolkit.getDefaultToolkit()
+					.getSystemClipboard()
+					.getData(DataFlavor.stringFlavor)
+					.toString().trim();
+			}
+			catch (IOException | UnsupportedFlavorException ex)
+			{
+				sendChatStatusMessage("Unable to read system clipboard for dev token.", true);
+				log.warn("Error reading clipboard", ex);
+				return;
+			}
+
+			if (!DEV_TOKEN_PATTERN.matcher(clipboardText).matches())
+			{
+				sendChatStatusMessage("Dev token in clipboard must be alphanumeric/'_'/'-' and 12 to 32 characters long.", true);
+			}
+			else
+			{
+				config.setAuthToken(clipboardText);
+				sendChatStatusMessage("Dev token successfully set from clipboard.", true);
+			}
+		}
+		else if (command.equalsIgnoreCase(CLEAR_DEV_TOKEN_COMMAND))
+		{
+			config.setAuthToken(null);
+			sendChatStatusMessage("Dev token cleared.", true);
 		}
 	}
 
@@ -582,7 +640,12 @@ public class BotDetectorPlugin extends Plugin
 
 	public void sendChatStatusMessage(String msg)
 	{
-		if (config.enableChatStatusMessages() && loggedPlayerName != null)
+		sendChatStatusMessage(msg, false);
+	}
+
+	public void sendChatStatusMessage(String msg, boolean forceShow)
+	{
+		if ((forceShow || config.enableChatStatusMessages()) && loggedPlayerName != null)
 		{
 			final String message = new ChatMessageBuilder()
 				.append(ChatColorType.HIGHLIGHT)

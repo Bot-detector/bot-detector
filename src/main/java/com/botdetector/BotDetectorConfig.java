@@ -88,13 +88,21 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 7,
 		keyName = "authToken",
-		name = "Developer Authentication Token",
-		description = "If you have an auth token from the devs, enter it here for special features!."
+		name = "",
+		description = "",
+		hidden = true
 	)
 	default String authToken()
 	{
-		return "";
+		return null;
 	}
+
+	@ConfigItem(
+		keyName = "authToken",
+		name = "",
+		description = "",
+		hidden = true
+	)
+	String setAuthToken(String token);
 }
