@@ -15,8 +15,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
 import net.runelite.api.ChatMessageType;
@@ -132,11 +132,11 @@ public class BotDetectorPlugin extends Plugin
 	// All map keys should get handled with normalizePlayerName() followed by toLowerCase()
 	private final Table<CaseInsensitiveString, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	@Getter
-	private final Map<CaseInsensitiveString, PlayerSighting> persistentSightings = new HashMap<>();
+	private final Map<CaseInsensitiveString, PlayerSighting> persistentSightings = new ConcurrentHashMap<>();
 	@Getter
-	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new HashMap<>();
+	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new ConcurrentHashMap<>();
 	@Getter
-	private final Map<CaseInsensitiveString, Boolean> reportedPlayers = new HashMap<>();
+	private final Map<CaseInsensitiveString, Boolean> reportedPlayers = new ConcurrentHashMap<>();
 
 	@Override
 	protected void startUp()
@@ -487,11 +487,11 @@ public class BotDetectorPlugin extends Plugin
 				{
 					if (b)
 					{
-						sendChatStatusMessage("Discord verified for " + author + "!");
+						sendChatStatusMessage("Discord verified for '" + author + "'!");
 					}
 					else
 					{
-						sendChatStatusMessage("Could not verify Discord for " + author + ".");
+						sendChatStatusMessage("Could not verify Discord for '" + author + "'.");
 					}
 				});
 		}
