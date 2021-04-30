@@ -261,7 +261,7 @@ public class BotDetectorPanel extends PluginPanel
 		reportingStatsPanel.add(playerStatsReportsLabel, c);
 		switchableFontComponents.add(playerStatsReportsLabel);
 
-		label = new JLabel("Probable Bans: ");
+		label = new JLabel("Possible Bans: ");
 		label.setToolTipText(
 			"<html>How many of your uploaded names may have been banned." +
 			"<br>For example: Names that no longer appear on the Hiscores.</html>");
