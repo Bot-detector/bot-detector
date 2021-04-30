@@ -263,23 +263,7 @@ public class BotDetectorPanel extends PluginPanel
 		reportingStatsPanel.add(playerStatsReportsLabel, c);
 		switchableFontComponents.add(playerStatsReportsLabel);
 
-		label = new JLabel("Confirmed Bans: ");
-		label.setToolTipText("How many of your uploaded names were confirmed to have been banned by Jagex.");
-		label.setForeground(TEXT_COLOR);
-		c.gridy++;
-		c.gridx = 0;
-		c.weightx = 0;
-		reportingStatsPanel.add(label, c);
-		switchableFontComponents.add(label);
-
-		playerStatsConfirmedBansLabel = new JLabel();
-		playerStatsConfirmedBansLabel.setForeground(VALUE_COLOR);
-		c.gridx = 1;
-		c.weightx = 1;
-		reportingStatsPanel.add(playerStatsConfirmedBansLabel, c);
-		switchableFontComponents.add(playerStatsConfirmedBansLabel);
-
-		label = new JLabel("Probable Bans: ");
+		label = new JLabel("Possible Bans: ");
 		label.setToolTipText(
 			"<html>How many of your uploaded names may have been banned." +
 			"<br>For example: Names that no longer appear on the Hiscores.</html>");
@@ -296,6 +280,22 @@ public class BotDetectorPanel extends PluginPanel
 		c.weightx = 1;
 		reportingStatsPanel.add(playerStatsPossibleBansLabel, c);
 		switchableFontComponents.add(playerStatsPossibleBansLabel);
+
+		label = new JLabel("Confirmed Bans: ");
+		label.setToolTipText("How many of your uploaded names were confirmed to have been banned by Jagex.");
+		label.setForeground(TEXT_COLOR);
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsConfirmedBansLabel = new JLabel();
+		playerStatsConfirmedBansLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsConfirmedBansLabel, c);
+		switchableFontComponents.add(playerStatsConfirmedBansLabel);
 
 		playerStatsAnonymousWarningLabel = new JLabel(" Anonymous Uploading Active");
 		playerStatsAnonymousWarningLabel.setToolTipText(
