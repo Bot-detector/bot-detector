@@ -39,6 +39,7 @@ import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.QuantityFormatter;
 import net.runelite.client.util.Text;
+import org.apache.commons.text.WordUtils;
 
 public class BotDetectorPanel extends PluginPanel
 {
@@ -753,7 +754,7 @@ public class BotDetectorPanel extends PluginPanel
 			.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
 			.forEach(e ->
 				sb.append("<tr><td>").append(normalizeLabel(e.getKey())).append(":</td>")
-				.append("<td style='padding-left:5;color:").append(ColorUtil.toHexColor(getPredictionColor(e.getValue())))
+				.append("<td style='padding-left:5;text-align:right;color:").append(ColorUtil.toHexColor(getPredictionColor(e.getValue())))
 				.append("'>").append(getPercentString(e.getValue())).append("</td></tr>"));
 
 		return sb.append(closingTags).toString();
@@ -761,7 +762,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	private String normalizeLabel(String label)
 	{
-		return label.replace("_", " ").trim();
+		return WordUtils.capitalize(label.replace('_', ' ').trim(), ' ');
 	}
 
 	private String getPercentString(double percent)
