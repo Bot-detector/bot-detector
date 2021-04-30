@@ -85,6 +85,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.events.ConfigChanged;
 import javax.inject.Inject;
+import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.task.Schedule;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
@@ -146,7 +147,7 @@ public class BotDetectorPlugin extends Plugin
 	private BotDetectorConfig config;
 
 	@Inject
-	private ConfigManager configManager;
+	private PluginManager pluginManager;
 
 	@Inject
 	private ClientToolbar clientToolbar;
@@ -204,7 +205,7 @@ public class BotDetectorPlugin extends Plugin
 			log.error("Could not parse plugin version from properties file!", e);
 
 			// Turn plugin back off and display an error message
-			configManager.setConfiguration("runelite", BotDetectorConfig.CONFIG_GROUP, false);
+			pluginManager.setPluginEnabled(this, false);
 			displayPluginVersionError();
 
 			return;
