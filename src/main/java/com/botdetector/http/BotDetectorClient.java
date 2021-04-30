@@ -57,6 +57,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.http.api.RuneLiteAPI;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -86,7 +87,8 @@ public class BotDetectorClient
 		final String path;
 	}
 
-	public static OkHttpClient okHttpClient = new OkHttpClient.Builder()
+	public static OkHttpClient okHttpClient = RuneLiteAPI.CLIENT.newBuilder()
+		.pingInterval(0, TimeUnit.SECONDS)
 		.connectTimeout(30, TimeUnit.SECONDS)
 		.readTimeout(30, TimeUnit.SECONDS)
 		.build();
