@@ -435,7 +435,7 @@ public class BotDetectorPlugin extends Plugin
 			}
 			else
 			{
-				long secs = Duration.between(now, canFlush).toMillis() / 1000;
+				long secs = (Duration.between(now, canFlush).toMillis() / 1000) + 1;
 				sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players.", true);
 			}
 		}
