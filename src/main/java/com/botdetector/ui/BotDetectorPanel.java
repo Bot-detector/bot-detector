@@ -71,7 +71,7 @@ public class BotDetectorPanel extends PluginPanel
 {
 	@Getter
 	@AllArgsConstructor
-	private enum WebLink
+	public enum WebLink
 	{
 		WEBSITE(Icons.WEB_ICON, "Our website", "https://www.osrsbotdetector.com/"),
 		TWITTER(Icons.TWITTER_ICON, "Follow us on Twitter!", "https://www.twitter.com/OSRSBotDetector"),
@@ -138,6 +138,7 @@ public class BotDetectorPanel extends PluginPanel
 	private boolean searchBarLoading;
 
 	// Player Stats
+	private JLabel playerStatsPluginVersionLabel;
 	private JLabel playerStatsUploadedNamesLabel;
 	private JLabel playerStatsReportsLabel;
 	private JLabel playerStatsPossibleBansLabel;
@@ -268,14 +269,31 @@ public class BotDetectorPanel extends PluginPanel
 		c.weightx = 1;
 		reportingStatsPanel.add(label, c);
 
-		label = new JLabel("Current Uploads: ");
-		label.setToolTipText("How many names uploaded during the current Runelite session.");
+		label = new JLabel("Plugin Version: ");
+		label.setToolTipText("The Bot Detector plugin version you're running.");
 		label.setForeground(TEXT_COLOR);
 
 		c.gridy = 1;
 		c.gridy++;
 		c.ipady = 3;
 		c.gridwidth = 1;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsPluginVersionLabel = new JLabel();
+		playerStatsPluginVersionLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsPluginVersionLabel, c);
+		switchableFontComponents.add(playerStatsPluginVersionLabel);
+
+		label = new JLabel("Current Uploads: ");
+		label.setToolTipText("How many names uploaded during the current Runelite session.");
+		label.setForeground(TEXT_COLOR);
+
+		c.gridy++;
+		c.gridx = 0;
 		c.weightx = 0;
 		reportingStatsPanel.add(label, c);
 		switchableFontComponents.add(label);
@@ -615,6 +633,11 @@ public class BotDetectorPanel extends PluginPanel
 			playerStatsConfirmedBansLabel.setText(EMPTY_LABEL);
 			playerStatsPossibleBansLabel.setText(EMPTY_LABEL);
 		}
+	}
+
+	public void setPluginVersion(String pluginVersion)
+	{
+		playerStatsPluginVersionLabel.setText(pluginVersion);
 	}
 
 	public boolean getWarningVisible(WarningLabel wl)

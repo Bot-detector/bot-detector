@@ -52,6 +52,9 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Call;
@@ -69,11 +72,19 @@ public class BotDetectorClient
 	public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 	private static final String BASE_URL = System.getProperty("BotDetectorAPIPath", "https://www.osrsbotdetector.com/api");
 
-	private static final String DETECTION_URL = BASE_URL + "/plugin/detect/";
-	private static final String PLAYER_STATS_URL = BASE_URL + "/stats/contributions/";
-	private static final String PREDICTION_URL = BASE_URL + "/site/prediction/";
-	private static final String FEEDBACK_URL = BASE_URL + "/plugin/predictionfeedback/";
-	private static final String VERIFY_DISCORD_URL = BASE_URL + "/site/discord_user/";
+	@Getter
+	@AllArgsConstructor
+	private enum ApiUrl
+	{
+		DETECTION("plugin/detect/"),
+		PLAYER_STATS("stats/contributions/"),
+		PREDICTION("site/prediction/"),
+		FEEDBACK("plugin/predictionfeedback/"),
+		VERIFY_DISCORD("site/discord_user/")
+		;
+
+		final String path;
+	}
 
 	public static OkHttpClient okHttpClient = new OkHttpClient.Builder()
 		.connectTimeout(30, TimeUnit.SECONDS)
@@ -82,6 +93,21 @@ public class BotDetectorClient
 
 	@Inject
 	private GsonBuilder gsonBuilder;
+
+	@Getter
+	@Setter
+	private String pluginVersion;
+
+	private String getUrl(ApiUrl path)
+	{
+		String v = pluginVersion;
+		if (v == null || v.isEmpty())
+		{
+			v = "unknown";
+		}
+
+		return String.format("%s/%s/%s", BASE_URL, v, path.getPath());
+	}
 
 	public CompletableFuture<Boolean> sendSighting(PlayerSighting sighting, String reporter, boolean manual)
 	{
@@ -100,7 +126,7 @@ public class BotDetectorClient
 			.create();
 
 		Request request = new Request.Builder()
-			.url(DETECTION_URL + (manual ? 1 : 0))
+			.url(getUrl(ApiUrl.DETECTION) + (manual ? 1 : 0))
 			.post(RequestBody.create(JSON, gson.toJson(wrappedList)))
 			.build();
 
@@ -141,7 +167,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(VERIFY_DISCORD_URL + token)
+			.url(getUrl(ApiUrl.VERIFY_DISCORD) + token)
 			.post(RequestBody.create(JSON, gson.toJson(new DiscordVerification(nameToVerify, code))))
 			.build();
 
@@ -183,7 +209,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(FEEDBACK_URL)
+			.url(getUrl(ApiUrl.FEEDBACK))
 			.post(RequestBody.create(JSON, gson.toJson(new PredictionFeedback(
 				reporterName,
 				feedback ? 1 : -1,
@@ -229,7 +255,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(PREDICTION_URL + playerName.replace(" ", "%20"))
+			.url(getUrl(ApiUrl.PREDICTION) + playerName.replace(" ", "%20"))
 			.build();
 
 		CompletableFuture<Prediction> future = new CompletableFuture<>();
@@ -264,7 +290,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(PLAYER_STATS_URL + playerName.replace(" ", "%20"))
+			.url(getUrl(ApiUrl.PLAYER_STATS) + playerName.replace(" ", "%20"))
 			.build();
 
 		CompletableFuture<PlayerStats> future = new CompletableFuture<>();
