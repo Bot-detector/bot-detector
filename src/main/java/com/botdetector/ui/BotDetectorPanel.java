@@ -37,6 +37,7 @@ import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.LinkBrowser;
+import net.runelite.client.util.QuantityFormatter;
 import net.runelite.client.util.Text;
 
 public class BotDetectorPanel extends PluginPanel
@@ -566,16 +567,16 @@ public class BotDetectorPanel extends PluginPanel
 
 	public void setNamesUploaded(int num)
 	{
-		playerStatsUploadedNamesLabel.setText(String.valueOf(num));
+		playerStatsUploadedNamesLabel.setText(QuantityFormatter.formatNumber(num));
 	}
 
 	public void setPlayerStats(PlayerStats ps)
 	{
 		if (ps != null)
 		{
-			playerStatsReportsLabel.setText(String.valueOf(ps.getReports()));
-			playerStatsConfirmedBansLabel.setText(String.valueOf(ps.getBans()));
-			playerStatsPossibleBansLabel.setText(String.valueOf(ps.getPossibleBans()));
+			playerStatsReportsLabel.setText(QuantityFormatter.formatNumber(ps.getReports()));
+			playerStatsConfirmedBansLabel.setText(QuantityFormatter.formatNumber(ps.getBans()));
+			playerStatsPossibleBansLabel.setText(QuantityFormatter.formatNumber(ps.getPossibleBans()));
 		}
 		else
 		{
