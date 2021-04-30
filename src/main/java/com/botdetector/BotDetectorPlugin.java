@@ -20,9 +20,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -138,17 +138,18 @@ public class BotDetectorPlugin extends Plugin
 	private int namesUploaded;
 	private Instant lastFlush = Instant.MIN;
 	private boolean isCurrentWorldMembers;
+	private boolean isCurrentWorldPVP;
 	private boolean isCurrentWorldBlocked;
 
 	// Current login maps, clear on logout/shutdown. Feedback/Report map to selected value in panel.
 	// All map keys should get handled with normalizePlayerName() followed by toLowerCase()
 	private final Table<CaseInsensitiveString, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	@Getter
-	private final Map<CaseInsensitiveString, PlayerSighting> persistentSightings = new HashMap<>();
+	private final Map<CaseInsensitiveString, PlayerSighting> persistentSightings = new ConcurrentHashMap<>();
 	@Getter
-	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new HashMap<>();
+	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new ConcurrentHashMap<>();
 	@Getter
-	private final Map<CaseInsensitiveString, Boolean> reportedPlayers = new HashMap<>();
+	private final Map<CaseInsensitiveString, Boolean> reportedPlayers = new ConcurrentHashMap<>();
 
 	@Override
 	protected void startUp()
@@ -408,7 +409,7 @@ public class BotDetectorPlugin extends Plugin
 
 		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
 		PlayerSighting p = new PlayerSighting(playerName,
-			wp, isCurrentWorldMembers, Instant.now());
+			wp, isCurrentWorldMembers, isCurrentWorldPVP, Instant.now());
 
 		synchronized (sightingTable)
 		{
@@ -544,11 +545,11 @@ public class BotDetectorPlugin extends Plugin
 				{
 					if (b)
 					{
-						sendChatStatusMessage("Discord verified for " + author + "!");
+						sendChatStatusMessage("Discord verified for '" + author + "'!");
 					}
 					else
 					{
-						sendChatStatusMessage("Could not verify Discord for " + author + ".");
+						sendChatStatusMessage("Could not verify Discord for '" + author + "'.");
 					}
 				});
 		}
@@ -678,6 +679,7 @@ public class BotDetectorPlugin extends Plugin
 	{
 		EnumSet<WorldType> types = client.getWorldType();
 		isCurrentWorldMembers = types.contains(WorldType.MEMBERS);
+		isCurrentWorldPVP = types.contains(WorldType.PVP);
 		isCurrentWorldBlocked = BLOCKED_WORLD_TYPES.stream().anyMatch(types::contains);
 		SwingUtilities.invokeLater(() -> panel.setBlockedWorldWarning(isCurrentWorldBlocked));
 	}

@@ -37,7 +37,9 @@ import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.LinkBrowser;
+import net.runelite.client.util.QuantityFormatter;
 import net.runelite.client.util.Text;
+import org.apache.commons.text.WordUtils;
 
 public class BotDetectorPanel extends PluginPanel
 {
@@ -566,16 +568,16 @@ public class BotDetectorPanel extends PluginPanel
 
 	public void setNamesUploaded(int num)
 	{
-		playerStatsUploadedNamesLabel.setText(String.valueOf(num));
+		playerStatsUploadedNamesLabel.setText(QuantityFormatter.formatNumber(num));
 	}
 
 	public void setPlayerStats(PlayerStats ps)
 	{
 		if (ps != null)
 		{
-			playerStatsReportsLabel.setText(String.valueOf(ps.getReports()));
-			playerStatsConfirmedBansLabel.setText(String.valueOf(ps.getBans()));
-			playerStatsPossibleBansLabel.setText(String.valueOf(ps.getPossibleBans()));
+			playerStatsReportsLabel.setText(QuantityFormatter.formatNumber(ps.getReports()));
+			playerStatsConfirmedBansLabel.setText(QuantityFormatter.formatNumber(ps.getBans()));
+			playerStatsPossibleBansLabel.setText(QuantityFormatter.formatNumber(ps.getPossibleBans()));
 		}
 		else
 		{
@@ -752,7 +754,7 @@ public class BotDetectorPanel extends PluginPanel
 			.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
 			.forEach(e ->
 				sb.append("<tr><td>").append(normalizeLabel(e.getKey())).append(":</td>")
-				.append("<td style='padding-left:5;color:").append(ColorUtil.toHexColor(getPredictionColor(e.getValue())))
+				.append("<td style='padding-left:5;text-align:right;color:").append(ColorUtil.toHexColor(getPredictionColor(e.getValue())))
 				.append("'>").append(getPercentString(e.getValue())).append("</td></tr>"));
 
 		return sb.append(closingTags).toString();
@@ -760,7 +762,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	private String normalizeLabel(String label)
 	{
-		return label.replace("_", " ").trim();
+		return WordUtils.capitalize(label.replace('_', ' ').trim(), ' ');
 	}
 
 	private String getPercentString(double percent)
@@ -777,19 +779,26 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		detectorClient.sendFeedback(lastPrediction, lastPredictionReporterName, true)
+		CaseInsensitiveString wrappedName = plugin.normalizeAndWrapPlayerName(lastPrediction.getPlayerName());
+		Map<CaseInsensitiveString, Boolean> feedbackMap = plugin.getFeedbackedPlayers();
+		feedbackMap.put(wrappedName, feedback);
+
+		detectorClient.sendFeedback(lastPrediction, lastPredictionReporterName, feedback)
 			.whenComplete((b, ex) ->
 			{
+				String message;
 				if (b)
 				{
-					plugin.sendChatStatusMessage("Thank you for your feedback!");
-					plugin.getFeedbackedPlayers().put(
-						plugin.normalizeAndWrapPlayerName(lastPrediction.getPlayerName()), feedback);
+					message = "Thank you for your prediction feedback for '%s'!";
 				}
 				else
 				{
-					plugin.sendChatStatusMessage("Error sending your feedback.");
+					message = "Error sending your prediction feedback for '%s'.";
+					// Didn't work so remove from feedback map
+					feedbackMap.remove(wrappedName);
 				}
+
+				plugin.sendChatStatusMessage(String.format(message, wrappedName));
 			});
 	}
 
@@ -802,26 +811,32 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		CaseInsensitiveString name = plugin.normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
+		CaseInsensitiveString wrappedName = plugin.normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
+		Map<CaseInsensitiveString, Boolean> reportMap = plugin.getReportedPlayers();
+		reportMap.put(wrappedName, doReport);
 
+		// Didn't want to report? Work is done!
 		if (!doReport)
 		{
-			plugin.getReportedPlayers().put(name, false);
 			return;
 		}
 
 		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionReporterName, true)
 			.whenComplete((b, ex) ->
 			{
+				String message;
 				if (b)
 				{
-					plugin.sendChatStatusMessage("Thank you for your report!");
-					plugin.getReportedPlayers().put(name, true);
+					message = "Thank you for your report for '%s'!";
 				}
 				else
 				{
-					plugin.sendChatStatusMessage("Error sending your report.");
+					message = "Error sending your report '%s'.";
+					// Didn't work so remove from report map
+					reportMap.remove(wrappedName);
 				}
+
+				plugin.sendChatStatusMessage(String.format(message, wrappedName));
 			});
 	}
 
