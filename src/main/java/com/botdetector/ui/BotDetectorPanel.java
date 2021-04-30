@@ -414,6 +414,7 @@ public class BotDetectorPanel extends PluginPanel
 		c.ipady = 3;
 		c.gridwidth = 1;
 		c.weightx = 0;
+		c.anchor = GridBagConstraints.NORTH;
 		primaryPredictionPanel.add(predictionPlayerIdTextLabel, c);
 		switchableFontComponents.add(predictionPlayerIdTextLabel);
 
@@ -651,8 +652,8 @@ public class BotDetectorPanel extends PluginPanel
 			lastPredictionPlayerSighting = sighting;
 			lastPredictionReporterName = plugin.getReporterName();
 			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
-			predictionPlayerNameLabel.setText(pred.getPlayerName());
-			predictionTypeLabel.setText(normalizeLabel(pred.getPredictionLabel()));
+			predictionPlayerNameLabel.setText(wrapHTML(pred.getPlayerName()));
+			predictionTypeLabel.setText(wrapHTML(normalizeLabel(pred.getPredictionLabel())));
 			predictionConfidenceLabel.setText(getPercentString(pred.getConfidence()));
 			predictionConfidenceLabel.setForeground(getPredictionColor(pred.getConfidence()));
 
@@ -889,5 +890,11 @@ public class BotDetectorPanel extends PluginPanel
 		}
 
 		switchableFontComponents.forEach(c -> c.setFont(f));
+	}
+
+	// This makes wrapping work on the labels that could wrap
+	private String wrapHTML(String str)
+	{
+		return "<html>" + str + "</html>";
 	}
 }
