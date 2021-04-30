@@ -125,6 +125,7 @@ public class BotDetectorPlugin extends Plugin
 	private int namesUploaded;
 	private Instant lastFlush = Instant.MIN;
 	private boolean isCurrentWorldMembers;
+	private boolean isCurrentWorldPVP;
 	private boolean isCurrentWorldBlocked;
 
 	// Current login maps, clear on logout/shutdown. Feedback/Report map to selected value in panel.
@@ -395,7 +396,7 @@ public class BotDetectorPlugin extends Plugin
 
 		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
 		PlayerSighting p = new PlayerSighting(playerName,
-			wp, isCurrentWorldMembers, Instant.now());
+			wp, isCurrentWorldMembers, isCurrentWorldPVP, Instant.now());
 
 		synchronized (sightingTable)
 		{
@@ -615,6 +616,7 @@ public class BotDetectorPlugin extends Plugin
 	{
 		EnumSet<WorldType> types = client.getWorldType();
 		isCurrentWorldMembers = types.contains(WorldType.MEMBERS);
+		isCurrentWorldPVP = types.contains(WorldType.PVP);
 		isCurrentWorldBlocked = BLOCKED_WORLD_TYPES.stream().anyMatch(types::contains);
 		SwingUtilities.invokeLater(() -> panel.setBlockedWorldWarning(isCurrentWorldBlocked));
 	}
