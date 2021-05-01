@@ -59,10 +59,10 @@ public class PlayerSighting
 	int regionID;
 
 	@SerializedName("x")
-	int regionX;
+	int worldX;
 
 	@SerializedName("y")
-	int regionY;
+	int worldY;
 
 	@SerializedName("z")
 	int plane;
