@@ -242,7 +242,7 @@ public class BotDetectorPanel extends PluginPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 
-		label = new JLabel("Reporting Statistics");
+		label = new JLabel("Player Statistics");
 		label.setFont(BOLD_FONT);
 		label.setForeground(HEADER_COLOR);
 
