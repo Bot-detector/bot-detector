@@ -92,6 +92,17 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 5,
+		keyName = "predictOptionCopyName",
+		name = "'Predict' Copy Name to Clipboard",
+		description = "Copies the player's name to the clipboard when right-click predicting a player."
+	)
+	default boolean predictOptionCopyName()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 6,
 		keyName = PANEL_FONT_TYPE_KEY,
 		name = "Panel Font Size",
 		description = "Sets the size of the label fields in the prediction panel."
