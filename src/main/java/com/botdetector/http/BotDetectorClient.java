@@ -117,8 +117,14 @@ public class BotDetectorClient
 			@Override
 			public void onResponse(Call call, Response response)
 			{
-				future.complete(response.isSuccessful());
-				response.close();
+				try
+				{
+					future.complete(checkPostSuccess(response));
+				}
+				finally
+				{
+					response.close();
+				}
 			}
 		});
 
@@ -147,8 +153,14 @@ public class BotDetectorClient
 			@Override
 			public void onResponse(Call call, Response response)
 			{
-				future.complete(response.isSuccessful());
-				response.close();
+				try
+				{
+					future.complete(checkPostSuccess(response));
+				}
+				finally
+				{
+					response.close();
+				}
 			}
 		});
 
@@ -182,8 +194,14 @@ public class BotDetectorClient
 			@Override
 			public void onResponse(Call call, Response response)
 			{
-				future.complete(response.isSuccessful());
-				response.close();
+				try
+				{
+					future.complete(checkPostSuccess(response));
+				}
+				finally
+				{
+					response.close();
+				}
 			}
 		});
 
@@ -215,9 +233,14 @@ public class BotDetectorClient
 			@Override
 			public void onResponse(Call call, Response response)
 			{
-				future.complete(processResponse(gson, response, Prediction.class));
-
-				response.close();
+				try
+				{
+					future.complete(processResponse(gson, response, Prediction.class));
+				}
+					finally
+				{
+					response.close();
+				}
 			}
 		});
 
@@ -245,19 +268,59 @@ public class BotDetectorClient
 			@Override
 			public void onResponse(Call call, Response response)
 			{
-				future.complete(processResponse(gson, response, PlayerStats.class));
-
-				response.close();
+				try
+				{
+					future.complete(processResponse(gson, response, PlayerStats.class));
+				}
+				finally
+				{
+					response.close();
+				}
 			}
 		});
 
 		return future;
 	}
 
+	// TODO: These process methods should probably throw IOExceptions for the onFailures to catch and send to the .whenComplete calls
+	private boolean checkPostSuccess(Response response)
+	{
+		if (!response.isSuccessful())
+		{
+			// TODO: Special check for code 400
+			log.warn("Unsuccessful client response, '"
+				+ response.request().url()
+				+ "' returned a " + response.code() + ".");
+			return false;
+		}
+
+		Type mapType = new TypeToken<Map<String, Object>>()
+		{
+		}.getType();
+		Gson gson = gsonBuilder.create();
+
+		try
+		{
+			Map<String, Object> map = gson.fromJson(response.body().string(), mapType);
+			return !map.containsKey("error");
+		}
+		catch (JsonSyntaxException je)
+		{
+			log.warn("Error parsing client response.", je);
+		}
+		catch (IOException ie)
+		{
+			log.warn("Invalid data format from client.", ie);
+		}
+
+		return false;
+	}
+
 	private <T> T processResponse(Gson gson, Response response, Class<T> classOfT)
 	{
 		if (!response.isSuccessful())
 		{
+			// TODO: Special check for code 400
 			log.warn("Unsuccessful client response, '"
 				+ response.request().url()
 				+ "' returned a " + response.code() + ".");
