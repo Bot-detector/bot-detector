@@ -43,6 +43,7 @@ public interface BotDetectorConfig extends Config
 	String PANEL_FONT_TYPE_KEY = "panelFontType";
 
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
+	int AUTO_SEND_MAXIMUM_MINUTES = 360;
 
 	@ConfigItem(
 		position = 1,
@@ -61,7 +62,7 @@ public interface BotDetectorConfig extends Config
 		name = "Send Names Every",
 		description = "Sets the amount of time between automatic name uploads."
 	)
-	@Range(min = AUTO_SEND_MINIMUM_MINUTES)
+	@Range(min = AUTO_SEND_MINIMUM_MINUTES, max = AUTO_SEND_MAXIMUM_MINUTES)
 	@Units(Units.MINUTES)
 	default int autoSendMinutes()
 	{
