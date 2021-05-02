@@ -639,7 +639,12 @@ public class BotDetectorPlugin extends Plugin
 
 			if (name != null)
 			{
-				predictPlayer(Text.removeTags(name));
+				String toPredict = Text.removeTags(name);
+				if (config.predictOptionCopyName())
+				{
+					Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(toPredict), null);
+				}
+				predictPlayer(toPredict);
 			}
 		}
 	}
