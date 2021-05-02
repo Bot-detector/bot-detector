@@ -110,12 +110,12 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error sending player sighting data.", e);
-				future.complete(false);
+				log.error("Error sending player sighting data", e);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
 				try
 				{
@@ -146,12 +146,12 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error verifying discord user.", e);
-				future.complete(false);
+				log.error("Error verifying discord user", e);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
 				try
 				{
@@ -188,11 +188,11 @@ public class BotDetectorClient
 			public void onFailure(Call call, IOException e)
 			{
 				log.error("Error sending prediction feedback.", e);
-				future.complete(false);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
 				try
 				{
@@ -210,10 +210,6 @@ public class BotDetectorClient
 
 	public CompletableFuture<Prediction> requestPrediction(String playerName)
 	{
-		Type predictionMapType = new TypeToken<Map<String, Double>>()
-		{
-		}.getType();
-
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
@@ -226,18 +222,18 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error obtaining player prediction data.", e);
-				future.complete(null);
+				log.error("Error obtaining player prediction data", e);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
 				try
 				{
 					future.complete(processResponse(gson, response, Prediction.class));
 				}
-					finally
+				finally
 				{
 					response.close();
 				}
@@ -261,12 +257,12 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error obtaining player stats data.", e);
-				future.complete(null);
+				log.error("Error obtaining player stats data", e);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
 				try
 				{
@@ -282,65 +278,66 @@ public class BotDetectorClient
 		return future;
 	}
 
-	// TODO: These process methods should probably throw IOExceptions for the onFailures to catch and send to the .whenComplete calls
-	private boolean checkPostSuccess(Response response)
+	private boolean checkPostSuccess(Response response) throws IOException
 	{
 		if (!response.isSuccessful())
 		{
-			// TODO: Special check for code 400
-			log.warn("Unsuccessful client response, '"
-				+ response.request().url()
-				+ "' returned a " + response.code() + ".");
-			return false;
+			if (response.code() == 404)
+			{
+				return false;
+			}
+
+			throw getIOException(response);
 		}
 
-		Type mapType = new TypeToken<Map<String, Object>>()
-		{
-		}.getType();
-		Gson gson = gsonBuilder.create();
-
-		try
-		{
-			Map<String, Object> map = gson.fromJson(response.body().string(), mapType);
-			return !map.containsKey("error");
-		}
-		catch (JsonSyntaxException je)
-		{
-			log.warn("Error parsing client response.", je);
-		}
-		catch (IOException ie)
-		{
-			log.warn("Invalid data format from client.", ie);
-		}
-
-		return false;
+		return true;
 	}
 
-	private <T> T processResponse(Gson gson, Response response, Class<T> classOfT)
+	private <T> T processResponse(Gson gson, Response response, Class<T> classOfT) throws IOException
 	{
 		if (!response.isSuccessful())
 		{
-			// TODO: Special check for code 400
-			log.warn("Unsuccessful client response, '"
-				+ response.request().url()
-				+ "' returned a " + response.code() + ".");
-			return null;
+			if (response.code() == 404)
+			{
+				return null;
+			}
+
+			throw getIOException(response);
 		}
 
 		try
 		{
 			return gson.fromJson(response.body().string(), classOfT);
 		}
-		catch (JsonSyntaxException je)
+		catch (IOException | JsonSyntaxException ex)
 		{
-			log.warn("Error parsing client response.", je);
+			throw new IOException("Error parsing API response body", ex);
 		}
-		catch (IOException ie)
+	}
+
+	private IOException getIOException(Response response)
+	{
+		Type mapType = new TypeToken<Map<String, String>>()
 		{
-			log.warn("Invalid data format from client.", ie);
+		}.getType();
+		Gson gson = gsonBuilder.create();
+
+		int code = response.code();
+
+		if (response.code() == 400)
+		{
+			try
+			{
+				Map<String, String> map = gson.fromJson(response.body().string(), mapType);
+				return new IOException(map.getOrDefault("error", "Unknown Error"));
+			}
+			catch (IOException | JsonSyntaxException ex)
+			{
+				return new IOException("Error " + code + " with malformed error info", ex);
+			}
 		}
 
-		return null;
+		return new IOException("Error " + code + " from API");
 	}
 
 	@Value

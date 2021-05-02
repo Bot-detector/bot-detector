@@ -277,7 +277,7 @@ public class BotDetectorPlugin extends Plugin
 		detectorClient.sendSightings(sightings, getReporterName(), false)
 			.whenComplete((b, ex) ->
 			{
-				if (b)
+				if (ex == null && b)
 				{
 					namesUploaded += uniqueNames;
 					SwingUtilities.invokeLater(() -> panel.setNamesUploaded(namesUploaded));
@@ -333,7 +333,7 @@ public class BotDetectorPlugin extends Plugin
 		detectorClient.requestPlayerStats(nameAtRequest)
 			.whenComplete((ps, ex) ->
 			{
-				if (ps != null)
+				if (ex == null && ps != null)
 				{
 					if (nameAtRequest.equals(loggedPlayerName))
 					{
@@ -587,7 +587,7 @@ public class BotDetectorPlugin extends Plugin
 			detectorClient.verifyDiscord(config.authToken().trim(), author, code)
 				.whenComplete((b, ex) ->
 				{
-					if (b)
+					if (ex == null && b)
 					{
 						sendChatStatusMessage("Discord verified for '" + author + "'!");
 					}
