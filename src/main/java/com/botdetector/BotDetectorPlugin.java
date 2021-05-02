@@ -183,7 +183,7 @@ public class BotDetectorPlugin extends Plugin
 		panel = injector.getInstance(BotDetectorPanel.class);
 		SwingUtilities.invokeLater(() ->
 		{
-			panel.setAnonymousWarning(config.enableAnonymousReporting());
+			panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
 			panel.setNamesUploaded(0);
 		});
 
@@ -316,7 +316,11 @@ public class BotDetectorPlugin extends Plugin
 	{
 		if (config.enableAnonymousReporting())
 		{
-			SwingUtilities.invokeLater(() -> panel.setPlayerStats(null));
+			SwingUtilities.invokeLater(() ->
+			{
+				panel.setPlayerStats(null);
+				panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
+			});
 			return;
 		}
 
@@ -329,9 +333,21 @@ public class BotDetectorPlugin extends Plugin
 		detectorClient.requestPlayerStats(nameAtRequest)
 			.whenComplete((ps, ex) ->
 			{
-				if (ps != null && nameAtRequest.equals(loggedPlayerName))
+				if (ps != null)
 				{
-					SwingUtilities.invokeLater(() -> panel.setPlayerStats(ps));
+					if (nameAtRequest.equals(loggedPlayerName))
+					{
+						SwingUtilities.invokeLater(() ->
+						{
+							panel.setPlayerStats(ps);
+							panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
+						});
+					}
+				}
+				else
+				{
+					SwingUtilities.invokeLater(() ->
+						panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, true));
 				}
 			});
 	}
@@ -361,7 +377,7 @@ public class BotDetectorPlugin extends Plugin
 				refreshPlayerStats();
 				SwingUtilities.invokeLater(() ->
 				{
-					panel.setAnonymousWarning(config.enableAnonymousReporting());
+					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
 					panel.forceHideFeedbackPanel();
 					panel.forceHideReportPanel();
 				});
@@ -714,7 +730,8 @@ public class BotDetectorPlugin extends Plugin
 		isCurrentWorldMembers = types.contains(WorldType.MEMBERS);
 		isCurrentWorldPVP = types.contains(WorldType.PVP);
 		isCurrentWorldBlocked = BLOCKED_WORLD_TYPES.stream().anyMatch(types::contains);
-		SwingUtilities.invokeLater(() -> panel.setBlockedWorldWarning(isCurrentWorldBlocked));
+		SwingUtilities.invokeLater(() ->
+			panel.setWarningVisible(BotDetectorPanel.WarningLabel.BLOCKED_WORLD, isCurrentWorldBlocked));
 	}
 
 	public String getReporterName()

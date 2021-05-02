@@ -44,6 +44,7 @@ public class Icons
 	public static final ImageIcon WEB_ICON;
 	public static final ImageIcon TWITTER_ICON;
 	public static final ImageIcon WARNING_ICON;
+	public static final ImageIcon ERROR_ICON;
 
 	static
 	{
@@ -64,5 +65,8 @@ public class Icons
 
 		final BufferedImage warningIcon = ImageUtil.loadImageResource(BotDetectorPlugin.class, "/warning.png");
 		WARNING_ICON = new ImageIcon(warningIcon);
+
+		final BufferedImage errorIcon = ImageUtil.loadImageResource(BotDetectorPlugin.class, "/error.png");
+		ERROR_ICON = new ImageIcon(errorIcon);
 	}
 }
