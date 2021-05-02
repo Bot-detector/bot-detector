@@ -119,7 +119,12 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(checkPostSuccess(response));
+					if (!response.isSuccessful())
+					{
+						throw getIOException(response);
+					}
+
+					future.complete(true);
 				}
 				finally
 				{
@@ -155,7 +160,13 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(checkPostSuccess(response));
+					// TODO: Differenciate between bad token and failed auth (return false)
+					if (!response.isSuccessful())
+					{
+						throw getIOException(response);
+					}
+
+					future.complete(true);
 				}
 				finally
 				{
@@ -187,7 +198,7 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error sending prediction feedback.", e);
+				log.error("Error sending prediction feedback", e);
 				future.completeExceptionally(e);
 			}
 
@@ -196,7 +207,12 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(checkPostSuccess(response));
+					if (!response.isSuccessful())
+					{
+						throw getIOException(response);
+					}
+
+					future.complete(true);
 				}
 				finally
 				{
@@ -276,21 +292,6 @@ public class BotDetectorClient
 		});
 
 		return future;
-	}
-
-	private boolean checkPostSuccess(Response response) throws IOException
-	{
-		if (!response.isSuccessful())
-		{
-			if (response.code() == 404)
-			{
-				return false;
-			}
-
-			throw getIOException(response);
-		}
-
-		return true;
 	}
 
 	private <T> T processResponse(Gson gson, Response response, Class<T> classOfT) throws IOException
