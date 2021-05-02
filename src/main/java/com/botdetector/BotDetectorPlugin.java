@@ -33,6 +33,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
+import com.google.common.primitives.Ints;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -229,8 +230,10 @@ public class BotDetectorPlugin extends Plugin
 
 	private void updateTimeToAutoSend()
 	{
-		timeToAutoSend = Instant.now().plusSeconds(
-			Math.max(config.autoSendMinutes(), BotDetectorConfig.AUTO_SEND_MINIMUM_MINUTES) * 60);
+		timeToAutoSend = Instant.now().plusSeconds(60L *
+			Ints.constrainToRange(config.autoSendMinutes(),
+				BotDetectorConfig.AUTO_SEND_MINIMUM_MINUTES,
+				BotDetectorConfig.AUTO_SEND_MAXIMUM_MINUTES));
 	}
 
 	@Schedule(period = AUTO_SEND_SCHEDULE_SECONDS,
