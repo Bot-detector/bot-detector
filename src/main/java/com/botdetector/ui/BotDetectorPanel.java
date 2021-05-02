@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -63,7 +64,7 @@ import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.QuantityFormatter;
-import net.runelite.client.util.Text;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.text.WordUtils;
 
 public class BotDetectorPanel extends PluginPanel
@@ -105,6 +106,7 @@ public class BotDetectorPanel extends PluginPanel
 	}
 
 	private static final int MAX_RSN_LENGTH = 12;
+	private static final Pattern VALID_RSN_PATTERN = Pattern.compile("^[ _\\-]*[a-zA-Z0-9][\\w\\- ]*$");
 	private static final Font BOLD_FONT = FontManager.getRunescapeBoldFont();
 	private static final Font NORMAL_FONT = FontManager.getRunescapeFont();
 	private static final Font SMALL_FONT = FontManager.getRunescapeSmallFont();
@@ -115,6 +117,7 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Color HEADER_COLOR = Color.WHITE;
 	private static final Color TEXT_COLOR = ColorScheme.LIGHT_GRAY_COLOR;
 	private static final Color VALUE_COLOR = Color.WHITE;
+	private static final Color ERROR_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
 
 	private static final String EMPTY_LABEL = "---";
 
@@ -424,7 +427,6 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.add(predictionPlayerIdTextLabel);
 
 		predictionPlayerIdLabel = new JLabel();
-		predictionPlayerIdLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		primaryPredictionPanel.add(predictionPlayerIdLabel, c);
@@ -439,7 +441,6 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.add(label);
 
 		predictionPlayerNameLabel = new JLabel();
-		predictionPlayerNameLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		primaryPredictionPanel.add(predictionPlayerNameLabel, c);
@@ -454,7 +455,6 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.add(label);
 
 		predictionTypeLabel = new JLabel();
-		predictionTypeLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		primaryPredictionPanel.add(predictionTypeLabel, c);
@@ -469,7 +469,6 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.add(label);
 
 		predictionConfidenceLabel = new JLabel();
-		predictionConfidenceLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
 		primaryPredictionPanel.add(predictionConfidenceLabel, c);
@@ -649,6 +648,14 @@ public class BotDetectorPanel extends PluginPanel
 		predictionReportPanel.setVisible(false);
 	}
 
+	private void setPredictionLabelsColor(Color color)
+	{
+		predictionPlayerIdLabel.setForeground(color);
+		predictionPlayerNameLabel.setForeground(color);
+		predictionTypeLabel.setForeground(color);
+		predictionConfidenceLabel.setForeground(color);
+	}
+
 	public void setPrediction(Prediction pred)
 	{
 		setPrediction(pred, null);
@@ -656,6 +663,8 @@ public class BotDetectorPanel extends PluginPanel
 
 	public void setPrediction(Prediction pred, PlayerSighting sighting)
 	{
+		setPredictionLabelsColor(VALUE_COLOR);
+
 		if (pred != null)
 		{
 			lastPrediction = pred;
@@ -695,14 +704,26 @@ public class BotDetectorPanel extends PluginPanel
 			predictionPlayerNameLabel.setText(EMPTY_LABEL);
 			predictionTypeLabel.setText(EMPTY_LABEL);
 			predictionConfidenceLabel.setText(EMPTY_LABEL);
-			// Don't forget to reset this color!
-			predictionConfidenceLabel.setForeground(VALUE_COLOR);
 			predictionBreakdownLabel.setText(EMPTY_LABEL);
 
 			predictionBreakdownPanel.setVisible(false);
 			predictionFeedbackPanel.setVisible(false);
 			predictionReportPanel.setVisible(false);
 		}
+	}
+
+	public void setPredictionError(String error)
+	{
+		setPredictionError(error, EMPTY_LABEL);
+	}
+
+	public void setPredictionError(String error, String details)
+	{
+		setPrediction(null);
+		setPredictionLabelsColor(ERROR_COLOR);
+
+		predictionPlayerNameLabel.setText(wrapHTML(error));
+		predictionTypeLabel.setText(wrapHTML(details));
 	}
 
 	public void predictPlayer(String playerName)
@@ -713,7 +734,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	private void predictPlayer()
 	{
-		String target = Text.sanitize(searchBar.getText());
+		String target = sanitize(searchBar.getText());
 
 		if (target.length() <= 0)
 		{
@@ -724,6 +745,16 @@ public class BotDetectorPanel extends PluginPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			searchBarLoading = false;
+			setPredictionError("Name Input Error",
+				"Name cannot be longer than " + MAX_RSN_LENGTH + " characters");
+			return;
+		}
+		else if (!isValidPlayerName(target))
+		{
+			searchBar.setIcon(IconTextField.Icon.ERROR);
+			searchBarLoading = false;
+			setPredictionError("Name Input Error",
+				"'" + target + "' is not a valid Runescape name");
 			return;
 		}
 
@@ -736,7 +767,7 @@ public class BotDetectorPanel extends PluginPanel
 		detectorClient.requestPrediction(target).whenCompleteAsync((pred, ex) ->
 			SwingUtilities.invokeLater(() ->
 			{
-				if (!Text.sanitize(searchBar.getText()).equals(target))
+				if (!sanitize(searchBar.getText()).equals(target))
 				{
 					// Target has changed in the meantime
 					return;
@@ -747,6 +778,18 @@ public class BotDetectorPanel extends PluginPanel
 					searchBar.setIcon(IconTextField.Icon.ERROR);
 					searchBar.setEditable(true);
 					searchBarLoading = false;
+
+					String details;
+					if (ex != null)
+					{
+						details = ex.getMessage();
+					}
+					else
+					{
+						details = "No prediction returned from the API";
+					}
+					setPredictionError("Server Error", details);
+
 					return;
 				}
 
@@ -903,8 +946,23 @@ public class BotDetectorPanel extends PluginPanel
 	}
 
 	// This makes wrapping work on the labels that could wrap
-	private String wrapHTML(String str)
+	private static String wrapHTML(String str)
 	{
-		return "<html>" + str + "</html>";
+		return "<html>" + StringEscapeUtils.escapeHtml4(str) + "</html>";
+	}
+
+	private static String sanitize(String lookup)
+	{
+		return lookup.replace('\u00A0', ' ');
+	}
+
+	private static boolean isValidPlayerName(String playerName)
+	{
+		if (playerName == null || playerName.length() > MAX_RSN_LENGTH)
+		{
+			return false;
+		}
+
+		return VALID_RSN_PATTERN.matcher(playerName).matches();
 	}
 }
