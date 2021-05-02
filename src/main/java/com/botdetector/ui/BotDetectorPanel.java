@@ -866,7 +866,7 @@ public class BotDetectorPanel extends PluginPanel
 			.whenComplete((b, ex) ->
 			{
 				String message;
-				if (b)
+				if (ex == null && b)
 				{
 					message = "Thank you for your prediction feedback for '%s'!";
 				}
@@ -904,7 +904,7 @@ public class BotDetectorPanel extends PluginPanel
 			.whenComplete((b, ex) ->
 			{
 				String message;
-				if (b)
+				if (ex == null && b)
 				{
 					message = "Thank you for your report for '%s'!";
 				}

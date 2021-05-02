@@ -29,7 +29,6 @@ import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
 import com.google.common.collect.ImmutableList;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -41,6 +40,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.IOException;
@@ -110,15 +110,26 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error sending player sighting data.", e);
-				future.complete(false);
+				log.warn("Error sending player sighting data", e);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
-				future.complete(response.isSuccessful());
-				response.close();
+				try
+				{
+					if (!response.isSuccessful())
+					{
+						throw getIOException(response);
+					}
+
+					future.complete(true);
+				}
+				finally
+				{
+					response.close();
+				}
 			}
 		});
 
@@ -140,15 +151,27 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error verifying discord user.", e);
-				future.complete(false);
+				log.warn("Error verifying discord user", e);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
-				future.complete(response.isSuccessful());
-				response.close();
+				try
+				{
+					// TODO: Differenciate between bad token and failed auth (return false)
+					if (!response.isSuccessful())
+					{
+						throw getIOException(response);
+					}
+
+					future.complete(true);
+				}
+				finally
+				{
+					response.close();
+				}
 			}
 		});
 
@@ -175,15 +198,26 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error sending prediction feedback.", e);
-				future.complete(false);
+				log.warn("Error sending prediction feedback", e);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
-				future.complete(response.isSuccessful());
-				response.close();
+				try
+				{
+					if (!response.isSuccessful())
+					{
+						throw getIOException(response);
+					}
+
+					future.complete(true);
+				}
+				finally
+				{
+					response.close();
+				}
 			}
 		});
 
@@ -192,10 +226,6 @@ public class BotDetectorClient
 
 	public CompletableFuture<Prediction> requestPrediction(String playerName)
 	{
-		Type predictionMapType = new TypeToken<Map<String, Double>>()
-		{
-		}.getType();
-
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
@@ -208,16 +238,21 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error obtaining player prediction data.", e);
-				future.complete(null);
+				log.warn("Error obtaining player prediction data", e);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
-				future.complete(processResponse(gson, response, Prediction.class));
-
-				response.close();
+				try
+				{
+					future.complete(processResponse(gson, response, Prediction.class));
+				}
+				finally
+				{
+					response.close();
+				}
 			}
 		});
 
@@ -238,46 +273,69 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error obtaining player stats data.", e);
-				future.complete(null);
+				log.warn("Error obtaining player stats data", e);
+				future.completeExceptionally(e);
 			}
 
 			@Override
-			public void onResponse(Call call, Response response)
+			public void onResponse(Call call, Response response) throws IOException
 			{
-				future.complete(processResponse(gson, response, PlayerStats.class));
-
-				response.close();
+				try
+				{
+					future.complete(processResponse(gson, response, PlayerStats.class));
+				}
+				finally
+				{
+					response.close();
+				}
 			}
 		});
 
 		return future;
 	}
 
-	private <T> T processResponse(Gson gson, Response response, Class<T> classOfT)
+	private <T> T processResponse(Gson gson, Response response, Class<T> classOfT) throws IOException
 	{
 		if (!response.isSuccessful())
 		{
-			log.warn("Unsuccessful client response, '"
-				+ response.request().url()
-				+ "' returned a " + response.code() + ".");
-			return null;
+			if (response.code() == 404)
+			{
+				return null;
+			}
+
+			throw getIOException(response);
 		}
 
 		try
 		{
 			return gson.fromJson(response.body().string(), classOfT);
 		}
-		catch (JsonSyntaxException je)
+		catch (IOException | JsonSyntaxException ex)
 		{
-			log.warn("Error parsing client response.", je);
+			throw new IOException("Error parsing API response body", ex);
 		}
-		catch (IOException ie)
+	}
+
+	private IOException getIOException(Response response)
+	{
+		int code = response.code();
+		if (code == 400)
 		{
-			log.warn("Invalid data format from client.", ie);
+			try
+			{
+				Map<String, String> map = gsonBuilder.create().fromJson(response.body().string(),
+					new TypeToken<Map<String, String>>()
+					{
+					}.getType());
+				return new IOException(map.getOrDefault("error", "Unknown " + code + " error from API"));
+			}
+			catch (IOException | JsonSyntaxException ex)
+			{
+				return new IOException("Error " + code + " with malformed error info", ex);
+			}
 		}
 
-		return null;
+		return new IOException("Error " + code + " from API");
 	}
 
 	@Value
