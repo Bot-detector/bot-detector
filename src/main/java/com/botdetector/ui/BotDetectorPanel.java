@@ -32,7 +32,6 @@ import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
-import com.google.common.collect.ImmutableList;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -42,11 +41,12 @@ import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -73,15 +73,35 @@ public class BotDetectorPanel extends PluginPanel
 	private enum WebLink
 	{
 		WEBSITE(Icons.WEB_ICON, "Our website", "https://www.osrsbotdetector.com/"),
+		TWITTER(Icons.TWITTER_ICON, "Follow us on Twitter!", "https://www.twitter.com/OSRSBotDetector"),
 		DISCORD(Icons.DISCORD_ICON, "Join our Discord!", "https://discord.com/invite/JCAGpcjbfP"),
 		GITHUB(Icons.GITHUB_ICON, "Check out the project's source code", "https://github.com/Bot-detector"),
-		PATREON(Icons.PATREON_ICON, "Help keep us going!", "https://www.patreon.com/bot_detector"),
-		TWITTER(Icons.TWITTER_ICON, "Follow us on Twitter!", "https://www.twitter.com/OSRSBotDetector")
+		PATREON(Icons.PATREON_ICON, "Help keep us going!", "https://www.patreon.com/bot_detector")
 		;
 
 		private final ImageIcon image;
 		private final String tooltip;
 		private final String link;
+	}
+
+	@Getter
+	@AllArgsConstructor
+	public enum WarningLabel
+	{
+		ANONYMOUS(Icons.WARNING_ICON, " Anonymous Uploading Active",
+			"<html>Your name will not be included with your uploads and your tallies will not increase."
+				+ "<br>Prediction feedback and manual reporting are also disabled.</html>"),
+		BLOCKED_WORLD(Icons.WARNING_ICON, " No Uploading For Current World",
+			"<html>You are currently logged into a world where player sightings are not being collected."
+				+ "<br>Your tallies will not increase from seeing players in this world.</html>"),
+		PLAYER_STATS_ERROR(Icons.ERROR_ICON, " Could Not Retrieve Statistics",
+			"<html>Your player statistics could not be retrieved at this time."
+				+ "<br>Either the server could not assign you an ID or the server is down at the moment.</html>")
+		;
+
+		private final Icon image;
+		private final String message;
+		private final String tooltip;
 	}
 
 	private static final int MAX_RSN_LENGTH = 12;
@@ -97,13 +117,6 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Color VALUE_COLOR = Color.WHITE;
 
 	private static final String EMPTY_LABEL = "---";
-
-	private static final List<WebLink> LINKS = ImmutableList.of(
-		WebLink.WEBSITE,
-		WebLink.TWITTER,
-		WebLink.DISCORD,
-		WebLink.GITHUB,
-		WebLink.PATREON);
 
 	private final IconTextField searchBar;
 	private final JPanel linksPanel;
@@ -126,8 +139,7 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel playerStatsReportsLabel;
 	private JLabel playerStatsPossibleBansLabel;
 	private JLabel playerStatsConfirmedBansLabel;
-	private JLabel playerStatsAnonymousWarningLabel;
-	private JLabel playerStatsBlockedWorldWarningLabel;
+	private final Map<WarningLabel, JLabel> warningLabels = new HashMap<>();
 
 	// Primary Prediction
 	private JLabel predictionPlayerIdTextLabel;
@@ -211,7 +223,7 @@ public class BotDetectorPanel extends PluginPanel
 
 		linksPanel.add(title);
 
-		for (WebLink w : LINKS)
+		for (WebLink w : WebLink.values())
 		{
 			JLabel link = new JLabel(w.getImage());
 			link.setToolTipText(w.getTooltip());
@@ -322,29 +334,22 @@ public class BotDetectorPanel extends PluginPanel
 		reportingStatsPanel.add(playerStatsConfirmedBansLabel, c);
 		switchableFontComponents.add(playerStatsConfirmedBansLabel);
 
-		playerStatsAnonymousWarningLabel = new JLabel(" Anonymous Uploading Active");
-		playerStatsAnonymousWarningLabel.setToolTipText(
-			"<html>Your name will not be included with your uploads and your tallies will not increase." +
-			"<br>Prediction feedback and manual reporting are also disabled.</html>");
-		playerStatsAnonymousWarningLabel.setIcon(Icons.WARNING_ICON);
-		playerStatsAnonymousWarningLabel.setFont(NORMAL_FONT);
-		playerStatsAnonymousWarningLabel.setForeground(HEADER_COLOR);
-		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 1;
 		c.gridwidth = 2;
 		c.ipady = 5;
-		reportingStatsPanel.add(playerStatsAnonymousWarningLabel, c);
-
-		playerStatsBlockedWorldWarningLabel = new JLabel(" No Uploading For Current World");
-		playerStatsBlockedWorldWarningLabel.setToolTipText(
-			"<html>You are currently logged into a world where player sightings are not being collected." +
-				"<br>Your tallies will not increase from seeing players in this world.</html>");
-		playerStatsBlockedWorldWarningLabel.setIcon(Icons.WARNING_ICON);
-		playerStatsBlockedWorldWarningLabel.setFont(NORMAL_FONT);
-		playerStatsBlockedWorldWarningLabel.setForeground(HEADER_COLOR);
-		c.gridy++;
-		reportingStatsPanel.add(playerStatsBlockedWorldWarningLabel, c);
+		for (WarningLabel wl : WarningLabel.values())
+		{
+			c.gridy++;
+			label = new JLabel(wl.getMessage());
+			label.setToolTipText(wl.getTooltip());
+			label.setIcon(wl.getImage());
+			label.setFont(NORMAL_FONT);
+			label.setForeground(HEADER_COLOR);
+			label.setVisible(false);
+			reportingStatsPanel.add(label, c);
+			warningLabels.put(wl, label);
+		}
 
 		return reportingStatsPanel;
 	}
@@ -483,7 +488,7 @@ public class BotDetectorPanel extends PluginPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 
-		String tooltip = "<html>Please tell us if this prediction seems correct to you!" +
+		String tooltip = "<html>Please tell us if this prediction seems %s to you!" +
 			"<br>Doing so will help us improve our model.</html>";
 
 		JLabel label = new JLabel("Is this prediction correct?");
@@ -499,7 +504,7 @@ public class BotDetectorPanel extends PluginPanel
 		JButton button;
 
 		button = new JButton("Looks fine!");
-		button.setToolTipText(tooltip);
+		button.setToolTipText(String.format(tooltip, "correct"));
 		button.setForeground(HEADER_COLOR);
 		button.setFont(SMALL_FONT);
 		button.addActionListener(l -> sendFeedbackToClient(true));
@@ -509,7 +514,7 @@ public class BotDetectorPanel extends PluginPanel
 		panel.add(button, c);
 
 		button = new JButton("Not sure...");
-		button.setToolTipText(tooltip);
+		button.setToolTipText(String.format(tooltip, "incorrect"));
 		button.setForeground(HEADER_COLOR);
 		button.setFont(SMALL_FONT);
 		button.addActionListener(l -> sendFeedbackToClient(false));
@@ -613,14 +618,19 @@ public class BotDetectorPanel extends PluginPanel
 		}
 	}
 
-	public void setAnonymousWarning(boolean warn)
+	public boolean getWarningVisible(WarningLabel wl)
 	{
-		playerStatsAnonymousWarningLabel.setVisible(warn);
+		JLabel label = warningLabels.get(wl);
+		return label != null && label.isVisible();
 	}
 
-	public void setBlockedWorldWarning(boolean warn)
+	public void setWarningVisible(WarningLabel wl, boolean visible)
 	{
-		playerStatsBlockedWorldWarningLabel.setVisible(warn);
+		JLabel label = warningLabels.get(wl);
+		if (label != null)
+		{
+			label.setVisible(visible);
+		}
 	}
 
 	public void setPlayerIdVisible(boolean visible)
