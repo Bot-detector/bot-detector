@@ -60,6 +60,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.http.api.RuneLiteAPI;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -70,8 +71,10 @@ import okhttp3.Response;
 @Singleton
 public class BotDetectorClient
 {
-	public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-	private static final String BASE_URL = System.getProperty("BotDetectorAPIPath", "https://www.osrsbotdetector.com/api");
+	private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+	private static final String API_VERSION_FALLBACK_WORD = "latest";
+	private static final HttpUrl BASE_HTTP_URL = HttpUrl.parse(
+		System.getProperty("BotDetectorAPIPath", "https://www.osrsbotdetector.com/api"));
 
 	@Getter
 	@AllArgsConstructor
@@ -100,15 +103,15 @@ public class BotDetectorClient
 	@Setter
 	private String pluginVersion;
 
-	private String getUrl(ApiUrl path)
+	private HttpUrl getUrl(ApiUrl path)
 	{
-		String v = pluginVersion;
-		if (v == null || v.isEmpty())
-		{
-			v = "unknown";
-		}
+		String version = (pluginVersion != null && !pluginVersion.isEmpty()) ?
+			pluginVersion : API_VERSION_FALLBACK_WORD;
 
-		return String.format("%s/%s/%s", BASE_URL, v, path.getPath());
+		return BASE_HTTP_URL.newBuilder()
+			.addPathSegment(version)
+			.addPathSegments(path.getPath())
+			.build();
 	}
 
 	public CompletableFuture<Boolean> sendSighting(PlayerSighting sighting, String reporter, boolean manual)
@@ -128,7 +131,9 @@ public class BotDetectorClient
 			.create();
 
 		Request request = new Request.Builder()
-			.url(getUrl(ApiUrl.DETECTION) + (manual ? 1 : 0))
+			.url(getUrl(ApiUrl.DETECTION).newBuilder()
+				.addPathSegment(String.valueOf(manual ? 1 : 0))
+				.build())
 			.post(RequestBody.create(JSON, gson.toJson(wrappedList)))
 			.build();
 
@@ -169,7 +174,9 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(getUrl(ApiUrl.VERIFY_DISCORD) + token)
+			.url(getUrl(ApiUrl.VERIFY_DISCORD).newBuilder()
+				.addPathSegment(token)
+				.build())
 			.post(RequestBody.create(JSON, gson.toJson(new DiscordVerification(nameToVerify, code))))
 			.build();
 
@@ -257,7 +264,9 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(getUrl(ApiUrl.PREDICTION) + playerName.replace(" ", "%20"))
+			.url(getUrl(ApiUrl.PREDICTION).newBuilder()
+				.addPathSegment(playerName)
+				.build())
 			.build();
 
 		CompletableFuture<Prediction> future = new CompletableFuture<>();
@@ -292,7 +301,9 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(getUrl(ApiUrl.PLAYER_STATS) + playerName.replace(" ", "%20"))
+			.url(getUrl(ApiUrl.PLAYER_STATS).newBuilder()
+				.addPathSegment(playerName)
+				.build())
 			.build();
 
 		CompletableFuture<PlayerStats> future = new CompletableFuture<>();
