@@ -29,7 +29,6 @@ import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
 import com.google.common.collect.ImmutableList;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -41,6 +40,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.IOException;
@@ -318,19 +318,16 @@ public class BotDetectorClient
 
 	private IOException getIOException(Response response)
 	{
-		Type mapType = new TypeToken<Map<String, String>>()
-		{
-		}.getType();
-		Gson gson = gsonBuilder.create();
-
 		int code = response.code();
-
-		if (response.code() == 400)
+		if (code == 400)
 		{
 			try
 			{
-				Map<String, String> map = gson.fromJson(response.body().string(), mapType);
-				return new IOException(map.getOrDefault("error", "Unknown Error"));
+				Map<String, String> map = gsonBuilder.create().fromJson(response.body().string(),
+					new TypeToken<Map<String, String>>()
+					{
+					}.getType());
+				return new IOException(map.getOrDefault("error", "Unknown " + code + " Error from API"));
 			}
 			catch (IOException | JsonSyntaxException ex)
 			{
