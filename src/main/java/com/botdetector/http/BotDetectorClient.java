@@ -110,7 +110,7 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error sending player sighting data", e);
+				log.warn("Error sending player sighting data", e);
 				future.completeExceptionally(e);
 			}
 
@@ -151,7 +151,7 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error verifying discord user", e);
+				log.warn("Error verifying discord user", e);
 				future.completeExceptionally(e);
 			}
 
@@ -198,7 +198,7 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error sending prediction feedback", e);
+				log.warn("Error sending prediction feedback", e);
 				future.completeExceptionally(e);
 			}
 
@@ -238,7 +238,7 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error obtaining player prediction data", e);
+				log.warn("Error obtaining player prediction data", e);
 				future.completeExceptionally(e);
 			}
 
@@ -273,7 +273,7 @@ public class BotDetectorClient
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
-				log.error("Error obtaining player stats data", e);
+				log.warn("Error obtaining player stats data", e);
 				future.completeExceptionally(e);
 			}
 
