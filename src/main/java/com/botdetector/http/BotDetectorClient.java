@@ -327,7 +327,7 @@ public class BotDetectorClient
 					new TypeToken<Map<String, String>>()
 					{
 					}.getType());
-				return new IOException(map.getOrDefault("error", "Unknown " + code + " Error from API"));
+				return new IOException(map.getOrDefault("error", "Unknown " + code + " error from API"));
 			}
 			catch (IOException | JsonSyntaxException ex)
 			{
