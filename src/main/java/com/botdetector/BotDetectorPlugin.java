@@ -27,6 +27,7 @@ package com.botdetector;
 
 import com.botdetector.http.BotDetectorClient;
 import com.botdetector.model.AuthToken;
+import com.botdetector.model.AuthTokenPermission;
 import com.botdetector.model.AuthTokenType;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
@@ -569,7 +570,7 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onChatMessage(ChatMessage event)
 	{
-		if (!authToken.getTokenType().canVerifyDiscord())
+		if (!authToken.getTokenType().getPermissions().contains(AuthTokenPermission.VERIFY_DISCORD))
 		{
 			return;
 		}
