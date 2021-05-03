@@ -23,26 +23,11 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.botdetector.model;
+package com.botdetector.ui;
 
-import com.google.gson.annotations.SerializedName;
-import lombok.Value;
-
-@Value
-public class PlayerStats
+public enum PanelFontType
 {
-	int reports;
-	int bans;
-	@SerializedName("possible_bans")
-	int possibleBans;
-
-	public double getAccuracy()
-	{
-		if (reports > 0)
-		{
-			return bans / (double)reports;
-		}
-		return 0;
-	}
-
+	SMALL,
+	NORMAL,
+	BOLD
 }

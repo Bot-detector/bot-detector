@@ -25,24 +25,48 @@
  */
 package com.botdetector.model;
 
-import com.google.gson.annotations.SerializedName;
-import lombok.Value;
+import com.google.common.collect.ImmutableSet;
+import java.util.Arrays;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import static com.botdetector.model.AuthTokenPermission.*;
 
-@Value
-public class PlayerStats
+@Getter
+@RequiredArgsConstructor
+public enum AuthTokenType
 {
-	int reports;
-	int bans;
-	@SerializedName("possible_bans")
-	int possibleBans;
+	/**
+	 * No permissions
+	 */
+	NONE(ImmutableSet.of()),
 
-	public double getAccuracy()
+	/**
+	 * All permissions
+	 */
+	DEV(Arrays.stream(AuthTokenPermission.values()).collect(ImmutableSet.toImmutableSet())),
+
+	/**
+	 * Can perform discord verification
+	 */
+	MOD(ImmutableSet.of(VERIFY_DISCORD))
+	;
+
+	private final ImmutableSet<AuthTokenPermission> permissions;
+
+	public static AuthTokenType fromPrefix(String prefix)
 	{
-		if (reports > 0)
+		if (prefix == null)
 		{
-			return bans / (double)reports;
+			return AuthTokenType.NONE;
 		}
-		return 0;
-	}
 
+		try
+		{
+			return AuthTokenType.valueOf(prefix.toUpperCase());
+		}
+		catch (IllegalArgumentException e)
+		{
+			return AuthTokenType.NONE;
+		}
+	}
 }

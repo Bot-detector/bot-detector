@@ -1,189 +1,391 @@
+/*
+ * Copyright (c) 2021, Ferrariic, Seltzer Bro, Cyborger1
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.botdetector.ui;
 
 import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
+import com.botdetector.http.BotDetectorClient;
+import com.botdetector.model.CaseInsensitiveString;
+import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
-import com.google.inject.Inject;
+import com.botdetector.model.Prediction;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Hashtable;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import javax.inject.Inject;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import lombok.SneakyThrows;
-import net.runelite.api.Client;
-import net.runelite.api.Player;
-import net.runelite.client.Notifier;
-import net.runelite.client.eventbus.EventBus;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
+import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.LinkBrowser;
-import net.runelite.client.util.Text;
+import net.runelite.client.util.QuantityFormatter;
+import org.apache.commons.text.StringEscapeUtils;
+import org.apache.commons.text.WordUtils;
 
 public class BotDetectorPanel extends PluginPanel
 {
-	@Inject
-	private Client client;
+	@Getter
+	@AllArgsConstructor
+	public enum WebLink
+	{
+		WEBSITE(Icons.WEB_ICON, "Our website", "https://www.osrsbotdetector.com/"),
+		TWITTER(Icons.TWITTER_ICON, "Follow us on Twitter!", "https://www.twitter.com/OSRSBotDetector"),
+		DISCORD(Icons.DISCORD_ICON, "Join our Discord!", "https://discord.com/invite/JCAGpcjbfP"),
+		GITHUB(Icons.GITHUB_ICON, "Check out the project's source code", "https://github.com/Bot-detector"),
+		PATREON(Icons.PATREON_ICON, "Help keep us going!", "https://www.patreon.com/bot_detector")
+		;
 
-	@Inject
-	private BotDetectorConfig config;
+		private final ImageIcon image;
+		private final String tooltip;
+		private final String link;
+	}
 
-	@Inject
-	private EventBus eventBus;
+	@Getter
+	@AllArgsConstructor
+	public enum WarningLabel
+	{
+		ANONYMOUS(Icons.WARNING_ICON, " Anonymous Uploading Active",
+			"<html>Your name will not be included with your uploads and your tallies will not increase."
+				+ "<br>Prediction feedback and manual reporting are also disabled.</html>"),
+		BLOCKED_WORLD(Icons.WARNING_ICON, " No Uploading For Current World",
+			"<html>You are currently logged into a world where player sightings are not being collected."
+				+ "<br>Your tallies will not increase from seeing players in this world.</html>"),
+		PLAYER_STATS_ERROR(Icons.ERROR_ICON, " Could Not Retrieve Statistics",
+			"<html>Your player statistics could not be retrieved at this time."
+				+ "<br>Either the server could not assign you an ID or the server is down at the moment.</html>")
+		;
 
-	@Inject
-	private Notifier notifier;
+		private final Icon image;
+		private final String message;
+		private final String tooltip;
+	}
 
-	private BotDetectorPlugin plugin;
-
-	private final Font boldFont = FontManager.getRunescapeBoldFont();
 	private static final int MAX_RSN_LENGTH = 12;
-	private boolean active;
-	private boolean loading;
-	private boolean feedbackBtnsActive;
-	private boolean reportBtnsActive;
+	private static final Pattern VALID_RSN_PATTERN = Pattern.compile("^[ _\\-]*[a-zA-Z0-9][\\w\\- ]*$");
+	private static final Font BOLD_FONT = FontManager.getRunescapeBoldFont();
+	private static final Font NORMAL_FONT = FontManager.getRunescapeFont();
+	private static final Font SMALL_FONT = FontManager.getRunescapeSmallFont();
+
+	private static final Color BACKGROUND_COLOR = ColorScheme.DARK_GRAY_COLOR;
+	private static final Color SUB_BACKGROUND_COLOR = ColorScheme.DARKER_GRAY_COLOR;
+	private static final Color LINK_HEADER_COLOR = ColorScheme.LIGHT_GRAY_COLOR;
+	private static final Color HEADER_COLOR = Color.WHITE;
+	private static final Color TEXT_COLOR = ColorScheme.LIGHT_GRAY_COLOR;
+	private static final Color VALUE_COLOR = Color.WHITE;
+	private static final Color ERROR_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
+
+	private static final String EMPTY_LABEL = "---";
 
 	private final IconTextField searchBar;
+	private final JPanel linksPanel;
+	private final JPanel reportingStatsPanel;
+	private final JPanel primaryPredictionPanel;
+	private final JPanel predictionFeedbackPanel;
+	private final JPanel predictionReportPanel;
+	private final JPanel predictionBreakdownPanel;
 
-	private JPanel linksPanel;
-	private JPanel statsPanel;
-	private JPanel playerInfoPanel;
-	private JPanel additionalPredictionsPanel;
+	private final BotDetectorPlugin plugin;
+	private final BotDetectorClient detectorClient;
+	private final BotDetectorConfig config;
 
-	public PlayerStats ps;
+	private final Set<JComponent> switchableFontComponents = new HashSet<>();
 
-	JSeparator btnSpacer;
-	JLabel anonymousWarning;
+	private boolean searchBarLoading;
 
-	JLabel uploads;
-	JLabel numReports;
-	JLabel numBans;
-	JLabel numPossibleBans;
-	JLabel accuracy;
+	// Player Stats
+	private JLabel playerStatsPluginVersionLabel;
+	private JLabel playerStatsUploadedNamesLabel;
+	private JLabel playerStatsReportsLabel;
+	private JLabel playerStatsPossibleBansLabel;
+	private JLabel playerStatsConfirmedBansLabel;
+	private final Map<WarningLabel, JLabel> warningLabels = new HashMap<>();
 
-	String currRSN;
-	JLabel playerName;
-	JLabel playerGroupLabel;
-	JLabel playerGroupConfidence;
+	// Primary Prediction
+	private JLabel predictionPlayerIdTextLabel;
+	private JLabel predictionPlayerIdLabel;
+	private JLabel predictionPlayerNameLabel;
+	private JLabel predictionTypeLabel;
+	private JLabel predictionConfidenceLabel;
 
-	JButton reportBtn;
-	JButton dontReportBtn;
-	JLabel reportBtnTitle = new JLabel("<html><body style = 'color: #a5a5a5'>"
-		+ "Report as Bot?"
-		+ "</body></html>");
+	// Prediction Breakdown
+	private JLabel predictionBreakdownLabel;
 
-	JButton correctBtn;
-	JButton incorrectBtn;
-	JLabel feedbackTitle = new JLabel("<html><body style = 'color: #a5a5a5'>"
-		+ "Is The Prediction Correct?"
-		+ "</body></html>");
-
-	JButton refreshStatsBtn;
-
-	@SneakyThrows
-	@Override
-	public void onActivate()
-	{
-		super.onActivate();
-		searchBar.requestFocusInWindow();
-	}
-
-	@Override
-	public void onDeactivate()
-	{
-		active = false;
-	}
+	// For feedback/report
+	private Prediction lastPrediction;
+	private PlayerSighting lastPredictionPlayerSighting;
+	private String lastPredictionReporterName;
 
 	@Inject
-	public BotDetectorPanel(BotDetectorPlugin plugin)
+	public BotDetectorPanel(BotDetectorPlugin plugin, BotDetectorClient detectorClient, BotDetectorConfig config)
 	{
 		this.plugin = plugin;
-		loading = false;
-		ps = new PlayerStats(0, 0, 0);
+		this.detectorClient = detectorClient;
+		this.config = config;
 
-		btnSpacer = new JSeparator();
+		setBorder(new EmptyBorder(18, 10, 0, 10));
+		setBackground(BACKGROUND_COLOR);
+		setLayout(new GridBagLayout());
 
-		//Panels
-		statsPanel = new JPanel();
-		playerInfoPanel = new JPanel();
-		additionalPredictionsPanel = new JPanel();
-		additionalPredictionsPanel.setVisible(false);
+		searchBar = playerSearchBar();
+		linksPanel = linksPanel();
+		reportingStatsPanel = reportingStatsPanel();
+		primaryPredictionPanel = primaryPredictionPanel();
+		predictionFeedbackPanel = predictionFeedbackPanel();
+		predictionFeedbackPanel.setVisible(false);
+		predictionReportPanel = predictionReportPanel();
+		predictionReportPanel.setVisible(false);
+		predictionBreakdownPanel = predictionBreakdownPanel();
+		predictionBreakdownPanel.setVisible(false);
 
-		//Buttons
-		reportBtn = new JButton("Report");
-		reportBtn.createToolTip();
-		reportBtn.setToolTipText("Submit account as a probable offender.");
-		reportBtn.addActionListener(e ->
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.gridx = 0;
+		c.gridy = 0;
+		c.weightx = 1;
+		c.weighty = 0;
+		c.insets = new Insets(0, 0, 10, 0);
+		add(linksPanel, c);
+
+		c.gridy++;
+		add(reportingStatsPanel, c);
+
+		c.gridy++;
+		add(searchBar, c);
+
+		c.gridy++;
+		add(primaryPredictionPanel, c);
+
+		c.gridy++;
+		add(predictionBreakdownPanel, c);
+
+		c.gridy++;
+		add(predictionFeedbackPanel, c);
+
+		c.gridy++;
+		add(predictionReportPanel, c);
+
+		setPlayerIdVisible(false);
+		setPrediction(null);
+		setPlayerStats(null);
+		setFontType(config.panelFontType());
+	}
+
+	private JPanel linksPanel()
+	{
+		JPanel linksPanel = new JPanel();
+		linksPanel.setBorder(new EmptyBorder(0, 6, 0, 0));
+		linksPanel.setBackground(SUB_BACKGROUND_COLOR);
+
+		JLabel title = new JLabel("Connect With Us: ");
+		title.setForeground(LINK_HEADER_COLOR);
+		title.setFont(NORMAL_FONT);
+
+		linksPanel.add(title);
+
+		for (WebLink w : WebLink.values())
 		{
-			BotDetectorPlugin.http.reportPlayer(currRSN);
-		});
+			JLabel link = new JLabel(w.getImage());
+			link.setToolTipText(w.getTooltip());
+			link.addMouseListener(new MouseAdapter()
+			{
+				@Override
+				public void mousePressed(MouseEvent e)
+				{
+					LinkBrowser.browse(w.getLink());
+				}
+			});
 
-		dontReportBtn = new JButton("Don't Report");
-		dontReportBtn.createToolTip();
-		dontReportBtn.setToolTipText("Player is real and not a rule-breaker.");
-		dontReportBtn.addActionListener(e -> removeReportButtons());
+			linksPanel.add(link);
+		}
 
-		correctBtn = new JButton("It's Correct!");
-		correctBtn.createToolTip();
-		correctBtn.setToolTipText("Let us know if our prediction seems correct.");
-		correctBtn.addActionListener(e -> BotDetectorPlugin.http.sendPredictionFeedback(1));
+		return linksPanel;
+	}
 
-		incorrectBtn = new JButton("I Think It's Wrong");
-		incorrectBtn.createToolTip();
-		incorrectBtn.setToolTipText("Let us know if our prediction seems incorrect.");
-		incorrectBtn.addActionListener(e -> BotDetectorPlugin.http.sendPredictionFeedback(-1));
+	private JPanel reportingStatsPanel()
+	{
+		JLabel label;
 
-		//UI Components
-		anonymousWarning = new JLabel(" Anonymous Reporting Active");
-		anonymousWarning.setIcon(Icons.WARNING_ICON);
-		anonymousWarning.createToolTip();
-		anonymousWarning.setToolTipText("Your reports will not be added to your tallies.");
+		JPanel reportingStatsPanel = new JPanel();
+		reportingStatsPanel.setBackground(SUB_BACKGROUND_COLOR);
+		reportingStatsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-		//Stats Panel Items
-		uploads = new JLabel(htmlLabel("Names Uploaded: ", "0", "#a5a5a5", "white"));
-		uploads.createToolTip();
-		uploads.setToolTipText("Number of names uploaded during this RuneLite session.");
-		numReports = new JLabel(htmlLabel("Reports Made: ", "", "#a5a5a5", "white"));
-		numReports.createToolTip();
-		numReports.setToolTipText("How many reports you have made.");
-		numBans = new JLabel(htmlLabel("Confirmed Bans: ", "", "#a5a5a5", "white"));
-		numBans.createToolTip();
-		numBans.setToolTipText("How many of your reports that have resulted in a player ban.");
-		numPossibleBans = new JLabel(htmlLabel("Probable Bans: ", "", "#a5a5a5", "white"));
-		numPossibleBans.createToolTip();
-		numPossibleBans.setToolTipText("How many of your reports we think could result in bans.");
-		accuracy = new JLabel(htmlLabel("Accuracy: ", "", "#a5a5a5", "white"));
-		accuracy.createToolTip();
-		accuracy.setToolTipText("% of reports that resulted in a ban.");
+		reportingStatsPanel.setLayout(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
 
-		//Player Info Panel
-		playerName = new JLabel(htmlLabel("Player Name: ", "---", "#a5a5a5", "white"));
-		playerGroupLabel = new JLabel(htmlLabel("Prediction: ", "---", "#a5a5a5", "white"));
-		playerGroupConfidence = new JLabel(htmlLabel("Confidence: ", "---", "#a5a5a5", "white"));
+		label = new JLabel("Player Statistics");
+		label.setFont(BOLD_FONT);
+		label.setForeground(HEADER_COLOR);
 
-		//Search Bar Setup
-		searchBar = new IconTextField();
+		c.gridx = 0;
+		c.gridy = 0;
+		c.ipady = 5;
+		c.gridwidth = 2;
+		c.weightx = 1;
+		reportingStatsPanel.add(label, c);
+
+		label = new JLabel("Plugin Version: ");
+		label.setToolTipText("The Bot Detector plugin version you're running.");
+		label.setForeground(TEXT_COLOR);
+
+		c.gridy = 1;
+		c.gridy++;
+		c.ipady = 3;
+		c.gridwidth = 1;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsPluginVersionLabel = new JLabel();
+		playerStatsPluginVersionLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsPluginVersionLabel, c);
+		switchableFontComponents.add(playerStatsPluginVersionLabel);
+
+		label = new JLabel("Current Uploads: ");
+		label.setToolTipText("How many names uploaded during the current Runelite session.");
+		label.setForeground(TEXT_COLOR);
+
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsUploadedNamesLabel = new JLabel();
+		playerStatsUploadedNamesLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsUploadedNamesLabel, c);
+		switchableFontComponents.add(playerStatsUploadedNamesLabel);
+
+		label = new JLabel("Total Uploads: ");
+		label.setToolTipText("How many unique names sent to us that were attributed to you, both passively and manually reported.");
+		label.setForeground(TEXT_COLOR);
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsReportsLabel = new JLabel();
+		playerStatsReportsLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsReportsLabel, c);
+		switchableFontComponents.add(playerStatsReportsLabel);
+
+		label = new JLabel("Possible Bans: ");
+		label.setToolTipText(
+			"<html>How many of your uploaded names may have been banned." +
+			"<br>For example: Names that no longer appear on the Hiscores.</html>");
+		label.setForeground(TEXT_COLOR);
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsPossibleBansLabel = new JLabel();
+		playerStatsPossibleBansLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsPossibleBansLabel, c);
+		switchableFontComponents.add(playerStatsPossibleBansLabel);
+
+		label = new JLabel("Confirmed Bans: ");
+		label.setToolTipText("How many of your uploaded names were confirmed to have been banned by Jagex.");
+		label.setForeground(TEXT_COLOR);
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsConfirmedBansLabel = new JLabel();
+		playerStatsConfirmedBansLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsConfirmedBansLabel, c);
+		switchableFontComponents.add(playerStatsConfirmedBansLabel);
+
+		c.gridx = 0;
+		c.weightx = 1;
+		c.gridwidth = 2;
+		c.ipady = 5;
+		for (WarningLabel wl : WarningLabel.values())
+		{
+			c.gridy++;
+			label = new JLabel(wl.getMessage());
+			label.setToolTipText(wl.getTooltip());
+			label.setIcon(wl.getImage());
+			label.setFont(NORMAL_FONT);
+			label.setForeground(HEADER_COLOR);
+			label.setVisible(false);
+			reportingStatsPanel.add(label, c);
+			warningLabels.put(wl, label);
+		}
+
+		return reportingStatsPanel;
+	}
+
+	private IconTextField playerSearchBar()
+	{
+		IconTextField searchBar = new IconTextField();
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
 		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
-		searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		searchBar.setBackground(SUB_BACKGROUND_COLOR);
 		searchBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
 		searchBar.setMinimumSize(new Dimension(0, 30));
-		searchBar.addActionListener(e -> lookupPlayer(true));
+		searchBar.addActionListener(e -> predictPlayer());
 		searchBar.addMouseListener(new MouseAdapter()
 		{
-			@SneakyThrows
 			@Override
 			public void mouseClicked(MouseEvent e)
 			{
@@ -191,16 +393,11 @@ public class BotDetectorPanel extends PluginPanel
 				{
 					return;
 				}
-				if (client == null)
-				{
-					return;
-				}
 
-				Player localPlayer = client.getLocalPlayer();
-
-				if (localPlayer != null)
+				String name = plugin.getLoggedPlayerName();
+				if (name != null)
 				{
-					lookupPlayer(localPlayer.getName(), false);
+					predictPlayer(name);
 				}
 			}
 		});
@@ -208,416 +405,587 @@ public class BotDetectorPanel extends PluginPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.SEARCH);
 			searchBar.setEditable(true);
-			loading = false;
+			searchBarLoading = false;
 		});
 
-		add(searchBar);
+		return searchBar;
 	}
 
-	public void init()
+	private JPanel primaryPredictionPanel()
 	{
-		setLayout(new GridBagLayout());
-		setBackground(ColorScheme.DARK_GRAY_COLOR);
-		setBorder(new EmptyBorder(10, 10, 10, 10));
+		JLabel label;
 
-		GridBagConstraints constraints = new GridBagConstraints();
-		constraints.fill = GridBagConstraints.HORIZONTAL;
-		constraints.gridx = 0;
-		constraints.gridy = 0;
-		constraints.weightx = 1;
-		constraints.weighty = 0;
-		constraints.insets = new Insets(0, 0, 10, 0);
+		JPanel primaryPredictionPanel = new JPanel();
+		primaryPredictionPanel.setBackground(SUB_BACKGROUND_COLOR);
+		primaryPredictionPanel.setLayout(new GridBagLayout());
+		primaryPredictionPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-		playerInfoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		playerInfoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-		playerInfoPanel.setLayout(new GridLayout(0, 1));
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
 
-		statsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		statsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-		statsPanel.setLayout(new GridLayout(0, 1));
+		label = new JLabel("Primary Prediction");
+		label.setFont(BOLD_FONT);
+		label.setForeground(HEADER_COLOR);
+		c.gridx = 0;
+		c.gridy = 0;
+		c.ipady = 5;
+		c.gridwidth = 2;
+		c.weightx = 1;
+		primaryPredictionPanel.add(label, c);
 
-		playerInfoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		playerInfoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-		playerInfoPanel.setLayout(new GridLayout(0, 1));
+		predictionPlayerIdTextLabel = new JLabel("Player ID: ");
+		predictionPlayerIdTextLabel.setForeground(TEXT_COLOR);
+		c.gridy = 1;
+		c.gridy++;
+		c.ipady = 3;
+		c.gridwidth = 1;
+		c.weightx = 0;
+		c.anchor = GridBagConstraints.NORTH;
+		primaryPredictionPanel.add(predictionPlayerIdTextLabel, c);
+		switchableFontComponents.add(predictionPlayerIdTextLabel);
 
-		additionalPredictionsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		additionalPredictionsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-		additionalPredictionsPanel.setLayout(new GridLayout(0, 1));
+		predictionPlayerIdLabel = new JLabel();
+		c.gridx = 1;
+		c.weightx = 1;
+		primaryPredictionPanel.add(predictionPlayerIdLabel, c);
+		switchableFontComponents.add(predictionPlayerIdLabel);
 
-		JLabel dataTitle = new JLabel(htmlLabel("Player Data: ", "", "#a5a5a5", "white"));
-		dataTitle.setFont((boldFont));
+		label = new JLabel("Player Name: ");
+		label.setForeground(TEXT_COLOR);
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridy++;
+		primaryPredictionPanel.add(label, c);
+		switchableFontComponents.add(label);
 
-		JLabel statsTitle = new JLabel(htmlLabel("Reporting Statistics: ", "", "#a5a5a5", "white"));
-		statsTitle.setFont(boldFont);
+		predictionPlayerNameLabel = new JLabel();
+		c.gridx = 1;
+		c.weightx = 1;
+		primaryPredictionPanel.add(predictionPlayerNameLabel, c);
+		switchableFontComponents.add(predictionPlayerNameLabel);
 
-		add(linksPanel(), constraints);
-		constraints.gridy++;
-		add(statsPanel, constraints);
-		constraints.gridy++;
-		add(searchBar, constraints);
-		constraints.gridy++;
-		add(playerInfoPanel, constraints);
-		constraints.gridy++;
-		add(additionalPredictionsPanel, constraints);
-		constraints.gridy++;
+		label = new JLabel("Prediction: ");
+		label.setForeground(TEXT_COLOR);
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridy++;
+		primaryPredictionPanel.add(label, c);
+		switchableFontComponents.add(label);
 
-		statsPanel.add(statsTitle);
-		statsPanel.add(uploads);
-		statsPanel.add(numReports);
-		statsPanel.add(numBans);
-		statsPanel.add(numPossibleBans);
+		predictionTypeLabel = new JLabel();
+		c.gridx = 1;
+		c.weightx = 1;
+		primaryPredictionPanel.add(predictionTypeLabel, c);
+		switchableFontComponents.add(predictionTypeLabel);
 
-		if (config.enableAnonymousReporting())
-		{
-			statsPanel.add(anonymousWarning);
-		}
+		label = new JLabel("Confidence: ");
+		label.setForeground(TEXT_COLOR);
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridy++;
+		primaryPredictionPanel.add(label, c);
+		switchableFontComponents.add(label);
 
-		playerInfoPanel.add(dataTitle);
-		playerInfoPanel.add(playerName);
-		playerInfoPanel.add(playerGroupLabel);
-		playerInfoPanel.add(playerGroupConfidence);
+		predictionConfidenceLabel = new JLabel();
+		c.gridx = 1;
+		c.weightx = 1;
+		primaryPredictionPanel.add(predictionConfidenceLabel, c);
+		switchableFontComponents.add(predictionConfidenceLabel);
 
-		eventBus.register(this);
+		return primaryPredictionPanel;
 	}
 
-	private JPanel linksPanel()
+	private JPanel predictionFeedbackPanel()
 	{
-		JLabel title = new JLabel("Connect With Us: ");
+		JPanel panel = new JPanel();
+		panel.setBackground(SUB_BACKGROUND_COLOR);
+		panel.setLayout(new GridBagLayout());
+		panel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-		JLabel webIcon = new JLabel(Icons.WEB_ICON);
-		webIcon.setToolTipText("Our Website");
-		webIcon.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				LinkBrowser.browse("https://www.osrsbotdetector.com/");
-			}
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
 
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				webIcon.setIcon(Icons.WEB_ICON);
-			}
+		String tooltip = "<html>Please tell us if this prediction seems %s to you!" +
+			"<br>Doing so will help us improve our model.</html>";
 
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				webIcon.setIcon(Icons.WEB_ICON);
-			}
-		});
+		JLabel label = new JLabel("Is this prediction correct?");
+		label.setFont(NORMAL_FONT);
+		label.setForeground(HEADER_COLOR);
+		c.gridx = 0;
+		c.gridy = 0;
+		c.ipady = 5;
+		c.gridwidth = 2;
+		c.weightx = 1;
+		panel.add(label, c);
 
-		JLabel githubIcon = new JLabel(Icons.GITHUB_ICON);
-		githubIcon.setToolTipText("Check Out Our Souce Code");
-		githubIcon.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				LinkBrowser.browse("https://github.com/Ferrariic/Bot-Detector-Core-Files");
-			}
+		JButton button;
 
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				githubIcon.setIcon(Icons.GITHUB_ICON);
-			}
+		button = new JButton("Looks fine!");
+		button.setToolTipText(String.format(tooltip, "correct"));
+		button.setForeground(HEADER_COLOR);
+		button.setFont(SMALL_FONT);
+		button.addActionListener(l -> sendFeedbackToClient(true));
+		c.gridy++;
+		c.weightx = 0.5;
+		c.gridwidth = 1;
+		panel.add(button, c);
 
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				githubIcon.setIcon(Icons.GITHUB_ICON);
-			}
-		});
+		button = new JButton("Not sure...");
+		button.setToolTipText(String.format(tooltip, "incorrect"));
+		button.setForeground(HEADER_COLOR);
+		button.setFont(SMALL_FONT);
+		button.addActionListener(l -> sendFeedbackToClient(false));
+		c.gridx++;
+		panel.add(button, c);
 
-		JLabel discordIcon = new JLabel(Icons.DISCORD_ICON);
-		discordIcon.setToolTipText("Join Our Discord!");
-		discordIcon.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				LinkBrowser.browse("https://discord.com/invite/JCAGpcjbfP");
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				discordIcon.setIcon(Icons.DISCORD_ICON);
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				discordIcon.setIcon(Icons.DISCORD_ICON);
-			}
-		});
-
-		JLabel patreonIcon = new JLabel(Icons.PATREON_ICON);
-		patreonIcon.setToolTipText("Help Keep Us Going");
-		patreonIcon.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				LinkBrowser.browse("https://www.patreon.com/bot_detector");
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				patreonIcon.setIcon(Icons.PATREON_ICON);
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				patreonIcon.setIcon(Icons.PATREON_ICON);
-			}
-		});
-
-		JPanel linksPanel = new JPanel();
-		linksPanel.setBorder(new EmptyBorder(0, 6, 0, 0));
-		linksPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		linksPanel.add(title);
-		linksPanel.add(webIcon);
-		linksPanel.add(discordIcon);
-		linksPanel.add(githubIcon);
-		linksPanel.add(patreonIcon);
-
-		return linksPanel;
+		return panel;
 	}
 
-	public void updateUploads()
+	private JPanel predictionReportPanel()
 	{
-		uploads.setText(htmlLabel("Names Uploaded: ",
-			String.valueOf(plugin.getNumNamesSubmitted()),
-			"#a5a5a5", "white"));
+		JPanel panel = new JPanel();
+		panel.setBackground(SUB_BACKGROUND_COLOR);
+		panel.setLayout(new GridBagLayout());
+		panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
+
+		JLabel label = new JLabel("Report this player to us as a bot?");
+		label.setFont(NORMAL_FONT);
+		label.setForeground(HEADER_COLOR);
+		c.gridx = 0;
+		c.gridy = 0;
+		c.ipady = 5;
+		c.gridwidth = 2;
+		c.weightx = 1;
+		panel.add(label, c);
+
+		JButton button;
+
+		button = new JButton("Yes");
+		button.setToolTipText(
+			"<html>This is <span style='color:red'>NOT</span> the same as reporting the player in-game!" +
+			"<br>Reporting a player to us as a bot tells us to pay more attention to them when training our model.</html>");
+		button.setForeground(HEADER_COLOR);
+		button.setFont(SMALL_FONT);
+		button.addActionListener(l -> sendReportToClient(true));
+		c.gridy++;
+		c.weightx = 0.5;
+		c.gridwidth = 1;
+		panel.add(button, c);
+
+		button = new JButton("No");
+		button.setForeground(HEADER_COLOR);
+		button.setFont(SMALL_FONT);
+		button.addActionListener(l -> sendReportToClient(false));
+		c.gridx++;
+		panel.add(button, c);
+
+		return panel;
 	}
 
-	//You only get here if something went wrong.
-	public void updatePlayerData(String rsn, boolean error)
+	private JPanel predictionBreakdownPanel()
 	{
-		currRSN = rsn;
+		JPanel predictionBreakdownPanel = new JPanel();
+		predictionBreakdownPanel.setBackground(SUB_BACKGROUND_COLOR);
+		predictionBreakdownPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+		predictionBreakdownPanel.setLayout(new GridBagLayout());
 
-		playerName.setText(htmlLabel("Player Name: ", rsn, "#a5a5a5", "red"));
-		playerGroupLabel.setText(htmlLabel("Prediction: ", "-----", "#a5a5a5", "red"));
-		playerGroupConfidence.setText(htmlLabel("Confidence: ", "-----", "#a5a5a5", "red"));
-		loading = false;
-		searchBar.setEditable(true);
-		searchBar.setIcon(IconTextField.Icon.ERROR);
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
+
+		JLabel label = new JLabel("Prediction Breakdown");
+		label.setFont(BOLD_FONT);
+		label.setForeground(HEADER_COLOR);
+		c.gridx = 0;
+		c.gridy = 0;
+		c.weightx = 1.0;
+		c.ipady = 5;
+		predictionBreakdownPanel.add(label, c);
+
+		predictionBreakdownLabel = new JLabel();
+		predictionBreakdownLabel.setForeground(TEXT_COLOR);
+		c.anchor = GridBagConstraints.PAGE_END;
+		c.gridy++;
+		predictionBreakdownPanel.add(predictionBreakdownLabel, c);
+		switchableFontComponents.add(predictionBreakdownLabel);
+
+		return predictionBreakdownPanel;
 	}
 
-	public void updatePlayerData(Hashtable<String, String> predictionData, boolean error)
+	public void setNamesUploaded(int num)
 	{
-		currRSN = predictionData.get("player_name");
-		String predictionLabel = predictionData.get("prediction_label");
-		Float confidencePer = (Float.parseFloat(predictionData.get("prediction_confidence")) * 100);
+		playerStatsUploadedNamesLabel.setText(QuantityFormatter.formatNumber(num));
+	}
 
-		if (error)
+	public void setPlayerStats(PlayerStats ps)
+	{
+		if (ps != null)
 		{
-			playerName.setText(htmlLabel("Player Name: ", currRSN, "#a5a5a5", "red"));
-			playerGroupLabel.setText(htmlLabel("Prediction: ", "-----", "#a5a5a5", "red"));
-			playerGroupConfidence.setText(htmlLabel("Confidence: ", "-----", "#a5a5a5", "red"));
-			loading = false;
-			searchBar.setEditable(true);
-			searchBar.setIcon(IconTextField.Icon.ERROR);
+			playerStatsReportsLabel.setText(QuantityFormatter.formatNumber(ps.getReports()));
+			playerStatsConfirmedBansLabel.setText(QuantityFormatter.formatNumber(ps.getBans()));
+			playerStatsPossibleBansLabel.setText(QuantityFormatter.formatNumber(ps.getPossibleBans()));
 		}
 		else
 		{
-			playerName.setText(htmlLabel("Player Name: ", Text.sanitize(currRSN),
-				"#a5a5a5", "white"));
-			playerGroupLabel.setText(htmlLabel("Prediction: ", predictionLabel,
-				"#a5a5a5", "white"));
-			playerGroupConfidence.setText(htmlLabel("Confidence: ", String.format("%.2f", confidencePer) + "%",
-				"#a5a5a5", "white"));
-			searchBar.setEditable(true);
-			searchBar.setIcon(IconTextField.Icon.SEARCH);
+			playerStatsReportsLabel.setText(EMPTY_LABEL);
+			playerStatsConfirmedBansLabel.setText(EMPTY_LABEL);
+			playerStatsPossibleBansLabel.setText(EMPTY_LABEL);
 		}
 	}
 
-	public void updateAdditionalPredictions(LinkedHashMap<String, String> predictions, boolean error)
+	public void setPluginVersion(String pluginVersion)
 	{
-		if (error)
+		playerStatsPluginVersionLabel.setText(pluginVersion);
+	}
+
+	public boolean getWarningVisible(WarningLabel wl)
+	{
+		JLabel label = warningLabels.get(wl);
+		return label != null && label.isVisible();
+	}
+
+	public void setWarningVisible(WarningLabel wl, boolean visible)
+	{
+		JLabel label = warningLabels.get(wl);
+		if (label != null)
+		{
+			label.setVisible(visible);
+		}
+	}
+
+	public void setPlayerIdVisible(boolean visible)
+	{
+		predictionPlayerIdTextLabel.setVisible(visible);
+		predictionPlayerIdLabel.setVisible(visible);
+	}
+
+	public void forceHideFeedbackPanel()
+	{
+		predictionFeedbackPanel.setVisible(false);
+	}
+
+	public void forceHideReportPanel()
+	{
+		predictionReportPanel.setVisible(false);
+	}
+
+	private void setPredictionLabelsColor(Color color)
+	{
+		predictionPlayerIdLabel.setForeground(color);
+		predictionPlayerNameLabel.setForeground(color);
+		predictionTypeLabel.setForeground(color);
+		predictionConfidenceLabel.setForeground(color);
+	}
+
+	public void setPrediction(Prediction pred)
+	{
+		setPrediction(pred, null);
+	}
+
+	public void setPrediction(Prediction pred, PlayerSighting sighting)
+	{
+		setPredictionLabelsColor(VALUE_COLOR);
+
+		if (pred != null)
+		{
+			lastPrediction = pred;
+			lastPredictionPlayerSighting = sighting;
+			lastPredictionReporterName = plugin.getReporterName();
+			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
+			predictionPlayerNameLabel.setText(wrapHTML(pred.getPlayerName()));
+			predictionTypeLabel.setText(wrapHTML(normalizeLabel(pred.getPredictionLabel())));
+			predictionConfidenceLabel.setText(getPercentString(pred.getConfidence()));
+			predictionConfidenceLabel.setForeground(getPredictionColor(pred.getConfidence()));
+
+			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
+			{
+				predictionBreakdownLabel.setText(EMPTY_LABEL);
+				predictionBreakdownPanel.setVisible(false);
+			}
+			else
+			{
+				predictionBreakdownLabel.setText(getPredictionBreakdownString(pred.getPredictionBreakdown()));
+				predictionBreakdownPanel.setVisible(true);
+			}
+
+			if (shouldAllowFeedbackOrReport()
+				&& pred.getPlayerId() > 0)
+			{
+				CaseInsensitiveString name = plugin.normalizeAndWrapPlayerName(pred.getPlayerName());
+				predictionFeedbackPanel.setVisible(!plugin.getFeedbackedPlayers().containsKey(name));
+				predictionReportPanel.setVisible(sighting != null && !plugin.getReportedPlayers().containsKey(name));
+			}
+		}
+		else
+		{
+			lastPrediction = null;
+			lastPredictionPlayerSighting = null;
+			lastPredictionReporterName = null;
+			predictionPlayerIdLabel.setText(EMPTY_LABEL);
+			predictionPlayerNameLabel.setText(EMPTY_LABEL);
+			predictionTypeLabel.setText(EMPTY_LABEL);
+			predictionConfidenceLabel.setText(EMPTY_LABEL);
+			predictionBreakdownLabel.setText(EMPTY_LABEL);
+
+			predictionBreakdownPanel.setVisible(false);
+			predictionFeedbackPanel.setVisible(false);
+			predictionReportPanel.setVisible(false);
+		}
+	}
+
+	public void setPredictionError(String error)
+	{
+		setPredictionError(error, EMPTY_LABEL);
+	}
+
+	public void setPredictionError(String error, String details)
+	{
+		setPrediction(null);
+		setPredictionLabelsColor(ERROR_COLOR);
+
+		predictionPlayerNameLabel.setText(wrapHTML(error));
+		predictionTypeLabel.setText(wrapHTML(details));
+	}
+
+	public void predictPlayer(String playerName)
+	{
+		searchBar.setText(playerName);
+		predictPlayer();
+	}
+
+	private void predictPlayer()
+	{
+		String target = sanitize(searchBar.getText());
+
+		if (target.length() <= 0)
 		{
 			return;
 		}
 
-		additionalPredictionsPanel.removeAll();
-		additionalPredictionsPanel.setVisible(true);
-
-		JLabel title = new JLabel(htmlLabel("Prediction Breakdown: ",
-			"",
-			"#a5a5a5",
-			"white"));
-
-		title.setFont(boldFont);
-
-		additionalPredictionsPanel.add(title);
-
-		Set<String> keys = predictions.keySet();
-
-		for (String key : keys)
-		{
-			additionalPredictionsPanel.add(
-				new JLabel(htmlLabel(key + ": ",
-					String.format("%.2f", Float.parseFloat(predictions.get(key)) * 100) + "%",
-					"#a5a5a5",
-					getPredictionColor(predictions.get(key))
-				))
-			);
-		}
-
-		additionalPredictionsPanel.revalidate();
-		additionalPredictionsPanel.repaint();
-	}
-
-	public String getPredictionColor(String pred_conf)
-	{
-		float conf = Float.parseFloat(pred_conf);
-
-		if (conf >= .8)
-		{
-			return "green";
-		}
-		else if (conf >= .60)
-		{
-			return "orange";
-		}
-		else
-		{
-			return "red";
-		}
-	}
-
-	public void addFeedbackButtons()
-	{
-		feedbackBtnsActive = true;
-
-		playerInfoPanel.add(feedbackTitle);
-		playerInfoPanel.add(correctBtn);
-		playerInfoPanel.add(incorrectBtn);
-		playerInfoPanel.add(btnSpacer);
-
-		playerInfoPanel.revalidate();
-		playerInfoPanel.repaint();
-	}
-
-	public void removeFeedbackButtons()
-	{
-		if (feedbackBtnsActive)
-		{
-			playerInfoPanel.remove(feedbackTitle);
-			playerInfoPanel.remove(correctBtn);
-			playerInfoPanel.remove(incorrectBtn);
-			playerInfoPanel.remove(btnSpacer);
-
-			playerInfoPanel.revalidate();
-			playerInfoPanel.repaint();
-		}
-
-		feedbackBtnsActive = false;
-	}
-
-	public void addReportButtons()
-	{
-		reportBtnsActive = true;
-
-		playerInfoPanel.add(reportBtnTitle);
-		playerInfoPanel.add(reportBtn);
-		playerInfoPanel.add(dontReportBtn);
-
-		playerInfoPanel.revalidate();
-		playerInfoPanel.repaint();
-	}
-
-	public void removeReportButtons()
-	{
-		if (reportBtnsActive)
-		{
-			playerInfoPanel.remove(reportBtnTitle);
-			playerInfoPanel.remove(reportBtn);
-			playerInfoPanel.remove(dontReportBtn);
-
-			playerInfoPanel.revalidate();
-			playerInfoPanel.repaint();
-		}
-
-		reportBtnsActive = false;
-	}
-
-	public void toggleAnonymousWarning()
-	{
-		if (config.enableAnonymousReporting())
-		{
-			statsPanel.add(anonymousWarning);
-		}
-		else
-		{
-			statsPanel.remove(anonymousWarning);
-		}
-
-		statsPanel.revalidate();
-		statsPanel.repaint();
-	}
-
-	public void lookupPlayer(String rsn, boolean reportable)
-	{
-		searchBar.setText(rsn);
-		lookupPlayer(reportable);
-	}
-
-	private void lookupPlayer(boolean reportable)
-	{
-		removeReportButtons();
-
-		String sanitizedRSN = Text.sanitize(searchBar.getText());
-
-		if (sanitizedRSN.length() <= 0)
-		{
-			return;
-		}
-
-		if (sanitizedRSN.length() > MAX_RSN_LENGTH)
+		if (target.length() > MAX_RSN_LENGTH)
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
-			loading = false;
+			searchBarLoading = false;
+			setPredictionError("Name Input Error",
+				"Name cannot be longer than " + MAX_RSN_LENGTH + " characters");
+			return;
+		}
+		else if (!isValidPlayerName(target))
+		{
+			searchBar.setIcon(IconTextField.Icon.ERROR);
+			searchBarLoading = false;
+			setPredictionError("Name Input Error",
+				"'" + target + "' is not a valid Runescape name");
 			return;
 		}
 
 		searchBar.setIcon(IconTextField.Icon.LOADING_DARKER);
 		searchBar.setEditable(false);
-		loading = true;
+		searchBarLoading = true;
 
-		BotDetectorPlugin.http.getPlayerPrediction(sanitizedRSN, reportable);
+		setPrediction(null);
+
+		detectorClient.requestPrediction(target).whenCompleteAsync((pred, ex) ->
+			SwingUtilities.invokeLater(() ->
+			{
+				if (!sanitize(searchBar.getText()).equals(target))
+				{
+					// Target has changed in the meantime
+					return;
+				}
+
+				if (pred == null || ex != null)
+				{
+					searchBar.setIcon(IconTextField.Icon.ERROR);
+					searchBar.setEditable(true);
+					searchBarLoading = false;
+
+					String details;
+					if (ex != null)
+					{
+						details = ex.getMessage();
+					}
+					else
+					{
+						details = "No prediction returned from the API";
+					}
+					setPredictionError("Server Error", details);
+
+					return;
+				}
+
+				// Successful player prediction
+				searchBar.setIcon(IconTextField.Icon.SEARCH);
+				searchBar.setEditable(true);
+				searchBarLoading = false;
+
+				setPrediction(pred, plugin.getPersistentSightings().get(plugin.normalizeAndWrapPlayerName(target)));
+			}));
 	}
 
-	public void updatePlayerStats()
+	private Color getPredictionColor(double prediction)
 	{
-		numReports.setText("Reports Made: " + ps.getReports());
-		numBans.setText("Confirmed Bans: " + ps.getBans());
-		numPossibleBans.setText("Probable Bans: " + ps.getPossibleBans());
-		accuracy.setText("Accuracy: " + ps.getAccuracy() + "%");
+		prediction = Math.min(Math.max(0.0, prediction), 1.0);
+		if (prediction < 0.5)
+		{
+			return ColorUtil.colorLerp(Color.RED, Color.YELLOW, prediction * 2);
+		}
+		else
+		{
+			return ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, (prediction - 0.5) * 2);
+		}
 	}
 
-	public void resetPlayerStats()
+	private String getPredictionBreakdownString(Map<String, Double> predictionMap)
 	{
-		numReports.setText("Reports Made: ");
-		numBans.setText("Confirmed Bans: ");
-		numPossibleBans.setText("Probable Bans: ");
-		accuracy.setText("Accuracy: ");
+		if (predictionMap == null || predictionMap.size() == 0)
+		{
+			return null;
+		}
+
+		String openingTags = "<html><body style='margin:0;padding:0;color:" + ColorUtil.toHexColor(TEXT_COLOR) + "'>" +
+			"<table border='0' cellspacing='0' cellpadding='0'>";
+		String closingTags = "</table></body></html>";
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(openingTags);
+
+		predictionMap.entrySet().stream().filter(e -> e.getValue() > 0)
+			.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+			.forEach(e ->
+				sb.append("<tr><td>").append(normalizeLabel(e.getKey())).append(":</td>")
+				.append("<td style='padding-left:5;text-align:right;color:").append(ColorUtil.toHexColor(getPredictionColor(e.getValue())))
+				.append("'>").append(getPercentString(e.getValue())).append("</td></tr>"));
+
+		return sb.append(closingTags).toString();
 	}
 
-	public void setPlayerStats(PlayerStats stats)
+	private String normalizeLabel(String label)
 	{
-		this.ps = stats;
-		updatePlayerStats();
+		return WordUtils.capitalize(label.replace('_', ' ').trim(), ' ');
 	}
 
-	private static String htmlLabel(String key, String value, String keyColor, String valueColor)
+	private String getPercentString(double percent)
 	{
-		return "<html><body style = 'color:" + keyColor + "'>" + key +
-			"<span style = 'color:" + valueColor + "'>" + value +
-			"</span></body></html>";
+		return String.format("%.2f%%", percent * 100);
+	}
+
+	private void sendFeedbackToClient(boolean feedback)
+	{
+		predictionFeedbackPanel.setVisible(false);
+		if (lastPrediction == null
+			|| !shouldAllowFeedbackOrReport())
+		{
+			return;
+		}
+
+		CaseInsensitiveString wrappedName = plugin.normalizeAndWrapPlayerName(lastPrediction.getPlayerName());
+		Map<CaseInsensitiveString, Boolean> feedbackMap = plugin.getFeedbackedPlayers();
+		feedbackMap.put(wrappedName, feedback);
+
+		detectorClient.sendFeedback(lastPrediction, lastPredictionReporterName, feedback)
+			.whenComplete((b, ex) ->
+			{
+				String message;
+				if (ex == null && b)
+				{
+					message = "Thank you for your prediction feedback for '%s'!";
+				}
+				else
+				{
+					message = "Error sending your prediction feedback for '%s'.";
+					// Didn't work so remove from feedback map
+					feedbackMap.remove(wrappedName);
+				}
+
+				plugin.sendChatStatusMessage(String.format(message, wrappedName));
+			});
+	}
+
+	private void sendReportToClient(boolean doReport)
+	{
+		predictionReportPanel.setVisible(false);
+		if (lastPredictionPlayerSighting == null
+			|| !shouldAllowFeedbackOrReport())
+		{
+			return;
+		}
+
+		CaseInsensitiveString wrappedName = plugin.normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
+		Map<CaseInsensitiveString, Boolean> reportMap = plugin.getReportedPlayers();
+		reportMap.put(wrappedName, doReport);
+
+		// Didn't want to report? Work is done!
+		if (!doReport)
+		{
+			return;
+		}
+
+		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionReporterName, true)
+			.whenComplete((b, ex) ->
+			{
+				String message;
+				if (ex == null && b)
+				{
+					message = "Thank you for your report for '%s'!";
+				}
+				else
+				{
+					message = "Error sending your report '%s'.";
+					// Didn't work so remove from report map
+					reportMap.remove(wrappedName);
+				}
+
+				plugin.sendChatStatusMessage(String.format(message, wrappedName));
+			});
+	}
+
+	private boolean shouldAllowFeedbackOrReport()
+	{
+		return lastPredictionReporterName != null
+			&& !lastPredictionReporterName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
+	}
+
+	public void setFontType(PanelFontType fontType)
+	{
+		Font f;
+
+		switch (fontType)
+		{
+			case SMALL:
+				f = SMALL_FONT;
+				break;
+			case BOLD:
+				f = BOLD_FONT;
+				break;
+			default:
+				f = NORMAL_FONT;
+				break;
+		}
+
+		switchableFontComponents.forEach(c -> c.setFont(f));
+	}
+
+	// This makes wrapping work on the labels that could wrap
+	private static String wrapHTML(String str)
+	{
+		return "<html>" + StringEscapeUtils.escapeHtml4(str) + "</html>";
+	}
+
+	private static String sanitize(String lookup)
+	{
+		return lookup.replace('\u00A0', ' ');
+	}
+
+	private static boolean isValidPlayerName(String playerName)
+	{
+		if (playerName == null || playerName.length() > MAX_RSN_LENGTH)
+		{
+			return false;
+		}
+
+		return VALID_RSN_PATTERN.matcher(playerName).matches();
 	}
 }

@@ -25,24 +25,46 @@
  */
 package com.botdetector.model;
 
-import com.google.gson.annotations.SerializedName;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Value;
 
 @Value
-public class PlayerStats
+public class AuthToken
 {
-	int reports;
-	int bans;
-	@SerializedName("possible_bans")
-	int possibleBans;
+	AuthTokenType tokenType;
+	String token;
 
-	public double getAccuracy()
+	public static final AuthToken EMPTY_TOKEN = new AuthToken(AuthTokenType.NONE, "");
+	public static final String AUTH_TOKEN_SEPARATOR = "|";
+	public static final Pattern AUTH_TOKEN_PATTERN = Pattern.compile("^([a-zA-Z_]+)"
+		+ Pattern.quote(AUTH_TOKEN_SEPARATOR)
+		+ "([\\w\\-]{12,32})$");
+
+	public static final String AUTH_TOKEN_DESCRIPTION_MESSAGE =
+		"Auth token in clipboard must be of format 'prefix|Suffix_Alpha-numeric'" +
+			" with a valid prefix and a suffix between 12 and 32 characters long.";
+
+	public static AuthToken fromFullToken(String fullToken)
 	{
-		if (reports > 0)
+		if (fullToken == null)
 		{
-			return bans / (double)reports;
+			return EMPTY_TOKEN;
 		}
-		return 0;
+
+		Matcher m = AUTH_TOKEN_PATTERN.matcher(fullToken);
+		if (m.matches())
+		{
+			return new AuthToken(AuthTokenType.fromPrefix(m.group(1)), m.group(2));
+		}
+		else
+		{
+			return EMPTY_TOKEN;
+		}
 	}
 
+	public String toFullToken()
+	{
+		return tokenType.name() + AUTH_TOKEN_SEPARATOR + token;
+	}
 }

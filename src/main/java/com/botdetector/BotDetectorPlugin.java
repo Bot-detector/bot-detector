@@ -1,30 +1,83 @@
+/*
+ * Copyright (c) 2021, Ferrariic, Seltzer Bro, Cyborger1
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.botdetector;
 
-import com.botdetector.http.BotDetectorHTTP;
-import com.botdetector.model.Prediction;
+import com.botdetector.http.BotDetectorClient;
+import com.botdetector.model.AuthToken;
+import com.botdetector.model.AuthTokenPermission;
+import com.botdetector.model.AuthTokenType;
+import com.botdetector.model.CaseInsensitiveString;
+import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ObjectArrays;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
+import com.google.common.primitives.Ints;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Set;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.swing.JEditorPane;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import javax.swing.event.HyperlinkEvent;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.Player;
 import net.runelite.api.WorldType;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
+import net.runelite.api.events.WorldChanged;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.Notifier;
+import net.runelite.client.chat.ChatColorType;
+import net.runelite.client.chat.ChatMessageBuilder;
+import net.runelite.client.chat.ChatMessageManager;
+import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.menus.MenuManager;
@@ -32,16 +85,18 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.events.ConfigChanged;
 import javax.inject.Inject;
+import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.task.Schedule;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
-import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.util.ImageUtil;
+import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
-import java.awt.image.BufferedImage;
-import java.util.List;
-import java.util.stream.Collectors;
-import net.runelite.client.util.ImageUtil;
+import org.apache.commons.lang3.ArrayUtils;
+import static com.botdetector.model.CaseInsensitiveString.wrap;
 
+@Slf4j
 @PluginDescriptor(
 	name = "Bot Detector",
 	description = "This plugin sends encountered Player Names to a server in order to detect Botting Behavior.",
@@ -50,18 +105,40 @@ import net.runelite.client.util.ImageUtil;
 )
 public class BotDetectorPlugin extends Plugin
 {
+	private static final ImmutableSet<WorldType> BLOCKED_WORLD_TYPES =
+		ImmutableSet.of(
+			WorldType.LEAGUE,
+			WorldType.DEADMAN,
+			WorldType.DEADMAN_TOURNAMENT,
+			WorldType.TOURNAMENT
+		);
 
-	private static final String DETECT = "Detect";
-	private static final String MASS_DETECT = "Mass Detect";
+	private static final String PREDICT_OPTION = "Predict";
 	private static final String KICK_OPTION = "Kick";
-	private static final ImmutableList<String> AFTER_OPTIONS =
-		ImmutableList.of("Message", "Add ignore", "Remove friend", "Delete", KICK_OPTION);
+	private static final String DELETE_OPTION = "Delete";
+	private static final ImmutableSet<String> AFTER_OPTIONS =
+		ImmutableSet.of("Message", "Add ignore", "Remove friend", DELETE_OPTION, KICK_OPTION);
+
+	private static final char CODE_COMMAND_INDICATOR = '!';
+	private static final String CODE_COMMAND = "code";
+
+	private static final String COMMAND_PREFIX = "bd";
+	private static final String MANUAL_FLUSH_COMMAND = COMMAND_PREFIX + "Flush";
+	private static final String MANUAL_SIGHT_COMMAND = COMMAND_PREFIX + "Snap";
+	private static final String SHOW_HIDE_ID_COMMAND = COMMAND_PREFIX + "ShowId";
+	private static final String GET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "GetToken";
+	private static final String SET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "SetToken";
+	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
+
+	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
+	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
+	private static final int REFRESH_PLAYER_STATS_SCHEDULE_SECONDS = 60;
+
+	private static final String CHAT_MESSAGE_HEADER = "[Bot Detector] ";
+	public static final String ANONYMOUS_USER_NAME = "AnonymousUser";
 
 	@Inject
 	private Client client;
-
-	@Inject
-	private Notifier notifier;
 
 	@Inject
 	private MenuManager menuManager;
@@ -70,13 +147,18 @@ public class BotDetectorPlugin extends Plugin
 	private BotDetectorConfig config;
 
 	@Inject
+	private PluginManager pluginManager;
+
+	@Inject
 	private ClientToolbar clientToolbar;
 
 	@Inject
-	private OverlayManager overlayManager;
+	private ChatMessageManager chatMessageManager;
 
-	public static BotDetectorHTTP http;
-	public BotDetectorPanel panel;
+	@Inject
+	private BotDetectorClient detectorClient;
+
+	private BotDetectorPanel panel;
 	private NavigationButton navButton;
 
 	@Provides
@@ -86,38 +168,58 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	@Getter
-	private int numNamesSubmitted = 0;
-	@Getter
-	private int worldIsMembers;
-	@Getter
-	private Prediction currPrediction;
+	private String loggedPlayerName;
+	private Instant timeToAutoSend;
+	private int namesUploaded;
+	private Instant lastFlush = Instant.MIN;
+	private boolean isCurrentWorldMembers;
+	private boolean isCurrentWorldPVP;
+	private boolean isCurrentWorldBlocked;
 
 	@Getter
-	private final List<Player> detectedPlayers = new ArrayList<>();
-	@Getter
-	private final List<Player> freshPlayers = new ArrayList<>();
-	@Getter
-	private final Set<String> detectedPlayerNames = new HashSet<>();
+	private AuthToken authToken = AuthToken.EMPTY_TOKEN;
 
+	// Current login maps, clear on logout/shutdown. Feedback/Report map to selected value in panel.
+	// All map keys should get handled with normalizePlayerName() followed by toLowerCase()
+	private final Table<CaseInsensitiveString, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	@Getter
-	private boolean playerLoggedIn = false;
-
+	private final Map<CaseInsensitiveString, PlayerSighting> persistentSightings = new ConcurrentHashMap<>();
 	@Getter
-	private String currPlayer;
+	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new ConcurrentHashMap<>();
 	@Getter
-	private int currPlayerID;
-
-	private int tickCount = 0;
+	private final Map<CaseInsensitiveString, Boolean> reportedPlayers = new ConcurrentHashMap<>();
 
 	@Override
 	protected void startUp()
 	{
-		currPlayer = "";
+		// Get current version of the plugin using properties file generated by build.gradle
+		// Thanks to https://github.com/dillydill123/inventory-setups/
+		try
+		{
+			final Properties props = new Properties();
+			props.load(BotDetectorPlugin.class.getResourceAsStream( "/version.properties"));
+			detectorClient.setPluginVersion(props.getProperty("version"));
+		}
+		catch (Exception e)
+		{
+			log.error("Could not parse plugin version from properties file!", e);
+
+			// Turn plugin back off and display an error message
+			pluginManager.setPluginEnabled(this, false);
+			displayPluginVersionError();
+
+			return;
+		}
 
 		panel = injector.getInstance(BotDetectorPanel.class);
-		panel.init();
-		http = injector.getInstance(BotDetectorHTTP.class);
+		SwingUtilities.invokeLater(() ->
+		{
+			panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
+			panel.setPluginVersion(detectorClient.getPluginVersion());
+			panel.setNamesUploaded(0);
+		});
 
+		processCurrentWorld();
 
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
 
@@ -130,177 +232,416 @@ public class BotDetectorPlugin extends Plugin
 
 		clientToolbar.addNavigation(navButton);
 
-		if (config.addDetectOption() && client != null)
+		if (config.addPredictOption() && client != null)
 		{
-			menuManager.addPlayerMenuItem(DETECT);
+			menuManager.addPlayerMenuItem(PREDICT_OPTION);
 		}
+
+		updateTimeToAutoSend();
+
+		authToken = AuthToken.fromFullToken(config.authFullToken());
 	}
 
 	@Override
 	protected void shutDown()
 	{
-		if (detectedPlayers.size() > 0)
-		{
-			http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
-			detectedPlayers.clear();
-			freshPlayers.clear();
-			detectedPlayerNames.clear();
-		}
+		flushPlayersToClient(false);
+		persistentSightings.clear();
+		feedbackedPlayers.clear();
+		reportedPlayers.clear();
 
-		if (config.addDetectOption() && client != null)
+		if (config.addPredictOption() && client != null)
 		{
-			menuManager.removePlayerMenuItem(DETECT);
+			menuManager.removePlayerMenuItem(PREDICT_OPTION);
 		}
 
 		clientToolbar.removeNavigation(navButton);
+
+		namesUploaded = 0;
+		loggedPlayerName = null;
+		lastFlush = Instant.MIN;
+		authToken = AuthToken.EMPTY_TOKEN;
 	}
 
-	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void updateTimeToAutoSend()
 	{
-		if (!event.getGroup().equals(BotDetectorConfig.CONFIG_GROUP))
+		timeToAutoSend = Instant.now().plusSeconds(60L *
+			Ints.constrainToRange(config.autoSendMinutes(),
+				BotDetectorConfig.AUTO_SEND_MINIMUM_MINUTES,
+				BotDetectorConfig.AUTO_SEND_MAXIMUM_MINUTES));
+	}
+
+	@Schedule(period = AUTO_SEND_SCHEDULE_SECONDS,
+		unit = ChronoUnit.SECONDS, asynchronous = true)
+	public void autoFlushPlayersToClient()
+	{
+		if (loggedPlayerName == null || config.onlySendAtLogout() || Instant.now().isBefore(timeToAutoSend))
 		{
 			return;
 		}
 
-		if (event.getKey().equals(BotDetectorConfig.ADD_DETECT_OPTION_KEY))
-		{
-			if (config.addDetectOption())
-			{
-				menuManager.addPlayerMenuItem(DETECT);
-			}
-			else
-			{
-				menuManager.removePlayerMenuItem(DETECT);
-			}
-		}
-
-		if (event.getKey().equals(BotDetectorConfig.ANONYMOUS_REPORTING_KEY))
-		{
-			SwingUtilities.invokeLater(panel::toggleAnonymousWarning);
-		}
+		flushPlayersToClient(true);
 	}
 
-	@Subscribe
-	public void onGameTick(GameTick event)
+	public boolean flushPlayersToClient(boolean restoreOnFailure)
 	{
-		if (config.sendAtLogout())
+		if (loggedPlayerName == null)
 		{
-			return;
+			return false;
 		}
 
-		int timeSend = 100 * Math.max(config.autoSendMinutes(), 5);
+		updateTimeToAutoSend();
 
-		tickCount++;
-
-		if (tickCount > timeSend)
+		int uniqueNames;
+		Collection<PlayerSighting> sightings;
+		int numReports;
+		synchronized (sightingTable)
 		{
-			if (detectedPlayers.size() > 0)
+			uniqueNames = sightingTable.rowKeySet().size();
+			if (uniqueNames <= 0)
 			{
-				http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
-				freshPlayers.clear();
+				return false;
 			}
-			tickCount = 0;
-		}
-	}
 
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
-	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
-		{
-			playerLoggedIn = true;
+			sightings = new ArrayList<>(sightingTable.values());
+			sightingTable.clear();
+			numReports = sightings.size();
 		}
-		else if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
-		{
-			// If player was previously logged in and is now back at the login screen
-			// (not hopping, loading, etc..)
-			// then that means they have logged out.
-			if (playerLoggedIn)
+
+		lastFlush = Instant.now();
+		detectorClient.sendSightings(sightings, getReporterName(), false)
+			.whenComplete((b, ex) ->
 			{
-				currPlayer = "";
-				currPlayerID = 0;
-				playerLoggedIn = false;
-				tickCount = 0;
-
-				SwingUtilities.invokeLater(panel::resetPlayerStats);
-
-				if (detectedPlayers.size() > 0)
+				if (ex == null && b)
 				{
-					http.sendDetectedPlayers(freshPlayers, 0, currPlayer);
-					freshPlayers.clear();
-					detectedPlayers.clear();
+					namesUploaded += uniqueNames;
+					SwingUtilities.invokeLater(() -> panel.setNamesUploaded(namesUploaded));
+					sendChatStatusMessage("Successfully uploaded " + numReports +
+						" locations for " + uniqueNames + " unique players.");
 				}
+				else
+				{
+					sendChatStatusMessage("Error sending player sightings!");
+					// Put the sightings back
+					if (restoreOnFailure)
+					{
+						synchronized (sightingTable)
+						{
+							sightings.forEach(s ->
+							{
+								CaseInsensitiveString name = wrap(s.getPlayerName());
+								int region = s.getRegionID();
+								// Don't replace if new sightings were added to the table during the request
+								if (!sightingTable.contains(name, region))
+								{
+									sightingTable.put(name, region, s);
+								}
+							});
+						}
+					}
+				}
+			});
+
+		return true;
+	}
+
+	@Schedule(period = REFRESH_PLAYER_STATS_SCHEDULE_SECONDS,
+		unit = ChronoUnit.SECONDS, asynchronous = true)
+	public void refreshPlayerStats()
+	{
+		if (config.enableAnonymousReporting())
+		{
+			SwingUtilities.invokeLater(() ->
+			{
+				panel.setPlayerStats(null);
+				panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
+			});
+			return;
+		}
+
+		if (loggedPlayerName == null)
+		{
+			return;
+		}
+
+		String nameAtRequest = loggedPlayerName;
+		detectorClient.requestPlayerStats(nameAtRequest)
+			.whenComplete((ps, ex) ->
+			{
+				if (ex == null && ps != null)
+				{
+					if (nameAtRequest.equals(loggedPlayerName))
+					{
+						SwingUtilities.invokeLater(() ->
+						{
+							panel.setPlayerStats(ps);
+							panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
+						});
+					}
+				}
+				else
+				{
+					SwingUtilities.invokeLater(() ->
+						panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, true));
+				}
+			});
+	}
+
+	@Subscribe
+	private void onConfigChanged(ConfigChanged event)
+	{
+		if (!event.getGroup().equals(BotDetectorConfig.CONFIG_GROUP) || event.getKey() == null)
+		{
+			return;
+		}
+
+		switch (event.getKey())
+		{
+			case BotDetectorConfig.ADD_PREDICT_OPTION_KEY:
+				if (client != null)
+				{
+					menuManager.removePlayerMenuItem(PREDICT_OPTION);
+
+					if (config.addPredictOption())
+					{
+						menuManager.addPlayerMenuItem(PREDICT_OPTION);
+					}
+				}
+				break;
+			case BotDetectorConfig.ANONYMOUS_REPORTING_KEY:
+				refreshPlayerStats();
+				SwingUtilities.invokeLater(() ->
+				{
+					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
+					panel.forceHideFeedbackPanel();
+					panel.forceHideReportPanel();
+				});
+				break;
+			case BotDetectorConfig.PANEL_FONT_TYPE_KEY:
+				SwingUtilities.invokeLater(() -> panel.setFontType(config.panelFontType()));
+				break;
+			case BotDetectorConfig.AUTO_SEND_MINUTES_KEY:
+			case BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY:
+				updateTimeToAutoSend();
+				break;
+		}
+	}
+
+	@Subscribe
+	private void onGameStateChanged(GameStateChanged event)
+	{
+		if (event.getGameState() == GameState.LOGIN_SCREEN)
+		{
+			if (loggedPlayerName != null)
+			{
+				flushPlayersToClient(false);
+				persistentSightings.clear();
+				feedbackedPlayers.clear();
+				reportedPlayers.clear();
+				loggedPlayerName = null;
+				SwingUtilities.invokeLater(() ->
+				{
+					panel.setPlayerStats(null);
+					panel.forceHideFeedbackPanel();
+					panel.forceHideReportPanel();
+				});
 			}
 		}
 	}
 
 	@Subscribe
-	public void onPlayerSpawned(PlayerSpawned event)
+	private void onPlayerSpawned(PlayerSpawned event)
 	{
-		Player player = event.getPlayer();
+		processPlayer(event.getPlayer());
+	}
+
+	private void processPlayer(Player player)
+	{
 		if (player == null)
 		{
 			return;
 		}
 
-		Player localPlayer = client.getLocalPlayer();
-		if (localPlayer == null)
+		if (player == client.getLocalPlayer())
+		{
+			if (loggedPlayerName == null || !loggedPlayerName.equals(player.getName()))
+			{
+				loggedPlayerName = player.getName();
+				updateTimeToAutoSend();
+				refreshPlayerStats();
+			}
+			return;
+		}
+
+		// Block processing AFTER local player check
+		if (isCurrentWorldBlocked)
 		{
 			return;
 		}
 
-		String playerName = player.getName();
-		currPlayer = localPlayer.getName();
-
-		if (playerName == null || currPlayer == null)
+		String playerName = normalizePlayerName(player.getName());
+		CaseInsensitiveString wrappedName = wrap(playerName);
+		if (playerName == null)
 		{
 			return;
 		}
 
-		if (playerName.equals(currPlayer))
-		{
-			http.getPlayerID(currPlayer);
-			http.getPlayerStats(currPlayer);
-			setWorldType();
-		}
-		else
-		{
-			int listSize = detectedPlayerNames.size();
-			detectedPlayerNames.add(playerName);
+		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
+		PlayerSighting p = new PlayerSighting(playerName,
+			wp, isCurrentWorldMembers, isCurrentWorldPVP, Instant.now());
 
-			if (detectedPlayerNames.size() == (listSize + 1))
+		synchronized (sightingTable)
+		{
+			sightingTable.put(wrappedName, p.getRegionID(), p);
+		}
+		persistentSightings.put(wrappedName, p);
+	}
+
+	@Subscribe
+	private void onCommandExecuted(CommandExecuted event)
+	{
+		String command = event.getCommand();
+		if (command.equalsIgnoreCase(MANUAL_FLUSH_COMMAND))
+		{
+			Instant canFlush = lastFlush.plusSeconds(MANUAL_FLUSH_COOLDOWN_SECONDS);
+			Instant now = Instant.now();
+			if (now.isAfter(canFlush))
 			{
-				detectedPlayers.add(player);
-				freshPlayers.add(player);
+				if (!flushPlayersToClient(true))
+				{
+					sendChatStatusMessage("No player sightings to flush!", true);
+				}
 			}
+			else
+			{
+				long secs = (Duration.between(now, canFlush).toMillis() / 1000) + 1;
+				sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players.", true);
+			}
+		}
+		else if (command.equalsIgnoreCase(MANUAL_SIGHT_COMMAND))
+		{
+			if (isCurrentWorldBlocked)
+			{
+				sendChatStatusMessage("Cannot refresh player sightings on a blocked world.", true);
+			}
+			else
+			{
+				client.getPlayers().forEach(this::processPlayer);
+				sendChatStatusMessage("Player sightings refreshed.", true);
+			}
+		}
+		else if (command.equalsIgnoreCase(SHOW_HIDE_ID_COMMAND))
+		{
+			if (event.getArguments().length > 0)
+			{
+				String arg = event.getArguments()[0];
+				if (arg.equals("1"))
+				{
+					panel.setPlayerIdVisible(true);
+				}
+				else if (arg.equals("0"))
+				{
+					panel.setPlayerIdVisible(false);
+				}
+			}
+		}
+		else if (command.equalsIgnoreCase(GET_AUTH_TOKEN_COMMAND))
+		{
+			if (authToken.getTokenType() == AuthTokenType.NONE)
+			{
+				sendChatStatusMessage("No auth token currently set.", true);
+			}
+			else
+			{
+				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+					new StringSelection(authToken.toFullToken()), null);
+				sendChatStatusMessage("Auth token copied to clipboard.", true);
+			}
+		}
+		else if (command.equalsIgnoreCase(SET_AUTH_TOKEN_COMMAND))
+		{
+			final String clipboardText;
+			try
+			{
+				clipboardText = Toolkit.getDefaultToolkit()
+					.getSystemClipboard()
+					.getData(DataFlavor.stringFlavor)
+					.toString().trim();
+			}
+			catch (IOException | UnsupportedFlavorException ex)
+			{
+				sendChatStatusMessage("Unable to read system clipboard for dev token.", true);
+				log.warn("Error reading clipboard", ex);
+				return;
+			}
+
+			AuthToken token = AuthToken.fromFullToken(clipboardText);
+
+			if (token.getTokenType() == AuthTokenType.NONE)
+			{
+				sendChatStatusMessage(AuthToken.AUTH_TOKEN_DESCRIPTION_MESSAGE, true);
+			}
+			else
+			{
+				authToken = token;
+				config.setAuthFullToken(token.toFullToken());
+				sendChatStatusMessage("Auth token successfully set from clipboard.", true);
+			}
+		}
+		else if (command.equalsIgnoreCase(CLEAR_AUTH_TOKEN_COMMAND))
+		{
+			authToken = AuthToken.EMPTY_TOKEN;
+			config.setAuthFullToken(null);
+			sendChatStatusMessage("Auth token cleared.", true);
 		}
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage msgEvent)
+	private void onChatMessage(ChatMessage event)
 	{
-		String contents = msgEvent.getMessage();
-
-		if (contents.charAt(0) == '!')
+		if (!authToken.getTokenType().getPermissions().contains(AuthTokenPermission.VERIFY_DISCORD))
 		{
-			String[] split_contents = contents.split(" ");
+			return;
+		}
 
-			//Discord Linking Command
-			if (split_contents[0].toLowerCase().equals("!code"))
-			{
-				String author = msgEvent.getName();
-				String code = split_contents[1];
+		String msg = event.getMessage();
 
-				http.verifyDiscordUser(author, code);
-			}
+		if (msg.charAt(0) != CODE_COMMAND_INDICATOR)
+		{
+			return;
+		}
+
+		String[] split = msg.split(" +");
+		if (split.length != 2)
+		{
+			return;
+		}
+
+		//Discord Linking Command
+		if (split[0].substring(1).equalsIgnoreCase(CODE_COMMAND))
+		{
+			String author = normalizePlayerName(event.getName());
+			String code = split[1];
+
+			detectorClient.verifyDiscord(authToken.getToken(), author, code)
+				.whenComplete((b, ex) ->
+				{
+					if (ex == null && b)
+					{
+						sendChatStatusMessage("Discord verified for '" + author + "'!");
+					}
+					else
+					{
+						sendChatStatusMessage("Could not verify Discord for '" + author + "'.");
+					}
+				});
 		}
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	private void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		if (!config.addDetectOption())
+		if (!config.addPredictOption())
 		{
 			return;
 		}
@@ -313,20 +654,21 @@ public class BotDetectorPlugin extends Plugin
 			groupId == WidgetInfo.RAIDING_PARTY.getGroupId() || groupId == WidgetInfo.PRIVATE_CHAT_MESSAGE.getGroupId() ||
 			groupId == WidgetInfo.IGNORE_LIST.getGroupId())
 		{
-			if (!AFTER_OPTIONS.contains(option) || (option.equals("Delete") && groupId != WidgetInfo.IGNORE_LIST.getGroupId()))
+			if (!AFTER_OPTIONS.contains(option) || (option.equals(DELETE_OPTION) && groupId != WidgetInfo.IGNORE_LIST.getGroupId()))
 			{
 				return;
 			}
 
-			final MenuEntry detect = new MenuEntry();
-			detect.setOption(DETECT);
-			detect.setTarget(event.getTarget());
-			detect.setType(MenuAction.RUNELITE.getId());
-			detect.setParam0(event.getActionParam0());
-			detect.setParam1(event.getActionParam1());
-			detect.setIdentifier(event.getIdentifier());
+			final MenuEntry predict = new MenuEntry();
+			predict.setOption(PREDICT_OPTION);
+			predict.setTarget(event.getTarget());
+			predict.setType(MenuAction.RUNELITE.getId());
+			predict.setParam0(event.getActionParam0());
+			predict.setParam1(event.getActionParam1());
+			predict.setIdentifier(event.getIdentifier());
 
-			insertMenuEntry(detect, client.getMenuEntries());
+			// Menu entries are added in-game in reverse order
+			client.setMenuEntries(ArrayUtils.insert(1, client.getMenuEntries(), predict));
 		}
 	}
 
@@ -334,8 +676,9 @@ public class BotDetectorPlugin extends Plugin
 	public void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-			&& event.getMenuOption().equals(DETECT))
+			&& event.getMenuOption().equals(PREDICT_OPTION))
 		{
+			String name;
 			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
 			{
 				Player player = client.getCachedPlayers()[event.getId()];
@@ -345,110 +688,117 @@ public class BotDetectorPlugin extends Plugin
 					return;
 				}
 
-				updatePlayerData(player);
+				name = player.getName();
 			}
 			else
 			{
-				//Checks to see if player selected from chat has been on screen recently
-				//If they have then we have their approximate location that we can report with.
-				String targetRSN = Text.removeTags(event.getMenuTarget());
+				name = event.getMenuTarget();
+			}
 
-				Player target = findPlayerInCache(targetRSN);
-
-				if (target == null)
+			if (name != null)
+			{
+				String toPredict = Text.removeTags(name);
+				if (config.predictOptionCopyName())
 				{
-					updatePlayerData(targetRSN);
+					Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(toPredict), null);
 				}
-				else
-				{
-					updatePlayerData(target);
-				}
+				predictPlayer(toPredict);
 			}
 		}
 	}
 
-	private Player findPlayerInCache(String rsn)
+	@Subscribe
+	private void onWorldChanged(WorldChanged event)
 	{
-		List<Player> currPlayers = client.getPlayers();
+		processCurrentWorld();
+	}
 
-		List<Player> matches = currPlayers.stream()
-			.filter(p -> p != null && p.getName() != null && p.getName().contains(rsn))
-			.collect(Collectors.toList());
-
-		try
+	public void predictPlayer(String playerName)
+	{
+		SwingUtilities.invokeLater(() ->
 		{
-			return matches.get(0);
+			if (!navButton.isSelected())
+			{
+				navButton.getOnSelect().run();
+			}
+
+			panel.predictPlayer(playerName);
+		});
+	}
+
+	public void sendChatStatusMessage(String msg)
+	{
+		sendChatStatusMessage(msg, false);
+	}
+
+	public void sendChatStatusMessage(String msg, boolean forceShow)
+	{
+		if ((forceShow || config.enableChatStatusMessages()) && loggedPlayerName != null)
+		{
+			final String message = new ChatMessageBuilder()
+				.append(ChatColorType.HIGHLIGHT)
+				.append(CHAT_MESSAGE_HEADER + msg)
+				.build();
+
+			chatMessageManager.queue(
+				QueuedMessage.builder()
+					.type(ChatMessageType.CONSOLE)
+					.runeLiteFormattedMessage(message)
+					.build());
 		}
-		catch (IndexOutOfBoundsException exception)
+	}
+
+	public String normalizePlayerName(String playerName)
+	{
+		if (playerName == null)
 		{
 			return null;
 		}
+
+		return Text.removeTags(Text.toJagexName(playerName));
 	}
 
-	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
+	public CaseInsensitiveString normalizeAndWrapPlayerName(String playerName)
 	{
-		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
-		client.setMenuEntries(newMenu);
+		return wrap(normalizePlayerName(playerName));
 	}
 
-	public void addNumNamesSubmitted(int n)
+	public void processCurrentWorld()
 	{
-		numNamesSubmitted += n;
-		SwingUtilities.invokeLater(panel::updateUploads);
-	}
-
-	private void updatePlayerData(String playerName)
-	{
+		EnumSet<WorldType> types = client.getWorldType();
+		isCurrentWorldMembers = types.contains(WorldType.MEMBERS);
+		isCurrentWorldPVP = types.contains(WorldType.PVP);
+		isCurrentWorldBlocked = BLOCKED_WORLD_TYPES.stream().anyMatch(types::contains);
 		SwingUtilities.invokeLater(() ->
-		{
-			if (!navButton.isSelected())
-			{
-				navButton.getOnSelect().run();
-			}
-
-			panel.lookupPlayer(playerName, false);
-		});
+			panel.setWarningVisible(BotDetectorPanel.WarningLabel.BLOCKED_WORLD, isCurrentWorldBlocked));
 	}
 
-	private void updatePlayerData(Player player)
+	public String getReporterName()
 	{
-		SwingUtilities.invokeLater(() ->
+		if (loggedPlayerName == null || config.enableAnonymousReporting())
 		{
-			if (!navButton.isSelected())
-			{
-				navButton.getOnSelect().run();
-			}
-
-			panel.lookupPlayer(player.getName(), true);
-		});
-	}
-
-	public void pushNotification(String msg)
-	{
-		if (config.enableNotificatiions())
-		{
-			notifier.notify(msg);
+			return ANONYMOUS_USER_NAME;
 		}
+
+		return loggedPlayerName;
 	}
 
-	public void setCurrPlayerID(int id)
+	// This isn't perfect but really shouldn't ever happen!
+	private void displayPluginVersionError()
 	{
-		currPlayerID = id;
-	}
-
-	public void setCurrPrediction(Hashtable<String, String> predData)
-	{
-		Prediction pred = new Prediction();
-		pred.setPlayerId(Integer.parseInt(predData.get("player_id")));
-		pred.setDisplayName(predData.get("player_name"));
-		pred.setPredictionLabel(predData.get("prediction_label"));
-		pred.setConfidence(Float.parseFloat(predData.get("prediction_confidence")));
-
-		currPrediction = pred;
-	}
-
-	public void setWorldType()
-	{
-		worldIsMembers = client.getWorldType().contains(WorldType.MEMBERS) ? 1 : 0;
+		JEditorPane ep = new JEditorPane("text/html", "<html><body>Could not parse the plugin version from the properties file!"
+			+ "<br>This should never happen! Please contact us on our <a href="
+			+ BotDetectorPanel.WebLink.DISCORD.getLink() + ">Discord</a>.</body></html>");
+		ep.addHyperlinkListener(e ->
+		{
+			if (e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED))
+			{
+				LinkBrowser.browse(e.getURL().toString());
+			}
+		});
+		ep.setEditable(false);
+		JOptionPane.showOptionDialog(null, ep,
+			"Error starting Bot Detector!", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE,
+			null, new String[]{"Ok"}, "Ok");
 	}
 }

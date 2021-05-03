@@ -26,23 +26,53 @@
 package com.botdetector.model;
 
 import com.google.gson.annotations.SerializedName;
+import java.time.Instant;
+import lombok.AllArgsConstructor;
 import lombok.Value;
+import net.runelite.api.coords.WorldPoint;
 
 @Value
-public class PlayerStats
+@AllArgsConstructor
+public class PlayerSighting
 {
-	int reports;
-	int bans;
-	@SerializedName("possible_bans")
-	int possibleBans;
-
-	public double getAccuracy()
+	public PlayerSighting(
+		String playerName,
+		WorldPoint wp,
+		boolean inMembersWorld,
+		boolean inPVPWorld,
+		Instant timestamp)
 	{
-		if (reports > 0)
-		{
-			return bans / (double)reports;
-		}
-		return 0;
+		this(playerName,
+			wp.getRegionID(),
+			wp.getX(),
+			wp.getY(),
+			wp.getPlane(),
+			inMembersWorld,
+			inPVPWorld,
+			timestamp);
 	}
 
+	@SerializedName("reported")
+	String playerName;
+
+	@SerializedName("region_id")
+	int regionID;
+
+	@SerializedName("x")
+	int worldX;
+
+	@SerializedName("y")
+	int worldY;
+
+	@SerializedName("z")
+	int plane;
+
+	@SerializedName("on_members_world")
+	boolean inMembersWorld;
+
+	@SerializedName("on_pvp_world")
+	boolean inPVPWorld;
+
+	@SerializedName("ts")
+	Instant timestamp;
 }
