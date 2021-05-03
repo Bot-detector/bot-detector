@@ -26,6 +26,8 @@
 package com.botdetector;
 
 import com.botdetector.http.BotDetectorClient;
+import com.botdetector.model.AuthToken;
+import com.botdetector.model.AuthTokenType;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
@@ -47,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
@@ -118,11 +119,9 @@ public class BotDetectorPlugin extends Plugin
 	private static final String MANUAL_FLUSH_COMMAND = COMMAND_PREFIX + "Flush";
 	private static final String MANUAL_SIGHT_COMMAND = COMMAND_PREFIX + "Snap";
 	private static final String SHOW_HIDE_ID_COMMAND = COMMAND_PREFIX + "ShowId";
-	private static final String GET_DEV_TOKEN_COMMAND = COMMAND_PREFIX + "GetToken";
-	private static final String SET_DEV_TOKEN_COMMAND = COMMAND_PREFIX + "SetToken";
-	private static final String CLEAR_DEV_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
-
-	private static final Pattern DEV_TOKEN_PATTERN = Pattern.compile("^[\\w\\-]{12,32}$");
+	private static final String GET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "GetToken";
+	private static final String SET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "SetToken";
+	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
 	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
@@ -167,6 +166,9 @@ public class BotDetectorPlugin extends Plugin
 	private boolean isCurrentWorldPVP;
 	private boolean isCurrentWorldBlocked;
 
+	@Getter
+	private AuthToken authToken = AuthToken.EMPTY_TOKEN;
+
 	// Current login maps, clear on logout/shutdown. Feedback/Report map to selected value in panel.
 	// All map keys should get handled with normalizePlayerName() followed by toLowerCase()
 	private final Table<CaseInsensitiveString, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
@@ -206,6 +208,8 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		updateTimeToAutoSend();
+
+		authToken = AuthToken.fromFullToken(config.authFullToken());
 	}
 
 	@Override
@@ -226,6 +230,7 @@ public class BotDetectorPlugin extends Plugin
 		namesUploaded = 0;
 		loggedPlayerName = null;
 		lastFlush = Instant.MIN;
+		authToken = AuthToken.EMPTY_TOKEN;
 	}
 
 	private void updateTimeToAutoSend()
@@ -510,20 +515,20 @@ public class BotDetectorPlugin extends Plugin
 				}
 			}
 		}
-		else if (command.equalsIgnoreCase(GET_DEV_TOKEN_COMMAND))
+		else if (command.equalsIgnoreCase(GET_AUTH_TOKEN_COMMAND))
 		{
-			String token = config.authToken();
-			if (token == null || token.isEmpty())
+			if (authToken.getTokenType() == AuthTokenType.NONE)
 			{
-				sendChatStatusMessage("No dev token currently set.", true);
+				sendChatStatusMessage("No auth token currently set.", true);
 			}
 			else
 			{
-				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(token), null);
-				sendChatStatusMessage("Dev token copied to clipboard.", true);
+				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+					new StringSelection(authToken.toFullToken()), null);
+				sendChatStatusMessage("Auth token copied to clipboard.", true);
 			}
 		}
-		else if (command.equalsIgnoreCase(SET_DEV_TOKEN_COMMAND))
+		else if (command.equalsIgnoreCase(SET_AUTH_TOKEN_COMMAND))
 		{
 			final String clipboardText;
 			try
@@ -540,27 +545,31 @@ public class BotDetectorPlugin extends Plugin
 				return;
 			}
 
-			if (!DEV_TOKEN_PATTERN.matcher(clipboardText).matches())
+			AuthToken token = AuthToken.fromFullToken(clipboardText);
+
+			if (token.getTokenType() == AuthTokenType.NONE)
 			{
-				sendChatStatusMessage("Dev token in clipboard must be alphanumeric/'_'/'-' and 12 to 32 characters long.", true);
+				sendChatStatusMessage(AuthToken.AUTH_TOKEN_DESCRIPTION_MESSAGE, true);
 			}
 			else
 			{
-				config.setAuthToken(clipboardText);
-				sendChatStatusMessage("Dev token successfully set from clipboard.", true);
+				authToken = token;
+				config.setAuthFullToken(token.toFullToken());
+				sendChatStatusMessage("Auth token successfully set from clipboard.", true);
 			}
 		}
-		else if (command.equalsIgnoreCase(CLEAR_DEV_TOKEN_COMMAND))
+		else if (command.equalsIgnoreCase(CLEAR_AUTH_TOKEN_COMMAND))
 		{
-			config.setAuthToken(null);
-			sendChatStatusMessage("Dev token cleared.", true);
+			authToken = AuthToken.EMPTY_TOKEN;
+			config.setAuthFullToken(null);
+			sendChatStatusMessage("Auth token cleared.", true);
 		}
 	}
 
 	@Subscribe
 	private void onChatMessage(ChatMessage event)
 	{
-		if (config.authToken() == null || config.authToken().isEmpty())
+		if (!authToken.getTokenType().canVerifyDiscord())
 		{
 			return;
 		}
@@ -584,7 +593,7 @@ public class BotDetectorPlugin extends Plugin
 			String author = normalizePlayerName(event.getName());
 			String code = split[1];
 
-			detectorClient.verifyDiscord(config.authToken().trim(), author, code)
+			detectorClient.verifyDiscord(authToken.getToken(), author, code)
 				.whenComplete((b, ex) ->
 				{
 					if (ex == null && b)
