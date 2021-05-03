@@ -41,6 +41,7 @@ public interface BotDetectorConfig extends Config
 	String ADD_PREDICT_OPTION_KEY = "addDetectOption"; // I know it says detect, don't change it.
 	String ANONYMOUS_REPORTING_KEY = "enableAnonymousReporting";
 	String PANEL_FONT_TYPE_KEY = "panelFontType";
+	String AUTH_FULL_TOKEN_KEY = "authToken";
 
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
 	int AUTO_SEND_MAXIMUM_MINUTES = 360;
@@ -125,21 +126,21 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "authToken",
+		keyName = AUTH_FULL_TOKEN_KEY,
 		name = "",
 		description = "",
 		hidden = true
 	)
-	default String authToken()
+	default String authFullToken()
 	{
 		return null;
 	}
 
 	@ConfigItem(
-		keyName = "authToken",
+		keyName = AUTH_FULL_TOKEN_KEY,
 		name = "",
 		description = "",
 		hidden = true
 	)
-	String setAuthToken(String token);
+	String setAuthFullToken(String fullToken);
 }
