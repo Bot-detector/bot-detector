@@ -52,10 +52,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.http.api.RuneLiteAPI;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -66,22 +71,48 @@ import okhttp3.Response;
 @Singleton
 public class BotDetectorClient
 {
-	public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-	private static final String BASE_URL = System.getProperty("BotDetectorAPIPath", "https://www.osrsbotdetector.com/api");
+	private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+	private static final String API_VERSION_FALLBACK_WORD = "latest";
+	private static final HttpUrl BASE_HTTP_URL = HttpUrl.parse(
+		System.getProperty("BotDetectorAPIPath", "https://www.osrsbotdetector.com/api"));
 
-	private static final String DETECTION_URL = BASE_URL + "/plugin/detect/";
-	private static final String PLAYER_STATS_URL = BASE_URL + "/stats/contributions/";
-	private static final String PREDICTION_URL = BASE_URL + "/site/prediction/";
-	private static final String FEEDBACK_URL = BASE_URL + "/plugin/predictionfeedback/";
-	private static final String VERIFY_DISCORD_URL = BASE_URL + "/site/discord_user/";
+	@Getter
+	@AllArgsConstructor
+	private enum ApiPath
+	{
+		DETECTION("plugin/detect/"),
+		PLAYER_STATS("stats/contributions/"),
+		PREDICTION("site/prediction/"),
+		FEEDBACK("plugin/predictionfeedback/"),
+		VERIFY_DISCORD("site/discord_user/")
+		;
 
-	public static OkHttpClient okHttpClient = new OkHttpClient.Builder()
+		final String path;
+	}
+
+	public static OkHttpClient okHttpClient = RuneLiteAPI.CLIENT.newBuilder()
+		.pingInterval(0, TimeUnit.SECONDS)
 		.connectTimeout(30, TimeUnit.SECONDS)
 		.readTimeout(30, TimeUnit.SECONDS)
 		.build();
 
 	@Inject
 	private GsonBuilder gsonBuilder;
+
+	@Getter
+	@Setter
+	private String pluginVersion;
+
+	private HttpUrl getUrl(ApiPath path)
+	{
+		String version = (pluginVersion != null && !pluginVersion.isEmpty()) ?
+			pluginVersion : API_VERSION_FALLBACK_WORD;
+
+		return BASE_HTTP_URL.newBuilder()
+			.addPathSegment(version)
+			.addPathSegments(path.getPath())
+			.build();
+	}
 
 	public CompletableFuture<Boolean> sendSighting(PlayerSighting sighting, String reporter, boolean manual)
 	{
@@ -100,7 +131,9 @@ public class BotDetectorClient
 			.create();
 
 		Request request = new Request.Builder()
-			.url(DETECTION_URL + (manual ? 1 : 0))
+			.url(getUrl(ApiPath.DETECTION).newBuilder()
+				.addPathSegment(String.valueOf(manual ? 1 : 0))
+				.build())
 			.post(RequestBody.create(JSON, gson.toJson(wrappedList)))
 			.build();
 
@@ -141,7 +174,9 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(VERIFY_DISCORD_URL + token)
+			.url(getUrl(ApiPath.VERIFY_DISCORD).newBuilder()
+				.addPathSegment(token)
+				.build())
 			.post(RequestBody.create(JSON, gson.toJson(new DiscordVerification(nameToVerify, code))))
 			.build();
 
@@ -183,7 +218,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(FEEDBACK_URL)
+			.url(getUrl(ApiPath.FEEDBACK))
 			.post(RequestBody.create(JSON, gson.toJson(new PredictionFeedback(
 				reporterName,
 				feedback ? 1 : -1,
@@ -229,7 +264,9 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(PREDICTION_URL + playerName.replace(" ", "%20"))
+			.url(getUrl(ApiPath.PREDICTION).newBuilder()
+				.addPathSegment(playerName)
+				.build())
 			.build();
 
 		CompletableFuture<Prediction> future = new CompletableFuture<>();
@@ -264,7 +301,9 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(PLAYER_STATS_URL + playerName.replace(" ", "%20"))
+			.url(getUrl(ApiPath.PLAYER_STATS).newBuilder()
+				.addPathSegment(playerName)
+				.build())
 			.build();
 
 		CompletableFuture<PlayerStats> future = new CompletableFuture<>();
