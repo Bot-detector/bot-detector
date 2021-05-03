@@ -78,7 +78,7 @@ public class BotDetectorClient
 
 	@Getter
 	@AllArgsConstructor
-	private enum ApiUrl
+	private enum ApiPath
 	{
 		DETECTION("plugin/detect/"),
 		PLAYER_STATS("stats/contributions/"),
@@ -103,7 +103,7 @@ public class BotDetectorClient
 	@Setter
 	private String pluginVersion;
 
-	private HttpUrl getUrl(ApiUrl path)
+	private HttpUrl getUrl(ApiPath path)
 	{
 		String version = (pluginVersion != null && !pluginVersion.isEmpty()) ?
 			pluginVersion : API_VERSION_FALLBACK_WORD;
@@ -131,7 +131,7 @@ public class BotDetectorClient
 			.create();
 
 		Request request = new Request.Builder()
-			.url(getUrl(ApiUrl.DETECTION).newBuilder()
+			.url(getUrl(ApiPath.DETECTION).newBuilder()
 				.addPathSegment(String.valueOf(manual ? 1 : 0))
 				.build())
 			.post(RequestBody.create(JSON, gson.toJson(wrappedList)))
@@ -174,7 +174,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(getUrl(ApiUrl.VERIFY_DISCORD).newBuilder()
+			.url(getUrl(ApiPath.VERIFY_DISCORD).newBuilder()
 				.addPathSegment(token)
 				.build())
 			.post(RequestBody.create(JSON, gson.toJson(new DiscordVerification(nameToVerify, code))))
@@ -218,7 +218,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(getUrl(ApiUrl.FEEDBACK))
+			.url(getUrl(ApiPath.FEEDBACK))
 			.post(RequestBody.create(JSON, gson.toJson(new PredictionFeedback(
 				reporterName,
 				feedback ? 1 : -1,
@@ -264,7 +264,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(getUrl(ApiUrl.PREDICTION).newBuilder()
+			.url(getUrl(ApiPath.PREDICTION).newBuilder()
 				.addPathSegment(playerName)
 				.build())
 			.build();
@@ -301,7 +301,7 @@ public class BotDetectorClient
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
-			.url(getUrl(ApiUrl.PLAYER_STATS).newBuilder()
+			.url(getUrl(ApiPath.PLAYER_STATS).newBuilder()
 				.addPathSegment(playerName)
 				.build())
 			.build();
