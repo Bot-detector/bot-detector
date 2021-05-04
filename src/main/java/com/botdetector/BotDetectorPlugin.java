@@ -565,7 +565,7 @@ public class BotDetectorPlugin extends Plugin
 			{
 				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
 					new StringSelection(authToken.toFullToken()), null);
-				sendChatStatusMessage("Auth token copied to clipboard.", true);
+				sendChatStatusMessage(authToken.getTokenType() + " auth token copied to clipboard.", true);
 			}
 		}
 		else if (command.equalsIgnoreCase(SET_AUTH_TOKEN_COMMAND))
@@ -595,7 +595,7 @@ public class BotDetectorPlugin extends Plugin
 			{
 				authToken = token;
 				config.setAuthFullToken(token.toFullToken());
-				sendChatStatusMessage("Auth token successfully set from clipboard.", true);
+				sendChatStatusMessage(token.getTokenType() + " auth token successfully set from clipboard.", true);
 			}
 		}
 		else if (command.equalsIgnoreCase(CLEAR_AUTH_TOKEN_COMMAND))
