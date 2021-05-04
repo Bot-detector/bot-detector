@@ -50,7 +50,8 @@ public interface BotDetectorConfig extends Config
 		position = 1,
 		keyName = ONLY_SEND_AT_LOGOUT_KEY,
 		name = "Send Names Only After Logout",
-		description = "Waits to upload names until you've logged out.<br>Use this if you have a poor connection."
+		description = "Waits to upload names until you've logged out. Use this if you have a poor connection."
+			+ "<br><span style='color:red'>WARNING:</span> Names <b>cannot</b> be sent if Runelite is closed completely before logging out."
 	)
 	default boolean onlySendAtLogout()
 	{
