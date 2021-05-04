@@ -35,6 +35,7 @@ import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import com.google.common.primitives.Ints;
@@ -682,9 +683,16 @@ public class BotDetectorPlugin extends Plugin
 			predict.setParam1(event.getActionParam1());
 			predict.setIdentifier(event.getIdentifier());
 
-			// Menu entries are added in-game in reverse order
-			client.setMenuEntries(ArrayUtils.insert(1, client.getMenuEntries(), predict));
+			insertMenuEntry(predict, client.getMenuEntries());
 		}
+	}
+
+	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
+	{
+		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
+		int menuEntryCount = newMenu.length;
+		ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
+		client.setMenuEntries(newMenu);
 	}
 
 	@Subscribe
