@@ -26,6 +26,7 @@
 package com.botdetector;
 
 import com.botdetector.http.BotDetectorClient;
+import com.botdetector.http.UnauthorizedTokenException;
 import com.botdetector.model.AuthToken;
 import com.botdetector.model.AuthTokenPermission;
 import com.botdetector.model.AuthTokenType;
@@ -52,6 +53,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -75,6 +77,7 @@ import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.events.WorldChanged;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.chat.ChatColorType;
+import net.runelite.client.chat.ChatCommandManager;
 import net.runelite.client.chat.ChatMessageBuilder;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
@@ -119,8 +122,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final ImmutableSet<String> AFTER_OPTIONS =
 		ImmutableSet.of("Message", "Add ignore", "Remove friend", DELETE_OPTION, KICK_OPTION);
 
-	private static final char CODE_COMMAND_INDICATOR = '!';
-	private static final String CODE_COMMAND = "code";
+	private static final String VERIFY_DISCORD_COMMAND = "!code";
+	private static final Pattern VERIFY_DISCORD_CODE_PATTERN = Pattern.compile("\\d{4}");
 
 	private static final String COMMAND_PREFIX = "bd";
 	private static final String MANUAL_FLUSH_COMMAND = COMMAND_PREFIX + "Flush";
@@ -151,6 +154,9 @@ public class BotDetectorPlugin extends Plugin
 
 	@Inject
 	private ClientToolbar clientToolbar;
+
+	@Inject
+	private ChatCommandManager chatCommandManager;
 
 	@Inject
 	private ChatMessageManager chatMessageManager;
@@ -240,6 +246,8 @@ public class BotDetectorPlugin extends Plugin
 		updateTimeToAutoSend();
 
 		authToken = AuthToken.fromFullToken(config.authFullToken());
+
+		chatCommandManager.registerCommand(VERIFY_DISCORD_COMMAND, this::verifyDiscord);
 	}
 
 	@Override
@@ -261,6 +269,8 @@ public class BotDetectorPlugin extends Plugin
 		loggedPlayerName = null;
 		lastFlush = Instant.MIN;
 		authToken = AuthToken.EMPTY_TOKEN;
+
+		chatCommandManager.unregisterCommand(VERIFY_DISCORD_COMMAND);
 	}
 
 	private void updateTimeToAutoSend()
@@ -596,46 +606,51 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
-	@Subscribe
-	private void onChatMessage(ChatMessage event)
+	private void verifyDiscord(ChatMessage chatMessage, String message)
 	{
 		if (!authToken.getTokenType().getPermissions().contains(AuthTokenPermission.VERIFY_DISCORD))
 		{
 			return;
 		}
 
-		String msg = event.getMessage();
-
-		if (msg.charAt(0) != CODE_COMMAND_INDICATOR)
+		if (message.length() <= VERIFY_DISCORD_COMMAND.length())
 		{
 			return;
 		}
 
-		String[] split = msg.split(" +");
-		if (split.length != 2)
+		String author;
+		if (chatMessage.getType().equals(ChatMessageType.PRIVATECHATOUT))
+		{
+			author = normalizePlayerName(loggedPlayerName);
+		}
+		else
+		{
+			author = normalizePlayerName(chatMessage.getName());
+		}
+
+		String code = message.substring(VERIFY_DISCORD_COMMAND.length() + 1).trim();
+
+		if (!VERIFY_DISCORD_CODE_PATTERN.matcher(code).matches())
 		{
 			return;
 		}
 
-		//Discord Linking Command
-		if (split[0].substring(1).equalsIgnoreCase(CODE_COMMAND))
-		{
-			String author = normalizePlayerName(event.getName());
-			String code = split[1];
-
-			detectorClient.verifyDiscord(authToken.getToken(), author, code)
-				.whenComplete((b, ex) ->
+		detectorClient.verifyDiscord(authToken.getToken(), author, code)
+			.whenComplete((b, ex) ->
+			{
+				if (ex == null && b)
 				{
-					if (ex == null && b)
-					{
-						sendChatStatusMessage("Discord verified for '" + author + "'!");
-					}
-					else
-					{
-						sendChatStatusMessage("Could not verify Discord for '" + author + "'.");
-					}
-				});
-		}
+					sendChatStatusMessage("Discord verified for '" + author + "'!", true);
+				}
+				else if (ex instanceof UnauthorizedTokenException)
+				{
+					sendChatStatusMessage("Invalid token for Discord verification, cannot verify '" + author + "'.", true);
+				}
+				else
+				{
+					sendChatStatusMessage("Could not verify Discord for '" + author + "'.", true);
+				}
+			});
 	}
 
 	@Subscribe
