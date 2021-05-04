@@ -148,7 +148,7 @@ public class BotDetectorClient
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
 				try
 				{
@@ -158,6 +158,11 @@ public class BotDetectorClient
 					}
 
 					future.complete(true);
+				}
+				catch (IOException e)
+				{
+					log.warn("Error sending player sighting data", e);
+					future.completeExceptionally(e);
 				}
 				finally
 				{
@@ -191,17 +196,29 @@ public class BotDetectorClient
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
 				try
 				{
 					// TODO: Differenciate between bad token and failed auth (return false)
 					if (!response.isSuccessful())
 					{
-						throw getIOException(response);
+						if (response.code() == 401)
+						{
+							throw new UnauthorizedTokenException("Invalid or unauthorized token for operation");
+						}
+						else
+						{
+							throw getIOException(response);
+						}
 					}
 
 					future.complete(true);
+				}
+				catch (UnauthorizedTokenException | IOException e)
+				{
+					log.warn("Error verifying discord user", e);
+					future.completeExceptionally(e);
 				}
 				finally
 				{
@@ -238,7 +255,7 @@ public class BotDetectorClient
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
 				try
 				{
@@ -248,6 +265,11 @@ public class BotDetectorClient
 					}
 
 					future.complete(true);
+				}
+				catch (IOException e)
+				{
+					log.warn("Error sending prediction feedback", e);
+					future.completeExceptionally(e);
 				}
 				finally
 				{
@@ -280,11 +302,16 @@ public class BotDetectorClient
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
 				try
 				{
 					future.complete(processResponse(gson, response, Prediction.class));
+				}
+				catch (IOException e)
+				{
+					log.warn("Error obtaining player prediction data", e);
+					future.completeExceptionally(e);
 				}
 				finally
 				{
@@ -317,11 +344,16 @@ public class BotDetectorClient
 			}
 
 			@Override
-			public void onResponse(Call call, Response response) throws IOException
+			public void onResponse(Call call, Response response)
 			{
 				try
 				{
 					future.complete(processResponse(gson, response, PlayerStats.class));
+				}
+				catch (IOException e)
+				{
+					log.warn("Error obtaining player stats data", e);
+					future.completeExceptionally(e);
 				}
 				finally
 				{
@@ -358,7 +390,7 @@ public class BotDetectorClient
 	private IOException getIOException(Response response)
 	{
 		int code = response.code();
-		if (code == 400)
+		if (code >= 400 && code < 500)
 		{
 			try
 			{
@@ -370,7 +402,7 @@ public class BotDetectorClient
 			}
 			catch (IOException | JsonSyntaxException ex)
 			{
-				return new IOException("Error " + code + " with malformed error info", ex);
+				return new IOException("Error " + code + " with no error info", ex);
 			}
 		}
 
