@@ -227,7 +227,7 @@ public class BotDetectorPlugin extends Plugin
 
 		processCurrentWorld();
 
-		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/bot-icon.png");
+		final BufferedImage icon = ImageUtil.loadImageResource(BotDetectorPlugin.class, "/bot-icon.png");
 
 		navButton = NavigationButton.builder()
 			.panel(panel)
