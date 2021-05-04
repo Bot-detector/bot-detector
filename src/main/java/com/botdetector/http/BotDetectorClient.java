@@ -390,7 +390,7 @@ public class BotDetectorClient
 	private IOException getIOException(Response response)
 	{
 		int code = response.code();
-		if (code == 400)
+		if (code >= 400 && code < 500)
 		{
 			try
 			{
@@ -402,7 +402,7 @@ public class BotDetectorClient
 			}
 			catch (IOException | JsonSyntaxException ex)
 			{
-				return new IOException("Error " + code + " with malformed error info", ex);
+				return new IOException("Error " + code + " with no error info", ex);
 			}
 		}
 
