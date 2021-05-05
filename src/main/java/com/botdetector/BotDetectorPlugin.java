@@ -137,7 +137,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
-	private static final int AUTO_REFRESH_STATS_COOLDOWN_SECONDS = BotDetectorConfig.AUTO_SEND_MINIMUM_MINUTES * 60;
+	private static final int AUTO_REFRESH_STATS_COOLDOWN_SECONDS = 150;
+	private static final int AUTO_REFRESH_LAST_FLUSH_GRACE_PERIOD_SECONDS = 30;
 	private static final int API_HIT_SCHEDULE_SECONDS = 5;
 
 	private static final String CHAT_MESSAGE_HEADER = "[Bot Detector] ";
@@ -371,9 +372,11 @@ public class BotDetectorPlugin extends Plugin
 	{
 		if (!forceRefresh)
 		{
+			Instant now = Instant.now();
 			// Only perform non-manual refreshes when a player is not anon, logged in and the panel is open
 			if (config.enableAnonymousReporting() || loggedPlayerName == null || !navButton.isSelected()
-				|| Instant.now().isBefore(lastStatsRefresh.plusSeconds(AUTO_REFRESH_STATS_COOLDOWN_SECONDS)))
+				|| now.isBefore(lastStatsRefresh.plusSeconds(AUTO_REFRESH_STATS_COOLDOWN_SECONDS))
+				|| now.isBefore(lastFlush.plusSeconds(AUTO_REFRESH_LAST_FLUSH_GRACE_PERIOD_SECONDS)))
 			{
 				return;
 			}
