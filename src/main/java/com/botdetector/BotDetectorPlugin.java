@@ -482,8 +482,9 @@ public class BotDetectorPlugin extends Plugin
 				feedbackedPlayers.clear();
 				reportedPlayers.clear();
 				loggedPlayerName = null;
-				lastStatsRefresh = Instant.MIN;
+
 				refreshPlayerStats(true);
+				lastStatsRefresh = Instant.MIN;
 			}
 		}
 	}
