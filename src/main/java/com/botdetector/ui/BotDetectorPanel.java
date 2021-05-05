@@ -27,6 +27,7 @@ package com.botdetector.ui;
 
 import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
+import com.botdetector.events.BotDetectorPanelActivated;
 import com.botdetector.http.BotDetectorClient;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
@@ -57,6 +58,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
@@ -132,6 +134,7 @@ public class BotDetectorPanel extends PluginPanel
 	private final BotDetectorPlugin plugin;
 	private final BotDetectorClient detectorClient;
 	private final BotDetectorConfig config;
+	private final EventBus eventBus;
 
 	private final Set<JComponent> switchableFontComponents = new HashSet<>();
 
@@ -161,11 +164,16 @@ public class BotDetectorPanel extends PluginPanel
 	private String lastPredictionReporterName;
 
 	@Inject
-	public BotDetectorPanel(BotDetectorPlugin plugin, BotDetectorClient detectorClient, BotDetectorConfig config)
+	public BotDetectorPanel(
+		BotDetectorPlugin plugin,
+		BotDetectorClient detectorClient,
+		BotDetectorConfig config,
+		EventBus eventBus)
 	{
 		this.plugin = plugin;
 		this.detectorClient = detectorClient;
 		this.config = config;
+		this.eventBus = eventBus;
 
 		setBorder(new EmptyBorder(18, 10, 0, 10));
 		setBackground(BACKGROUND_COLOR);
@@ -213,6 +221,12 @@ public class BotDetectorPanel extends PluginPanel
 		setPrediction(null);
 		setPlayerStats(null);
 		setFontType(config.panelFontType());
+	}
+
+	@Override
+	public void onActivate()
+	{
+		eventBus.post(new BotDetectorPanelActivated());
 	}
 
 	private JPanel linksPanel()
