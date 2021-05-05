@@ -577,12 +577,12 @@ public class BotDetectorPlugin extends Plugin
 				String arg = event.getArguments()[0];
 				if (arg.equals("1"))
 				{
-					panel.setPlayerIdVisible(true);
+					SwingUtilities.invokeLater(() -> panel.setPlayerIdVisible(true));
 					sendChatStatusMessage("Player ID field added to panel.", true);
 				}
 				else if (arg.equals("0"))
 				{
-					panel.setPlayerIdVisible(false);
+					SwingUtilities.invokeLater(() -> panel.setPlayerIdVisible(false));
 					sendChatStatusMessage("Player ID field hidden.", true);
 				}
 				else
