@@ -33,6 +33,7 @@ import com.botdetector.model.AuthTokenType;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
+import com.botdetector.events.BotDetectorPanelActivated;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ObjectArrays;
@@ -135,8 +136,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
-	private static final int AUTO_SEND_SCHEDULE_SECONDS = 30;
-	private static final int REFRESH_PLAYER_STATS_SCHEDULE_SECONDS = 60;
+	private static final int AUTO_REFRESH_STATS_COOLDOWN_SECONDS = 60;
+	private static final int API_HIT_SCHEDULE_SECONDS = 5;
 
 	private static final String CHAT_MESSAGE_HEADER = "[Bot Detector] ";
 	public static final String ANONYMOUS_USER_NAME = "AnonymousUser";
@@ -179,6 +180,7 @@ public class BotDetectorPlugin extends Plugin
 	private Instant timeToAutoSend;
 	private int namesUploaded;
 	private Instant lastFlush = Instant.MIN;
+	private Instant lastStatsRefresh = Instant.MIN;
 	private boolean isCurrentWorldMembers;
 	private boolean isCurrentWorldPVP;
 	private boolean isCurrentWorldBlocked;
@@ -269,6 +271,7 @@ public class BotDetectorPlugin extends Plugin
 		namesUploaded = 0;
 		loggedPlayerName = null;
 		lastFlush = Instant.MIN;
+		lastStatsRefresh = Instant.MIN;
 		authToken = AuthToken.EMPTY_TOKEN;
 
 		chatCommandManager.unregisterCommand(VERIFY_DISCORD_COMMAND);
@@ -282,19 +285,24 @@ public class BotDetectorPlugin extends Plugin
 				BotDetectorConfig.AUTO_SEND_MAXIMUM_MINUTES));
 	}
 
-	@Schedule(period = AUTO_SEND_SCHEDULE_SECONDS,
+	@Schedule(period = API_HIT_SCHEDULE_SECONDS,
 		unit = ChronoUnit.SECONDS, asynchronous = true)
-	public void autoFlushPlayersToClient()
+	public void hitApi()
 	{
-		if (loggedPlayerName == null || config.onlySendAtLogout() || Instant.now().isBefore(timeToAutoSend))
+		if (loggedPlayerName == null)
 		{
 			return;
 		}
 
-		flushPlayersToClient(true);
+		if (!config.onlySendAtLogout() && Instant.now().isAfter(timeToAutoSend))
+		{
+			flushPlayersToClient(true);
+		}
+
+		refreshPlayerStats(false);
 	}
 
-	public boolean flushPlayersToClient(boolean restoreOnFailure)
+	public synchronized boolean flushPlayersToClient(boolean restoreOnFailure)
 	{
 		if (loggedPlayerName == null)
 		{
@@ -356,22 +364,32 @@ public class BotDetectorPlugin extends Plugin
 		return true;
 	}
 
-	@Schedule(period = REFRESH_PLAYER_STATS_SCHEDULE_SECONDS,
-		unit = ChronoUnit.SECONDS, asynchronous = true)
-	public void refreshPlayerStats()
+	// Atomic, just to make sure a non-forced call (e.g. auto refresh)
+	// can't get past the checks while another call is setting the last refresh value.
+	public synchronized void refreshPlayerStats(boolean forceRefresh)
 	{
-		if (config.enableAnonymousReporting())
+		if (!forceRefresh)
+		{
+			// Only perform non-manual refreshes when a player is not anon, logged in and the panel is open
+			if (config.enableAnonymousReporting() || loggedPlayerName == null || !navButton.isSelected()
+				|| Instant.now().isBefore(lastStatsRefresh.plusSeconds(AUTO_REFRESH_STATS_COOLDOWN_SECONDS)))
+			{
+				return;
+			}
+		}
+
+		lastStatsRefresh = Instant.now();
+
+		if (config.enableAnonymousReporting() || loggedPlayerName == null)
 		{
 			SwingUtilities.invokeLater(() ->
 			{
 				panel.setPlayerStats(null);
+				panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
+				panel.forceHideFeedbackPanel();
+				panel.forceHideReportPanel();
 			});
-			return;
-		}
-
-		if (loggedPlayerName == null)
-		{
 			return;
 		}
 
@@ -379,16 +397,22 @@ public class BotDetectorPlugin extends Plugin
 		detectorClient.requestPlayerStats(nameAtRequest)
 			.whenComplete((ps, ex) ->
 			{
+				// Player could have logged out in the mean time, don't update panel
+				if (!nameAtRequest.equals(loggedPlayerName))
+				{
+					return;
+				}
+
+				SwingUtilities.invokeLater(() ->
+					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false));
+
 				if (ex == null && ps != null)
 				{
-					if (nameAtRequest.equals(loggedPlayerName))
+					SwingUtilities.invokeLater(() ->
 					{
-						SwingUtilities.invokeLater(() ->
-						{
-							panel.setPlayerStats(ps);
-							panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
-						});
-					}
+						panel.setPlayerStats(ps);
+						panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
+					});
 				}
 				else
 				{
@@ -396,6 +420,15 @@ public class BotDetectorPlugin extends Plugin
 						panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, true));
 				}
 			});
+	}
+
+	@Subscribe
+	private void onBotDetectorPanelActivated(BotDetectorPanelActivated event)
+	{
+		if (!config.enableAnonymousReporting())
+		{
+			refreshPlayerStats(false);
+		}
 	}
 
 	@Subscribe
@@ -420,13 +453,7 @@ public class BotDetectorPlugin extends Plugin
 				}
 				break;
 			case BotDetectorConfig.ANONYMOUS_REPORTING_KEY:
-				refreshPlayerStats();
-				SwingUtilities.invokeLater(() ->
-				{
-					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
-					panel.forceHideFeedbackPanel();
-					panel.forceHideReportPanel();
-				});
+				refreshPlayerStats(true);
 				break;
 			case BotDetectorConfig.PANEL_FONT_TYPE_KEY:
 				SwingUtilities.invokeLater(() -> panel.setFontType(config.panelFontType()));
@@ -450,12 +477,8 @@ public class BotDetectorPlugin extends Plugin
 				feedbackedPlayers.clear();
 				reportedPlayers.clear();
 				loggedPlayerName = null;
-				SwingUtilities.invokeLater(() ->
-				{
-					panel.setPlayerStats(null);
-					panel.forceHideFeedbackPanel();
-					panel.forceHideReportPanel();
-				});
+				lastStatsRefresh = Instant.MIN;
+				refreshPlayerStats(true);
 			}
 		}
 	}
@@ -479,7 +502,7 @@ public class BotDetectorPlugin extends Plugin
 			{
 				loggedPlayerName = player.getName();
 				updateTimeToAutoSend();
-				refreshPlayerStats();
+				refreshPlayerStats(true);
 			}
 			return;
 		}
