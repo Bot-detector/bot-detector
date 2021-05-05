@@ -402,7 +402,8 @@ public class BotDetectorPlugin extends Plugin
 			.whenComplete((ps, ex) ->
 			{
 				// Player could have logged out in the mean time, don't update panel
-				if (!nameAtRequest.equals(loggedPlayerName))
+				// Player could also have switch to anon mode. Don't update either.
+				if (config.enableAnonymousReporting() || !nameAtRequest.equals(loggedPlayerName))
 				{
 					return;
 				}
