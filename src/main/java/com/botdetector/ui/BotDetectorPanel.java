@@ -735,18 +735,19 @@ public class BotDetectorPanel extends PluginPanel
 		}
 	}
 
-	public void setPredictionError(String error)
+	public void setPredictionError(String playerName, String error)
 	{
-		setPredictionError(error, EMPTY_LABEL);
+		setPredictionError(playerName, error, EMPTY_LABEL);
 	}
 
-	public void setPredictionError(String error, String details)
+	public void setPredictionError(String playerName, String error, String details)
 	{
 		setPrediction(null);
 		setPredictionLabelsColor(ERROR_COLOR);
 
-		predictionPlayerNameLabel.setText(wrapHTML(error));
-		predictionTypeLabel.setText(wrapHTML(details));
+		predictionPlayerNameLabel.setText(wrapHTML(playerName));
+		predictionTypeLabel.setText(wrapHTML(error));
+		predictionConfidenceLabel.setText(wrapHTML(details));
 	}
 
 	public void predictPlayer(String playerName)
@@ -768,7 +769,8 @@ public class BotDetectorPanel extends PluginPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			searchBarLoading = false;
-			setPredictionError("Name Input Error",
+			setPredictionError(target.substring(0, MAX_RSN_LENGTH - 1) + "...",
+				"Name Input Error",
 				"Name cannot be longer than " + MAX_RSN_LENGTH + " characters");
 			return;
 		}
@@ -776,8 +778,9 @@ public class BotDetectorPanel extends PluginPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			searchBarLoading = false;
-			setPredictionError("Name Input Error",
-				"'" + target + "' is not a valid Runescape name");
+			setPredictionError(target,
+				"Name Input Error",
+				"Entered name is not a valid Runescape name");
 			return;
 		}
 
@@ -811,7 +814,7 @@ public class BotDetectorPanel extends PluginPanel
 					{
 						details = "No prediction returned from the API";
 					}
-					setPredictionError("Server Error", details);
+					setPredictionError(target, "Server Error", details);
 
 					return;
 				}
