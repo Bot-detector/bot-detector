@@ -130,13 +130,14 @@ public class BotDetectorPlugin extends Plugin
 	private static final String COMMAND_PREFIX = "bd";
 	private static final String MANUAL_FLUSH_COMMAND = COMMAND_PREFIX + "Flush";
 	private static final String MANUAL_SIGHT_COMMAND = COMMAND_PREFIX + "Snap";
+	private static final String MANUAL_REFRESH_COMMAND = COMMAND_PREFIX + "Refresh";
 	private static final String SHOW_HIDE_ID_COMMAND = COMMAND_PREFIX + "ShowId";
 	private static final String GET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "GetToken";
 	private static final String SET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "SetToken";
 	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
-	private static final int AUTO_REFRESH_STATS_COOLDOWN_SECONDS = 60;
+	private static final int AUTO_REFRESH_STATS_COOLDOWN_SECONDS = BotDetectorConfig.AUTO_SEND_MINIMUM_MINUTES * 60;
 	private static final int API_HIT_SCHEDULE_SECONDS = 5;
 
 	private static final String CHAT_MESSAGE_HEADER = "[Bot Detector] ";
@@ -564,6 +565,11 @@ public class BotDetectorPlugin extends Plugin
 				sendChatStatusMessage("Player sightings refreshed.", true);
 			}
 		}
+		else if (command.equalsIgnoreCase(MANUAL_REFRESH_COMMAND))
+		{
+			refreshPlayerStats(true);
+			sendChatStatusMessage("Refreshing player stats...", true);
+		}
 		else if (command.equalsIgnoreCase(SHOW_HIDE_ID_COMMAND))
 		{
 			if (event.getArguments().length > 0)
@@ -572,10 +578,16 @@ public class BotDetectorPlugin extends Plugin
 				if (arg.equals("1"))
 				{
 					panel.setPlayerIdVisible(true);
+					sendChatStatusMessage("Player ID field added to panel.", true);
 				}
 				else if (arg.equals("0"))
 				{
 					panel.setPlayerIdVisible(false);
+					sendChatStatusMessage("Player ID field hidden.", true);
+				}
+				else
+				{
+					sendChatStatusMessage("Argument must be 0 or 1.", true);
 				}
 			}
 		}
