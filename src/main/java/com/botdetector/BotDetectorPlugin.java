@@ -121,6 +121,7 @@ public class BotDetectorPlugin extends Plugin
 		);
 
 	private static final String PREDICT_OPTION = "Predict";
+	private static final String HIGHLIGHTED_PREDICT_OPTION = ColorUtil.prependColorTag(PREDICT_OPTION, Color.RED);
 	private static final String KICK_OPTION = "Kick";
 	private static final String DELETE_OPTION = "Delete";
 	private static final ImmutableSet<String> AFTER_OPTIONS =
@@ -452,7 +453,7 @@ public class BotDetectorPlugin extends Plugin
 			case BotDetectorConfig.ADD_PREDICT_OPTION_KEY:
 				if (client != null)
 				{
-					menuManager.removePlayerMenuItem(ColorUtil.prependColorTag(PREDICT_OPTION, Color.RED));
+					menuManager.removePlayerMenuItem(HIGHLIGHTED_PREDICT_OPTION);
 					menuManager.removePlayerMenuItem(PREDICT_OPTION);
 
 					if (config.addPredictOption())
@@ -871,13 +872,6 @@ public class BotDetectorPlugin extends Plugin
 
 	private String getPredictOption()
 	{
-		if (config.highlightPredictOption())
-		{
-			return ColorUtil.prependColorTag(PREDICT_OPTION, Color.RED);
-		}
-		else
-		{
-			return PREDICT_OPTION;
-		}
+		return config.highlightPredictOption() ? HIGHLIGHTED_PREDICT_OPTION : PREDICT_OPTION;
 	}
 }
