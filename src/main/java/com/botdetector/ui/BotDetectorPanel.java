@@ -27,12 +27,14 @@ package com.botdetector.ui;
 
 import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
+import static com.botdetector.BotDetectorPlugin.normalizeAndWrapPlayerName;
 import com.botdetector.events.BotDetectorPanelActivated;
 import com.botdetector.http.BotDetectorClient;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
+import com.google.common.primitives.Doubles;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -130,7 +132,6 @@ public class BotDetectorPanel extends PluginPanel
 	private static final int VALUE_PAD = 2;
 	private static final Border SUB_PANEL_BORDER = new EmptyBorder(5, 10, 10, 10);
 	private static final Dimension HEADER_PREFERRED_SIZE = new Dimension(0, 25);
-
 
 	private final IconTextField searchBar;
 	private final JPanel linksPanel;
@@ -646,6 +647,11 @@ public class BotDetectorPanel extends PluginPanel
 		return predictionBreakdownPanel;
 	}
 
+	public void setPluginVersion(String pluginVersion)
+	{
+		playerStatsPluginVersionLabel.setText(pluginVersion);
+	}
+
 	public void setNamesUploaded(int num)
 	{
 		playerStatsUploadedNamesLabel.setText(QuantityFormatter.formatNumber(num));
@@ -665,11 +671,6 @@ public class BotDetectorPanel extends PluginPanel
 			playerStatsConfirmedBansLabel.setText(EMPTY_LABEL);
 			playerStatsPossibleBansLabel.setText(EMPTY_LABEL);
 		}
-	}
-
-	public void setPluginVersion(String pluginVersion)
-	{
-		playerStatsPluginVersionLabel.setText(pluginVersion);
 	}
 
 	public boolean getWarningVisible(WarningLabel wl)
@@ -736,7 +737,7 @@ public class BotDetectorPanel extends PluginPanel
 			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
 			predictionPlayerNameLabel.setText(wrapHTML(pred.getPlayerName()));
 			predictionTypeLabel.setText(wrapHTML(normalizeLabel(pred.getPredictionLabel())));
-			predictionConfidenceLabel.setText(getPercentString(pred.getConfidence()));
+			predictionConfidenceLabel.setText(toPercentString(pred.getConfidence()));
 			predictionConfidenceLabel.setForeground(getPredictionColor(pred.getConfidence()));
 
 			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
@@ -746,14 +747,14 @@ public class BotDetectorPanel extends PluginPanel
 			}
 			else
 			{
-				predictionBreakdownLabel.setText(getPredictionBreakdownString(pred.getPredictionBreakdown()));
+				predictionBreakdownLabel.setText(toPredictionBreakdownString(pred.getPredictionBreakdown()));
 				predictionBreakdownPanel.setVisible(true);
 			}
 
 			if (shouldAllowFeedbackOrReport()
 				&& pred.getPlayerId() > 0)
 			{
-				CaseInsensitiveString name = plugin.normalizeAndWrapPlayerName(pred.getPlayerName());
+				CaseInsensitiveString name = normalizeAndWrapPlayerName(pred.getPlayerName());
 				predictionFeedbackPanel.setVisible(!plugin.getFeedbackedPlayers().containsKey(name));
 				predictionReportPanel.setVisible(sighting != null && !plugin.getReportedPlayers().containsKey(name));
 			}
@@ -864,55 +865,8 @@ public class BotDetectorPanel extends PluginPanel
 				searchBar.setEditable(true);
 				searchBarLoading = false;
 
-				setPrediction(pred, plugin.getPersistentSightings().get(plugin.normalizeAndWrapPlayerName(target)));
+				setPrediction(pred, plugin.getPersistentSightings().get(normalizeAndWrapPlayerName(target)));
 			}));
-	}
-
-	private Color getPredictionColor(double prediction)
-	{
-		prediction = Math.min(Math.max(0.0, prediction), 1.0);
-		if (prediction < 0.5)
-		{
-			return ColorUtil.colorLerp(Color.RED, Color.YELLOW, prediction * 2);
-		}
-		else
-		{
-			return ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, (prediction - 0.5) * 2);
-		}
-	}
-
-	private String getPredictionBreakdownString(Map<String, Double> predictionMap)
-	{
-		if (predictionMap == null || predictionMap.size() == 0)
-		{
-			return null;
-		}
-
-		String openingTags = "<html><body style='margin:0;padding:0;color:" + ColorUtil.toHexColor(TEXT_COLOR) + "'>" +
-			"<table border='0' cellspacing='0' cellpadding='0'>";
-		String closingTags = "</table></body></html>";
-
-		StringBuilder sb = new StringBuilder();
-		sb.append(openingTags);
-
-		predictionMap.entrySet().stream().filter(e -> e.getValue() > 0)
-			.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-			.forEach(e ->
-				sb.append("<tr><td>").append(normalizeLabel(e.getKey())).append(":</td>")
-				.append("<td style='padding-left:5;text-align:right;color:").append(ColorUtil.toHexColor(getPredictionColor(e.getValue())))
-				.append("'>").append(getPercentString(e.getValue())).append("</td></tr>"));
-
-		return sb.append(closingTags).toString();
-	}
-
-	private String normalizeLabel(String label)
-	{
-		return WordUtils.capitalize(label.replace('_', ' ').trim(), ' ');
-	}
-
-	private String getPercentString(double percent)
-	{
-		return String.format("%.2f%%", percent * 100);
 	}
 
 	private void sendFeedbackToClient(boolean feedback)
@@ -924,7 +878,7 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		CaseInsensitiveString wrappedName = plugin.normalizeAndWrapPlayerName(lastPrediction.getPlayerName());
+		CaseInsensitiveString wrappedName = normalizeAndWrapPlayerName(lastPrediction.getPlayerName());
 		Map<CaseInsensitiveString, Boolean> feedbackMap = plugin.getFeedbackedPlayers();
 		feedbackMap.put(wrappedName, feedback);
 
@@ -956,7 +910,7 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		CaseInsensitiveString wrappedName = plugin.normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
+		CaseInsensitiveString wrappedName = normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
 		Map<CaseInsensitiveString, Boolean> reportMap = plugin.getReportedPlayers();
 		reportMap.put(wrappedName, doReport);
 
@@ -1011,6 +965,11 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.forEach(c -> c.setFont(f));
 	}
 
+	private static String normalizeLabel(String label)
+	{
+		return WordUtils.capitalize(label.replace('_', ' ').trim(), ' ');
+	}
+
 	// This makes wrapping work on the labels that could wrap
 	private static String wrapHTML(String str)
 	{
@@ -1030,5 +989,42 @@ public class BotDetectorPanel extends PluginPanel
 		}
 
 		return VALID_RSN_PATTERN.matcher(playerName).matches();
+	}
+
+	private static Color getPredictionColor(double prediction)
+	{
+		prediction = Doubles.constrainToRange(prediction, 0, 1);
+		return prediction < 0.5 ?
+			ColorUtil.colorLerp(Color.RED, Color.YELLOW, prediction * 2)
+			: ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, (prediction - 0.5) * 2);
+	}
+
+	private static String toPercentString(double percent)
+	{
+		return String.format("%.2f%%", percent * 100);
+	}
+
+	private static String toPredictionBreakdownString(Map<String, Double> predictionMap)
+	{
+		if (predictionMap == null || predictionMap.size() == 0)
+		{
+			return null;
+		}
+
+		String openingTags = "<html><body style='margin:0;padding:0;color:" + ColorUtil.toHexColor(TEXT_COLOR) + "'>" +
+			"<table border='0' cellspacing='0' cellpadding='0'>";
+		String closingTags = "</table></body></html>";
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(openingTags);
+
+		predictionMap.entrySet().stream().filter(e -> e.getValue() > 0)
+			.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+			.forEach(e ->
+				sb.append("<tr><td>").append(normalizeLabel(e.getKey())).append(":</td>")
+					.append("<td style='padding-left:5;text-align:right;color:").append(ColorUtil.toHexColor(getPredictionColor(e.getValue())))
+					.append("'>").append(toPercentString(e.getValue())).append("</td></tr>"));
+
+		return sb.append(closingTags).toString();
 	}
 }
