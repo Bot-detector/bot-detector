@@ -41,6 +41,7 @@ import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import com.google.common.primitives.Ints;
 import java.awt.Toolkit;
+import java.awt.Color;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -94,6 +95,7 @@ import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.task.Schedule;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.Text;
@@ -245,7 +247,7 @@ public class BotDetectorPlugin extends Plugin
 
 		if (config.addPredictOption() && client != null)
 		{
-			menuManager.addPlayerMenuItem(PREDICT_OPTION);
+			menuManager.addPlayerMenuItem(getPredictOption());
 		}
 
 		updateTimeToAutoSend();
@@ -265,7 +267,7 @@ public class BotDetectorPlugin extends Plugin
 
 		if (config.addPredictOption() && client != null)
 		{
-			menuManager.removePlayerMenuItem(PREDICT_OPTION);
+			menuManager.removePlayerMenuItem(getPredictOption());
 		}
 
 		clientToolbar.removeNavigation(navButton);
@@ -446,14 +448,16 @@ public class BotDetectorPlugin extends Plugin
 
 		switch (event.getKey())
 		{
+			case BotDetectorConfig.HIGHLIGHT_PREDICT_KEY:
 			case BotDetectorConfig.ADD_PREDICT_OPTION_KEY:
 				if (client != null)
 				{
+					menuManager.removePlayerMenuItem(ColorUtil.prependColorTag(PREDICT_OPTION, Color.RED));
 					menuManager.removePlayerMenuItem(PREDICT_OPTION);
 
 					if (config.addPredictOption())
 					{
-						menuManager.addPlayerMenuItem(PREDICT_OPTION);
+						menuManager.addPlayerMenuItem(getPredictOption());
 					}
 				}
 				break;
@@ -716,7 +720,7 @@ public class BotDetectorPlugin extends Plugin
 			}
 
 			final MenuEntry predict = new MenuEntry();
-			predict.setOption(PREDICT_OPTION);
+			predict.setOption(getPredictOption());
 			predict.setTarget(event.getTarget());
 			predict.setType(MenuAction.RUNELITE.getId());
 			predict.setParam0(event.getActionParam0());
@@ -739,7 +743,7 @@ public class BotDetectorPlugin extends Plugin
 	public void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-			&& event.getMenuOption().equals(PREDICT_OPTION))
+			&& event.getMenuOption().equals(getPredictOption()))
 		{
 			String name;
 			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
@@ -863,5 +867,17 @@ public class BotDetectorPlugin extends Plugin
 		JOptionPane.showOptionDialog(null, ep,
 			"Error starting Bot Detector!", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE,
 			null, new String[]{"Ok"}, "Ok");
+	}
+
+	private String getPredictOption()
+	{
+		if (config.highlightPredictOption())
+		{
+			return ColorUtil.prependColorTag(PREDICT_OPTION, Color.RED);
+		}
+		else
+		{
+			return PREDICT_OPTION;
+		}
 	}
 }
