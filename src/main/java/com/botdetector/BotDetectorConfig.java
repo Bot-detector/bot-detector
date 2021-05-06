@@ -39,6 +39,7 @@ public interface BotDetectorConfig extends Config
 	String ONLY_SEND_AT_LOGOUT_KEY = "sendAtLogout";
 	String AUTO_SEND_MINUTES_KEY = "autoSendMinutes";
 	String ADD_PREDICT_OPTION_KEY = "addDetectOption"; // I know it says detect, don't change it.
+	String HIGHLIGHT_PREDICT_KEY = "highlightPredictOption";
 	String ANONYMOUS_REPORTING_KEY = "enableAnonymousReporting";
 	String PANEL_FONT_TYPE_KEY = "panelFontType";
 	String AUTH_FULL_TOKEN_KEY = "authToken";
@@ -105,6 +106,17 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 6,
+		keyName = HIGHLIGHT_PREDICT_KEY,
+		name = "Highlight 'Predict' Option",
+		description = "When right-clicking on a player, the predict option will be highlighted to be easier to identify."
+	)
+	default boolean highlightPredictOption()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 7,
 		keyName = PANEL_FONT_TYPE_KEY,
 		name = "Panel Font Size",
 		description = "Sets the size of the label fields in the prediction panel."
@@ -115,7 +127,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 6,
+		position = 7,
 		keyName = ANONYMOUS_REPORTING_KEY,
 		name = "Anonymous Uploading",
 		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."
