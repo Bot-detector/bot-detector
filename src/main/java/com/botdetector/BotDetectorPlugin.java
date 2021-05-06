@@ -392,6 +392,7 @@ public class BotDetectorPlugin extends Plugin
 			SwingUtilities.invokeLater(() ->
 			{
 				panel.setPlayerStats(null);
+				panel.setPlayerStatsLoading(false);
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
 				panel.forceHideFeedbackPanel();
@@ -400,19 +401,24 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		SwingUtilities.invokeLater(() -> panel.setPlayerStatsLoading(true));
+
 		String nameAtRequest = loggedPlayerName;
 		detectorClient.requestPlayerStats(nameAtRequest)
 			.whenComplete((ps, ex) ->
 			{
 				// Player could have logged out in the mean time, don't update panel
-				// Player could also have switch to anon mode. Don't update either.
+				// Player could also have switched to anon mode, don't update either.
 				if (config.enableAnonymousReporting() || !nameAtRequest.equals(loggedPlayerName))
 				{
 					return;
 				}
 
 				SwingUtilities.invokeLater(() ->
-					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false));
+				{
+					panel.setPlayerStatsLoading(false);
+					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false);
+				});
 
 				if (ex == null && ps != null)
 				{
