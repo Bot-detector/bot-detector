@@ -806,12 +806,14 @@ public class BotDetectorPlugin extends Plugin
 			null, new String[]{"Ok"}, "Ok");
 	}
 
-	private String getPredictOption() {
+	private String getPredictOption()
+	{
 		if (config.highlightPredictOption())
 		{
 			return ColorUtil.prependColorTag(PREDICT_OPTION, Color.RED);
 		}
-		else {
+		else
+		{
 			return PREDICT_OPTION;
 		}
 	}
