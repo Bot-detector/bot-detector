@@ -97,7 +97,7 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		ANONYMOUS(Icons.WARNING_ICON, " Anonymous Uploading Active",
 			"<html>Your name will not be included with your uploads and your tallies will not increase."
-				+ "<br>Prediction feedback and manual reporting are also disabled.</html>"),
+				+ "<br>Prediction feedback and manual bot flagging are also disabled.</html>"),
 		BLOCKED_WORLD(Icons.WARNING_ICON, " No Uploading For Current World",
 			"<html>You are currently logged into a world where player sightings are not being collected."
 				+ "<br>Your tallies will not increase from seeing players in this world.</html>"),
@@ -335,7 +335,7 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.add(playerStatsUploadedNamesLabel);
 
 		label = new JLabel("Total Uploads: ");
-		label.setToolTipText("How many unique names sent to us that were attributed to you, both passively and manually reported.");
+		label.setToolTipText("How many unique names sent to us that were attributed to you, both passive uploads and manual flags.");
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
 		c.gridx = 0;
@@ -582,7 +582,7 @@ public class BotDetectorPanel extends PluginPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 
-		JLabel label = new JLabel("Report this player to us as a bot?");
+		JLabel label = new JLabel("Flag this player as a bot for us?");
 		label.setFont(NORMAL_FONT);
 		label.setForeground(HEADER_COLOR);
 		label.setPreferredSize(HEADER_PREFERRED_SIZE);
@@ -598,7 +598,7 @@ public class BotDetectorPanel extends PluginPanel
 		button = new JButton("Yes");
 		button.setToolTipText(
 			"<html>This is <span style='color:red'>NOT</span> the same as reporting the player in-game!" +
-			"<br>Reporting a player to us as a bot tells us to pay more attention to them when training our model.</html>");
+			"<br>Flagging a player as a bot tells us to pay more attention to them when training our model.</html>");
 		button.setForeground(HEADER_COLOR);
 		button.setFont(SMALL_FONT);
 		button.addActionListener(l -> sendReportToClient(true));
@@ -926,11 +926,11 @@ public class BotDetectorPanel extends PluginPanel
 				String message;
 				if (ex == null && b)
 				{
-					message = "Thank you for your report for '%s'!";
+					message = "Thank you for flagging '%s' as a bot for us!";
 				}
 				else
 				{
-					message = "Error sending your report '%s'.";
+					message = "Error sending your bot flag for '%s'.";
 					// Didn't work so remove from report map
 					reportMap.remove(wrappedName);
 				}
