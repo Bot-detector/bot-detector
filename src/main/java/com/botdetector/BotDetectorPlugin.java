@@ -266,9 +266,10 @@ public class BotDetectorPlugin extends Plugin
 		feedbackedPlayers.clear();
 		reportedPlayers.clear();
 
-		if (config.addPredictOption() && client != null)
+		if (client != null)
 		{
-			menuManager.removePlayerMenuItem(getPredictOption());
+			menuManager.removePlayerMenuItem(HIGHLIGHTED_PREDICT_OPTION);
+			menuManager.removePlayerMenuItem(PREDICT_OPTION);
 		}
 
 		clientToolbar.removeNavigation(navButton);
