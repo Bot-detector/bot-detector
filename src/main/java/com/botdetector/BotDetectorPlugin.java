@@ -739,16 +739,8 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
-	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
-	{
-		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
-		int menuEntryCount = newMenu.length;
-		ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
-		client.setMenuEntries(newMenu);
-	}
-
 	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event)
+	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
 			&& event.getMenuOption().equals(getPredictOption()))
@@ -823,22 +815,7 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
-	public String normalizePlayerName(String playerName)
-	{
-		if (playerName == null)
-		{
-			return null;
-		}
-
-		return Text.removeTags(Text.toJagexName(playerName));
-	}
-
-	public CaseInsensitiveString normalizeAndWrapPlayerName(String playerName)
-	{
-		return wrap(normalizePlayerName(playerName));
-	}
-
-	public void processCurrentWorld()
+	private void processCurrentWorld()
 	{
 		EnumSet<WorldType> types = client.getWorldType();
 		isCurrentWorldMembers = types.contains(WorldType.MEMBERS);
@@ -858,10 +835,39 @@ public class BotDetectorPlugin extends Plugin
 		return loggedPlayerName;
 	}
 
+	private String getPredictOption()
+	{
+		return config.highlightPredictOption() ? HIGHLIGHTED_PREDICT_OPTION : PREDICT_OPTION;
+	}
+
+	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
+	{
+		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
+		int menuEntryCount = newMenu.length;
+		ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
+		client.setMenuEntries(newMenu);
+	}
+
+	public static String normalizePlayerName(String playerName)
+	{
+		if (playerName == null)
+		{
+			return null;
+		}
+
+		return Text.removeTags(Text.toJagexName(playerName));
+	}
+
+	public static CaseInsensitiveString normalizeAndWrapPlayerName(String playerName)
+	{
+		return wrap(normalizePlayerName(playerName));
+	}
+
 	// This isn't perfect but really shouldn't ever happen!
 	private void displayPluginVersionError()
 	{
-		JEditorPane ep = new JEditorPane("text/html", "<html><body>Could not parse the plugin version from the properties file!"
+		JEditorPane ep = new JEditorPane("text/html",
+			"<html><body>Could not parse the plugin version from the properties file!"
 			+ "<br>This should never happen! Please contact us on our <a href="
 			+ BotDetectorPanel.WebLink.DISCORD.getLink() + ">Discord</a>.</body></html>");
 		ep.addHyperlinkListener(e ->
@@ -875,10 +881,5 @@ public class BotDetectorPlugin extends Plugin
 		JOptionPane.showOptionDialog(null, ep,
 			"Error starting Bot Detector!", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE,
 			null, new String[]{"Ok"}, "Ok");
-	}
-
-	private String getPredictOption()
-	{
-		return config.highlightPredictOption() ? HIGHLIGHTED_PREDICT_OPTION : PREDICT_OPTION;
 	}
 }
