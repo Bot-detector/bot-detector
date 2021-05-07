@@ -104,6 +104,7 @@ import net.runelite.client.util.Text;
 import com.google.inject.Provides;
 import org.apache.commons.lang3.ArrayUtils;
 import static com.botdetector.model.CaseInsensitiveString.wrap;
+import static com.botdetector.ui.PredictHighlightMode.*;
 
 @Slf4j
 @PluginDescriptor(
@@ -655,6 +656,19 @@ public class BotDetectorPlugin extends Plugin
 
 			insertMenuEntry(predict, client.getMenuEntries());
 		}
+		else if (option.equals(getPredictOption()) && config.highlightPredictOption() == NOT_REPORTED)
+		{
+			MenuEntry[] menuEntries = client.getMenuEntries();
+			for (MenuEntry entry : menuEntries)
+			{
+				if (entry.getOption().equals(HIGHLIGHTED_PREDICT_OPTION))
+				{
+					entry.setOption(getPredictOption(entry.getTarget()));
+
+					client.setMenuEntries(menuEntries);
+				}
+			}
+		}
 	}
 
 	@Subscribe
@@ -755,7 +769,28 @@ public class BotDetectorPlugin extends Plugin
 
 	private String getPredictOption()
 	{
-		return config.highlightPredictOption() ? HIGHLIGHTED_PREDICT_OPTION : PREDICT_OPTION;
+		return getPredictOption(null);
+	}
+
+
+	private String getPredictOption(String playerName)
+	{
+		if (playerName == null || playerName.isEmpty())
+		{
+			return config.highlightPredictOption() == NONE ? PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
+		}
+
+		// Normalize player name and remove level from name
+		playerName = normalizePlayerName(playerName).replaceAll("\\s+\\(level [\\d]+\\)", "");
+
+		if (config.highlightPredictOption() == NOT_REPORTED)
+		{
+			return getReportedPlayers().containsKey(normalizeAndWrapPlayerName(playerName)) ? PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
+		}
+		else
+		{
+			return config.highlightPredictOption() == NONE ? PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
+		}
 	}
 
 	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
