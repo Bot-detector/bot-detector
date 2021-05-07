@@ -35,6 +35,7 @@ import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
 import com.botdetector.events.BotDetectorPanelActivated;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Table;
@@ -56,6 +57,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
@@ -138,6 +140,16 @@ public class BotDetectorPlugin extends Plugin
 	private static final String GET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "GetToken";
 	private static final String SET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "SetToken";
 	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
+	private final ImmutableMap<CaseInsensitiveString, Consumer<String[]>> commandConsumerMap =
+		ImmutableMap.<CaseInsensitiveString, Consumer<String[]>>builder()
+			.put(wrap(MANUAL_FLUSH_COMMAND), s -> manualFlushCommand())
+			.put(wrap(MANUAL_SIGHT_COMMAND), s -> manualSightCommand())
+			.put(wrap(MANUAL_REFRESH_COMMAND), s -> manualRefreshStatsCommand())
+			.put(wrap(SHOW_HIDE_ID_COMMAND), this::showHideIdCommand)
+			.put(wrap(GET_AUTH_TOKEN_COMMAND), s -> putAuthTokenIntoClipboardCommand())
+			.put(wrap(SET_AUTH_TOKEN_COMMAND), s -> setAuthTokenFromClipboardCommand())
+			.put(wrap(CLEAR_AUTH_TOKEN_COMMAND), s -> clearAuthTokenCommand())
+			.build();
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
 	private static final int AUTO_REFRESH_STATS_COOLDOWN_SECONDS = 150;
@@ -211,7 +223,7 @@ public class BotDetectorPlugin extends Plugin
 		try
 		{
 			final Properties props = new Properties();
-			props.load(BotDetectorPlugin.class.getResourceAsStream( "/version.properties"));
+			props.load(BotDetectorPlugin.class.getResourceAsStream("/version.properties"));
 			detectorClient.setPluginVersion(props.getProperty("version"));
 		}
 		catch (Exception e)
@@ -266,9 +278,10 @@ public class BotDetectorPlugin extends Plugin
 		feedbackedPlayers.clear();
 		reportedPlayers.clear();
 
-		if (config.addPredictOption() && client != null)
+		if (client != null)
 		{
-			menuManager.removePlayerMenuItem(getPredictOption());
+			menuManager.removePlayerMenuItem(HIGHLIGHTED_PREDICT_OPTION);
+			menuManager.removePlayerMenuItem(PREDICT_OPTION);
 		}
 
 		clientToolbar.removeNavigation(navButton);
@@ -309,6 +322,11 @@ public class BotDetectorPlugin extends Plugin
 
 	public synchronized boolean flushPlayersToClient(boolean restoreOnFailure)
 	{
+		return flushPlayersToClient(restoreOnFailure, false);
+	}
+
+	public synchronized boolean flushPlayersToClient(boolean restoreOnFailure, boolean forceChatNotification)
+	{
 		if (loggedPlayerName == null)
 		{
 			return false;
@@ -341,11 +359,12 @@ public class BotDetectorPlugin extends Plugin
 					namesUploaded += uniqueNames;
 					SwingUtilities.invokeLater(() -> panel.setNamesUploaded(namesUploaded));
 					sendChatStatusMessage("Successfully uploaded " + numReports +
-						" locations for " + uniqueNames + " unique players.");
+						" locations for " + uniqueNames + " unique players.",
+						forceChatNotification);
 				}
 				else
 				{
-					sendChatStatusMessage("Error sending player sightings!");
+					sendChatStatusMessage("Error sending player sightings!", forceChatNotification);
 					// Put the sightings back
 					if (restoreOnFailure)
 					{
@@ -392,6 +411,7 @@ public class BotDetectorPlugin extends Plugin
 			SwingUtilities.invokeLater(() ->
 			{
 				panel.setPlayerStats(null);
+				panel.setPlayerStatsLoading(false);
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
 				panel.forceHideFeedbackPanel();
@@ -400,19 +420,24 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		SwingUtilities.invokeLater(() -> panel.setPlayerStatsLoading(true));
+
 		String nameAtRequest = loggedPlayerName;
 		detectorClient.requestPlayerStats(nameAtRequest)
 			.whenComplete((ps, ex) ->
 			{
 				// Player could have logged out in the mean time, don't update panel
-				// Player could also have switch to anon mode. Don't update either.
+				// Player could also have switched to anon mode, don't update either.
 				if (config.enableAnonymousReporting() || !nameAtRequest.equals(loggedPlayerName))
 				{
 					return;
 				}
 
 				SwingUtilities.invokeLater(() ->
-					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false));
+				{
+					panel.setPlayerStatsLoading(false);
+					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false);
+				});
 
 				if (ex == null && ps != null)
 				{
@@ -545,110 +570,10 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onCommandExecuted(CommandExecuted event)
 	{
-		String command = event.getCommand();
-		if (command.equalsIgnoreCase(MANUAL_FLUSH_COMMAND))
+		Consumer<String[]> consumer = commandConsumerMap.get(wrap(event.getCommand()));
+		if (consumer != null)
 		{
-			Instant canFlush = lastFlush.plusSeconds(MANUAL_FLUSH_COOLDOWN_SECONDS);
-			Instant now = Instant.now();
-			if (now.isAfter(canFlush))
-			{
-				if (!flushPlayersToClient(true))
-				{
-					sendChatStatusMessage("No player sightings to flush!", true);
-				}
-			}
-			else
-			{
-				long secs = (Duration.between(now, canFlush).toMillis() / 1000) + 1;
-				sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players.", true);
-			}
-		}
-		else if (command.equalsIgnoreCase(MANUAL_SIGHT_COMMAND))
-		{
-			if (isCurrentWorldBlocked)
-			{
-				sendChatStatusMessage("Cannot refresh player sightings on a blocked world.", true);
-			}
-			else
-			{
-				client.getPlayers().forEach(this::processPlayer);
-				sendChatStatusMessage("Player sightings refreshed.", true);
-			}
-		}
-		else if (command.equalsIgnoreCase(MANUAL_REFRESH_COMMAND))
-		{
-			refreshPlayerStats(true);
-			sendChatStatusMessage("Refreshing player stats...", true);
-		}
-		else if (command.equalsIgnoreCase(SHOW_HIDE_ID_COMMAND))
-		{
-			if (event.getArguments().length > 0)
-			{
-				String arg = event.getArguments()[0];
-				if (arg.equals("1"))
-				{
-					SwingUtilities.invokeLater(() -> panel.setPlayerIdVisible(true));
-					sendChatStatusMessage("Player ID field added to panel.", true);
-				}
-				else if (arg.equals("0"))
-				{
-					SwingUtilities.invokeLater(() -> panel.setPlayerIdVisible(false));
-					sendChatStatusMessage("Player ID field hidden.", true);
-				}
-				else
-				{
-					sendChatStatusMessage("Argument must be 0 or 1.", true);
-				}
-			}
-		}
-		else if (command.equalsIgnoreCase(GET_AUTH_TOKEN_COMMAND))
-		{
-			if (authToken.getTokenType() == AuthTokenType.NONE)
-			{
-				sendChatStatusMessage("No auth token currently set.", true);
-			}
-			else
-			{
-				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
-					new StringSelection(authToken.toFullToken()), null);
-				sendChatStatusMessage(authToken.getTokenType() + " auth token copied to clipboard.", true);
-			}
-		}
-		else if (command.equalsIgnoreCase(SET_AUTH_TOKEN_COMMAND))
-		{
-			final String clipboardText;
-			try
-			{
-				clipboardText = Toolkit.getDefaultToolkit()
-					.getSystemClipboard()
-					.getData(DataFlavor.stringFlavor)
-					.toString().trim();
-			}
-			catch (IOException | UnsupportedFlavorException ex)
-			{
-				sendChatStatusMessage("Unable to read system clipboard for dev token.", true);
-				log.warn("Error reading clipboard", ex);
-				return;
-			}
-
-			AuthToken token = AuthToken.fromFullToken(clipboardText);
-
-			if (token.getTokenType() == AuthTokenType.NONE)
-			{
-				sendChatStatusMessage(AuthToken.AUTH_TOKEN_DESCRIPTION_MESSAGE, true);
-			}
-			else
-			{
-				authToken = token;
-				config.setAuthFullToken(token.toFullToken());
-				sendChatStatusMessage(token.getTokenType() + " auth token successfully set from clipboard.", true);
-			}
-		}
-		else if (command.equalsIgnoreCase(CLEAR_AUTH_TOKEN_COMMAND))
-		{
-			authToken = AuthToken.EMPTY_TOKEN;
-			config.setAuthFullToken(null);
-			sendChatStatusMessage("Auth token cleared.", true);
+			consumer.accept(event.getArguments());
 		}
 	}
 
@@ -732,16 +657,8 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
-	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
-	{
-		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
-		int menuEntryCount = newMenu.length;
-		ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
-		client.setMenuEntries(newMenu);
-	}
-
 	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event)
+	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
 			&& event.getMenuOption().equals(getPredictOption()))
@@ -816,22 +733,7 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
-	public String normalizePlayerName(String playerName)
-	{
-		if (playerName == null)
-		{
-			return null;
-		}
-
-		return Text.removeTags(Text.toJagexName(playerName));
-	}
-
-	public CaseInsensitiveString normalizeAndWrapPlayerName(String playerName)
-	{
-		return wrap(normalizePlayerName(playerName));
-	}
-
-	public void processCurrentWorld()
+	private void processCurrentWorld()
 	{
 		EnumSet<WorldType> types = client.getWorldType();
 		isCurrentWorldMembers = types.contains(WorldType.MEMBERS);
@@ -851,10 +753,151 @@ public class BotDetectorPlugin extends Plugin
 		return loggedPlayerName;
 	}
 
+	private String getPredictOption()
+	{
+		return config.highlightPredictOption() ? HIGHLIGHTED_PREDICT_OPTION : PREDICT_OPTION;
+	}
+
+	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
+	{
+		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
+		int menuEntryCount = newMenu.length;
+		ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
+		client.setMenuEntries(newMenu);
+	}
+
+	public static String normalizePlayerName(String playerName)
+	{
+		if (playerName == null)
+		{
+			return null;
+		}
+
+		return Text.removeTags(Text.toJagexName(playerName));
+	}
+
+	public static CaseInsensitiveString normalizeAndWrapPlayerName(String playerName)
+	{
+		return wrap(normalizePlayerName(playerName));
+	}
+
+	//region Commands
+
+	private void manualFlushCommand()
+	{
+		Instant canFlush = lastFlush.plusSeconds(MANUAL_FLUSH_COOLDOWN_SECONDS);
+		Instant now = Instant.now();
+		if (now.isAfter(canFlush))
+		{
+			if (!flushPlayersToClient(true, true))
+			{
+				sendChatStatusMessage("No player sightings to flush!", true);
+			}
+		}
+		else
+		{
+			long secs = (Duration.between(now, canFlush).toMillis() / 1000) + 1;
+			sendChatStatusMessage("Please wait " + secs + " seconds before manually flushing players.", true);
+		}
+	}
+
+	private void manualSightCommand()
+	{
+		if (isCurrentWorldBlocked)
+		{
+			sendChatStatusMessage("Cannot refresh player sightings on a blocked world.", true);
+		}
+		else
+		{
+			client.getPlayers().forEach(this::processPlayer);
+			sendChatStatusMessage("Player sightings refreshed.", true);
+		}
+	}
+
+	private void manualRefreshStatsCommand()
+	{
+		refreshPlayerStats(true);
+		sendChatStatusMessage("Refreshing player stats...", true);
+	}
+
+	private void showHideIdCommand(String[] args)
+	{
+		String arg = args.length > 0 ? args[0] : "";
+		switch (arg)
+		{
+			case "1":
+				SwingUtilities.invokeLater(() -> panel.setPlayerIdVisible(true));
+				sendChatStatusMessage("Player ID field added to panel.", true);
+				break;
+			case "0":
+				SwingUtilities.invokeLater(() -> panel.setPlayerIdVisible(false));
+				sendChatStatusMessage("Player ID field hidden.", true);
+				break;
+			default:
+				sendChatStatusMessage("Argument must be 0 or 1.", true);
+				break;
+		}
+	}
+
+	private void putAuthTokenIntoClipboardCommand()
+	{
+		if (authToken.getTokenType() == AuthTokenType.NONE)
+		{
+			sendChatStatusMessage("No auth token currently set.", true);
+		}
+		else
+		{
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+				new StringSelection(authToken.toFullToken()), null);
+			sendChatStatusMessage(authToken.getTokenType() + " auth token copied to clipboard.", true);
+		}
+	}
+
+	private void setAuthTokenFromClipboardCommand()
+	{
+		final String clipboardText;
+		try
+		{
+			clipboardText = Toolkit.getDefaultToolkit()
+				.getSystemClipboard()
+				.getData(DataFlavor.stringFlavor)
+				.toString().trim();
+		}
+		catch (IOException | UnsupportedFlavorException ex)
+		{
+			sendChatStatusMessage("Unable to read system clipboard for dev token.", true);
+			log.warn("Error reading clipboard", ex);
+			return;
+		}
+
+		AuthToken token = AuthToken.fromFullToken(clipboardText);
+
+		if (token.getTokenType() == AuthTokenType.NONE)
+		{
+			sendChatStatusMessage(AuthToken.AUTH_TOKEN_DESCRIPTION_MESSAGE, true);
+		}
+		else
+		{
+			authToken = token;
+			config.setAuthFullToken(token.toFullToken());
+			sendChatStatusMessage(token.getTokenType() + " auth token successfully set from clipboard.", true);
+		}
+	}
+
+	private void clearAuthTokenCommand()
+	{
+		authToken = AuthToken.EMPTY_TOKEN;
+		config.setAuthFullToken(null);
+		sendChatStatusMessage("Auth token cleared.", true);
+	}
+
+	//endregion
+
 	// This isn't perfect but really shouldn't ever happen!
 	private void displayPluginVersionError()
 	{
-		JEditorPane ep = new JEditorPane("text/html", "<html><body>Could not parse the plugin version from the properties file!"
+		JEditorPane ep = new JEditorPane("text/html",
+			"<html><body>Could not parse the plugin version from the properties file!"
 			+ "<br>This should never happen! Please contact us on our <a href="
 			+ BotDetectorPanel.WebLink.DISCORD.getLink() + ">Discord</a>.</body></html>");
 		ep.addHyperlinkListener(e ->
@@ -868,10 +911,5 @@ public class BotDetectorPlugin extends Plugin
 		JOptionPane.showOptionDialog(null, ep,
 			"Error starting Bot Detector!", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE,
 			null, new String[]{"Ok"}, "Ok");
-	}
-
-	private String getPredictOption()
-	{
-		return config.highlightPredictOption() ? HIGHLIGHTED_PREDICT_OPTION : PREDICT_OPTION;
 	}
 }
