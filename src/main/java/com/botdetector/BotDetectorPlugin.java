@@ -200,6 +200,7 @@ public class BotDetectorPlugin extends Plugin
 	private int namesUploaded;
 	private Instant lastFlush = Instant.MIN;
 	private Instant lastStatsRefresh = Instant.MIN;
+	private int currentWorldNumber;
 	private boolean isCurrentWorldMembers;
 	private boolean isCurrentWorldPVP;
 	private boolean isCurrentWorldBlocked;
@@ -559,8 +560,8 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
-		PlayerSighting p = new PlayerSighting(playerName,
-			wp, isCurrentWorldMembers, isCurrentWorldPVP, Instant.now());
+		PlayerSighting p = new PlayerSighting(playerName, wp, currentWorldNumber,
+			isCurrentWorldMembers, isCurrentWorldPVP, Instant.now());
 
 		synchronized (sightingTable)
 		{
@@ -771,6 +772,7 @@ public class BotDetectorPlugin extends Plugin
 
 	private void processCurrentWorld()
 	{
+		currentWorldNumber = client.getWorld();
 		EnumSet<WorldType> types = client.getWorldType();
 		isCurrentWorldMembers = types.contains(WorldType.MEMBERS);
 		isCurrentWorldPVP = types.contains(WorldType.PVP);
