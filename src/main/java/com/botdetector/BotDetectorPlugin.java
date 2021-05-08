@@ -54,6 +54,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,6 +82,7 @@ import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.events.WorldChanged;
+import net.runelite.api.kit.KitType;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatCommandManager;
@@ -559,9 +561,20 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		// Get player's equipment item ids (botanicvelious/Equipment-Inspector)
+		Map<KitType, Integer> equipment = new HashMap<>();
+		for (KitType kitType : KitType.values())
+		{
+			int itemId = player.getPlayerComposition().getEquipmentId(kitType);
+			if (itemId >= 0)
+			{
+				equipment.put(kitType, itemId);
+			}
+		}
+
 		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
-		PlayerSighting p = new PlayerSighting(playerName, wp, currentWorldNumber,
-			isCurrentWorldMembers, isCurrentWorldPVP, Instant.now());
+		PlayerSighting p = new PlayerSighting(playerName, wp, equipment,
+			currentWorldNumber, isCurrentWorldMembers, isCurrentWorldPVP, Instant.now());
 
 		synchronized (sightingTable)
 		{
