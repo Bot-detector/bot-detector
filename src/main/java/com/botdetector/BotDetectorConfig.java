@@ -26,6 +26,7 @@
 package com.botdetector;
 
 import com.botdetector.ui.PanelFontType;
+import com.botdetector.ui.PredictHighlightMode;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -111,9 +112,9 @@ public interface BotDetectorConfig extends Config
 		name = "Highlight 'Predict' Option",
 		description = "When right-clicking on a player, the predict option will be highlighted to be easier to identify."
 	)
-	default boolean highlightPredictOption()
+	default PredictHighlightMode highlightPredictOption()
 	{
-		return false;
+		return PredictHighlightMode.NONE;
 	}
 
 	@ConfigItem(
