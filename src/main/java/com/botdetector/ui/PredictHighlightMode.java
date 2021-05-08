@@ -25,9 +25,21 @@
  */
 package com.botdetector.ui;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 public enum PredictHighlightMode
 {
-    NONE,
-    ALL,
-    NOT_REPORTED
+	NONE("No Highlight"),
+	ALL("Highlight All"),
+	NOT_REPORTED("Only Not Reported")
+	;
+
+	private final String name;
+
+	@Override
+	public String toString()
+	{
+		return name;
+	}
 }

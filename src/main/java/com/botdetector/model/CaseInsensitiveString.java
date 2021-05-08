@@ -69,7 +69,7 @@ public class CaseInsensitiveString
 		{
 			// Is just a regular String
 			String that = (String) o;
-			return str.equalsIgnoreCase(that);
+			return that.equalsIgnoreCase(str);
 		}
 
 		return false;
