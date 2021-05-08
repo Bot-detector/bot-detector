@@ -683,7 +683,11 @@ public class BotDetectorPlugin extends Plugin
 			if (type == MenuAction.RUNELITE_PLAYER.getId()
 				&& entry.getOption().equals(HIGHLIGHTED_PREDICT_OPTION))
 			{
-				entry.setOption(getPredictOption(client.getCachedPlayers()[entry.getIdentifier()].getName()));
+				Player player = client.getCachedPlayers()[entry.getIdentifier()];
+				if (player != null)
+				{
+					entry.setOption(getPredictOption(player.getName()));
+				}
 			}
 		}
 		event.setMenuEntries(menuEntries);
