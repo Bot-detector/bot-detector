@@ -675,7 +675,7 @@ public class BotDetectorPlugin extends Plugin
 	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-			&& event.getMenuOption().equals(getPredictOption()))
+			&& event.getMenuOption().equals(getPredictOption(event.getMenuTarget())))
 		{
 			String name;
 			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
