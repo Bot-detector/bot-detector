@@ -77,6 +77,7 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuEntryAdded;
+import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.events.WorldChanged;
@@ -647,7 +648,7 @@ public class BotDetectorPlugin extends Plugin
 			}
 
 			final MenuEntry predict = new MenuEntry();
-			predict.setOption(getPredictOption());
+			predict.setOption(getPredictOption(event.getTarget()));
 			predict.setTarget(event.getTarget());
 			predict.setType(MenuAction.RUNELITE.getId());
 			predict.setParam0(event.getActionParam0());
@@ -656,26 +657,43 @@ public class BotDetectorPlugin extends Plugin
 
 			insertMenuEntry(predict, client.getMenuEntries());
 		}
-		else if (option.equals(getPredictOption()) && config.highlightPredictOption() == NOT_REPORTED)
-		{
-			MenuEntry[] menuEntries = client.getMenuEntries();
-			for (MenuEntry entry : menuEntries)
-			{
-				if (entry.getOption().equals(HIGHLIGHTED_PREDICT_OPTION))
-				{
-					entry.setOption(getPredictOption(entry.getTarget()));
+	}
 
-					client.setMenuEntries(menuEntries);
-				}
+	@Subscribe
+	private void onMenuOpened(MenuOpened event)
+	{
+		if (config.highlightPredictOption() != NOT_REPORTED)
+		{
+			return;
+		}
+
+		// Do this once when the menu opens
+		// Avoids having to loop the menu entries on every 'added' event
+		// Although, flashes red for one client tick
+
+		MenuEntry[] menuEntries = event.getMenuEntries();
+		for (MenuEntry entry : menuEntries)
+		{
+			int type = entry.getType();
+			if (type >= MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET)
+			{
+				type -= MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET;
+			}
+
+			if (type == MenuAction.RUNELITE_PLAYER.getId()
+				&& entry.getOption().equals(HIGHLIGHTED_PREDICT_OPTION))
+			{
+				entry.setOption(getPredictOption(client.getCachedPlayers()[entry.getIdentifier()].getName()));
 			}
 		}
+		event.setMenuEntries(menuEntries);
 	}
 
 	@Subscribe
 	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-			&& event.getMenuOption().equals(getPredictOption(event.getMenuTarget())))
+			&& event.getMenuOption().endsWith(PREDICT_OPTION))
 		{
 			String name;
 			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
@@ -772,24 +790,17 @@ public class BotDetectorPlugin extends Plugin
 		return getPredictOption(null);
 	}
 
-
 	private String getPredictOption(String playerName)
 	{
-		if (playerName == null || playerName.isEmpty())
+		switch (config.highlightPredictOption())
 		{
-			return config.highlightPredictOption() == NONE ? PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
-		}
-
-		// Normalize player name and remove level from name
-		playerName = normalizePlayerName(playerName).replaceAll("\\s+\\(level [\\d]+\\)", "");
-
-		if (config.highlightPredictOption() == NOT_REPORTED)
-		{
-			return getReportedPlayers().containsKey(normalizeAndWrapPlayerName(playerName)) ? PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
-		}
-		else
-		{
-			return config.highlightPredictOption() == NONE ? PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
+			case ALL:
+				return HIGHLIGHTED_PREDICT_OPTION;
+			case NOT_REPORTED:
+				return reportedPlayers.containsKey(normalizeAndWrapPlayerName(playerName)) ?
+					PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
+			default:
+				return PREDICT_OPTION;
 		}
 	}
 
