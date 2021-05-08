@@ -32,7 +32,7 @@ public enum PredictHighlightMode
 {
 	NONE("No Highlight"),
 	ALL("Highlight All"),
-	NOT_REPORTED("Only Not Reported")
+	NOT_REPORTED("Only Unflagged")
 	;
 
 	private final String name;
