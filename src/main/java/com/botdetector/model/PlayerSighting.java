@@ -38,6 +38,7 @@ public class PlayerSighting
 	public PlayerSighting(
 		String playerName,
 		WorldPoint wp,
+		int worldNumber,
 		boolean inMembersWorld,
 		boolean inPVPWorld,
 		Instant timestamp)
@@ -47,6 +48,7 @@ public class PlayerSighting
 			wp.getX(),
 			wp.getY(),
 			wp.getPlane(),
+			worldNumber,
 			inMembersWorld,
 			inPVPWorld,
 			timestamp);
@@ -66,6 +68,9 @@ public class PlayerSighting
 
 	@SerializedName("z")
 	int plane;
+
+	@SerializedName("world_number")
+	int worldNumber;
 
 	@SerializedName("on_members_world")
 	boolean inMembersWorld;
