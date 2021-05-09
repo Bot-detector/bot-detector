@@ -564,6 +564,7 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackGoodButton.setForeground(HEADER_COLOR);
 		feedbackGoodButton.setFont(SMALL_FONT);
 		feedbackGoodButton.addActionListener(l -> sendFeedbackToClient(true));
+		feedbackGoodButton.setFocusable(false);
 		c.gridy++;
 		c.weightx = 0.5;
 		c.gridwidth = 1;
@@ -574,6 +575,7 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackBadButton.setForeground(HEADER_COLOR);
 		feedbackBadButton.setFont(SMALL_FONT);
 		feedbackBadButton.addActionListener(l -> sendFeedbackToClient(false));
+		feedbackBadButton.setFocusable(false);
 		c.gridx++;
 		panel.add(feedbackBadButton, c);
 
@@ -609,6 +611,7 @@ public class BotDetectorPanel extends PluginPanel
 		reportYesButton.setForeground(HEADER_COLOR);
 		reportYesButton.setFont(SMALL_FONT);
 		reportYesButton.addActionListener(l -> sendReportToClient(true));
+		reportYesButton.setFocusable(false);
 		c.gridy++;
 		c.weightx = 0.5;
 		c.gridwidth = 1;
@@ -618,6 +621,7 @@ public class BotDetectorPanel extends PluginPanel
 		reportNoButton.setForeground(HEADER_COLOR);
 		reportNoButton.setFont(SMALL_FONT);
 		reportNoButton.addActionListener(l -> sendReportToClient(false));
+		reportNoButton.setFocusable(false);
 		c.gridx++;
 		panel.add(reportNoButton, c);
 
