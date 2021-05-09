@@ -685,7 +685,7 @@ public class BotDetectorPlugin extends Plugin
 		// Avoids having to loop the menu entries on every 'added' event
 		// Although, flashes red for one client tick
 
-		MenuEntry[] menuEntries = event.getMenuEntries();
+		MenuEntry[] menuEntries = client.getMenuEntries();
 		for (MenuEntry entry : menuEntries)
 		{
 			int type = entry.getType();
