@@ -34,7 +34,6 @@ import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
-import com.botdetector.NameAutocompleter;
 import com.google.common.primitives.Doubles;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -251,7 +250,7 @@ public class BotDetectorPanel extends PluginPanel
 		addInputKeyListener(nameAutocompleter);
 	}
 
-	void shutdown()
+	public void shutdown()
 	{
 		removeInputKeyListener(nameAutocompleter);
 	}
@@ -754,6 +753,7 @@ public class BotDetectorPanel extends PluginPanel
 
 		if (pred != null)
 		{
+			nameAutocompleter.addToSearchHistory(pred.getPlayerName().toLowerCase());
 			lastPrediction = pred;
 			lastPredictionPlayerSighting = sighting;
 			lastPredictionReporterName = plugin.getReporterName();
