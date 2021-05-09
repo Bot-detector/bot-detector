@@ -26,6 +26,7 @@
 package com.botdetector;
 
 import com.botdetector.ui.PanelFontType;
+import com.botdetector.ui.PredictHighlightMode;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -51,7 +52,8 @@ public interface BotDetectorConfig extends Config
 		position = 1,
 		keyName = ONLY_SEND_AT_LOGOUT_KEY,
 		name = "Send Names Only After Logout",
-		description = "Waits to upload names until you've logged out.<br>Use this if you have a poor connection."
+		description = "Waits to upload names until you've logged out. Use this if you have a poor connection."
+			+ "<br><span style='color:red'>WARNING:</span> Names <b>cannot</b> be sent if Runelite is closed completely before logging out."
 	)
 	default boolean onlySendAtLogout()
 	{
@@ -110,9 +112,9 @@ public interface BotDetectorConfig extends Config
 		name = "Highlight 'Predict' Option",
 		description = "When right-clicking on a player, the predict option will be highlighted to be easier to identify."
 	)
-	default boolean highlightPredictOption()
+	default PredictHighlightMode highlightPredictOption()
 	{
-		return false;
+		return PredictHighlightMode.NONE;
 	}
 
 	@ConfigItem(
@@ -127,7 +129,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 7,
+		position = 8,
 		keyName = ANONYMOUS_REPORTING_KEY,
 		name = "Anonymous Uploading",
 		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."

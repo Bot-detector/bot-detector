@@ -23,68 +23,23 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.botdetector.model;
+package com.botdetector.ui;
 
-import com.google.gson.annotations.SerializedName;
-import java.time.Instant;
-import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.Value;
-import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.kit.KitType;
+import lombok.RequiredArgsConstructor;
 
-@Value
-@AllArgsConstructor
-public class PlayerSighting
+@RequiredArgsConstructor
+public enum PredictHighlightMode
 {
-	public PlayerSighting(
-		String playerName,
-		WorldPoint wp,
-		Map<KitType, Integer> equipmentMap,
-		int worldNumber,
-		boolean inMembersWorld,
-		boolean inPVPWorld,
-		Instant timestamp)
+	NONE("No Highlight"),
+	ALL("Highlight All"),
+	NOT_REPORTED("Only Unflagged")
+	;
+
+	private final String name;
+
+	@Override
+	public String toString()
 	{
-		this(playerName,
-			wp.getRegionID(),
-			wp.getX(),
-			wp.getY(),
-			wp.getPlane(),
-			equipmentMap,
-			worldNumber,
-			inMembersWorld,
-			inPVPWorld,
-			timestamp);
+		return name;
 	}
-
-	@SerializedName("reported")
-	String playerName;
-
-	@SerializedName("region_id")
-	int regionID;
-
-	@SerializedName("x")
-	int worldX;
-
-	@SerializedName("y")
-	int worldY;
-
-	@SerializedName("z")
-	int plane;
-
-	@SerializedName("equipment")
-	Map<KitType, Integer> equipment;
-
-	@SerializedName("world_number")
-	int worldNumber;
-
-	@SerializedName("on_members_world")
-	boolean inMembersWorld;
-
-	@SerializedName("on_pvp_world")
-	boolean inPVPWorld;
-
-	@SerializedName("ts")
-	Instant timestamp;
 }
