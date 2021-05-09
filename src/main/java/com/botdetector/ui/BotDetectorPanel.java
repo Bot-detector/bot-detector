@@ -124,8 +124,11 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Color TEXT_COLOR = ColorScheme.LIGHT_GRAY_COLOR;
 	private static final Color VALUE_COLOR = Color.WHITE;
 	private static final Color ERROR_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
+	private static final Color POSITIVE_BUTTON_COLOR = ColorScheme.PROGRESS_COMPLETE_COLOR;
+	private static final Color NEGATIVE_BUTTON_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
 
 	private static final String EMPTY_LABEL = "---";
+	private static final String LOADING_SPINNER_PATH = "/loading_spinner_darker.gif";
 
 	private static final int HEADER_PAD = 3;
 	private static final int WARNING_PAD = 5;
@@ -171,6 +174,12 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel predictionBreakdownLabel;
 
 	// For feedback/report
+	private JLabel feedbackLabel;
+	private JButton feedbackGoodButton;
+	private JButton feedbackBadButton;
+	private JLabel reportLabel;
+	private JButton reportYesButton;
+	private JButton reportNoButton;
 	private Prediction lastPrediction;
 	private PlayerSighting lastPredictionPlayerSighting;
 	private String lastPredictionReporterName;
@@ -538,36 +547,37 @@ public class BotDetectorPanel extends PluginPanel
 		String tooltip = "<html>Please tell us if this prediction seems %s to you!" +
 			"<br>Doing so will help us improve our model.</html>";
 
-		JLabel label = new JLabel("Is this prediction correct?");
-		label.setFont(NORMAL_FONT);
-		label.setForeground(HEADER_COLOR);
-		label.setPreferredSize(HEADER_PREFERRED_SIZE);
+		feedbackLabel = new JLabel("Is this prediction correct?");
+		feedbackLabel.setHorizontalTextPosition(JLabel.LEFT);
+		feedbackLabel.setFont(NORMAL_FONT);
+		feedbackLabel.setForeground(HEADER_COLOR);
+		feedbackLabel.setPreferredSize(HEADER_PREFERRED_SIZE);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipady = HEADER_PAD;
 		c.gridwidth = 2;
 		c.weightx = 1;
-		panel.add(label, c);
+		panel.add(feedbackLabel, c);
 
-		JButton button;
-
-		button = new JButton("Looks fine!");
-		button.setToolTipText(String.format(tooltip, "correct"));
-		button.setForeground(HEADER_COLOR);
-		button.setFont(SMALL_FONT);
-		button.addActionListener(l -> sendFeedbackToClient(true));
+		feedbackGoodButton = new JButton("Looks fine!");
+		feedbackGoodButton.setToolTipText(String.format(tooltip, "correct"));
+		feedbackGoodButton.setForeground(HEADER_COLOR);
+		feedbackGoodButton.setFont(SMALL_FONT);
+		feedbackGoodButton.addActionListener(l -> sendFeedbackToClient(true));
+		feedbackGoodButton.setFocusable(false);
 		c.gridy++;
 		c.weightx = 0.5;
 		c.gridwidth = 1;
-		panel.add(button, c);
+		panel.add(feedbackGoodButton, c);
 
-		button = new JButton("Not sure...");
-		button.setToolTipText(String.format(tooltip, "incorrect"));
-		button.setForeground(HEADER_COLOR);
-		button.setFont(SMALL_FONT);
-		button.addActionListener(l -> sendFeedbackToClient(false));
+		feedbackBadButton = new JButton("Not sure...");
+		feedbackBadButton.setToolTipText(String.format(tooltip, "incorrect"));
+		feedbackBadButton.setForeground(HEADER_COLOR);
+		feedbackBadButton.setFont(SMALL_FONT);
+		feedbackBadButton.addActionListener(l -> sendFeedbackToClient(false));
+		feedbackBadButton.setFocusable(false);
 		c.gridx++;
-		panel.add(button, c);
+		panel.add(feedbackBadButton, c);
 
 		return panel;
 	}
@@ -582,37 +592,38 @@ public class BotDetectorPanel extends PluginPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 
-		JLabel label = new JLabel("Flag this player as a bot for us?");
-		label.setFont(NORMAL_FONT);
-		label.setForeground(HEADER_COLOR);
-		label.setPreferredSize(HEADER_PREFERRED_SIZE);
+		reportLabel = new JLabel("Flag this player as a bot?");
+		reportLabel.setHorizontalTextPosition(JLabel.LEFT);
+		reportLabel.setFont(NORMAL_FONT);
+		reportLabel.setForeground(HEADER_COLOR);
+		reportLabel.setPreferredSize(HEADER_PREFERRED_SIZE);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipady = HEADER_PAD;
 		c.gridwidth = 2;
 		c.weightx = 1;
-		panel.add(label, c);
+		panel.add(reportLabel, c);
 
-		JButton button;
-
-		button = new JButton("Yes");
-		button.setToolTipText(
+		reportYesButton = new JButton("Yes");
+		reportYesButton.setToolTipText(
 			"<html>This is <span style='color:red'>NOT</span> the same as reporting the player in-game!" +
 			"<br>Flagging a player as a bot tells us to pay more attention to them when training our model.</html>");
-		button.setForeground(HEADER_COLOR);
-		button.setFont(SMALL_FONT);
-		button.addActionListener(l -> sendReportToClient(true));
+		reportYesButton.setForeground(HEADER_COLOR);
+		reportYesButton.setFont(SMALL_FONT);
+		reportYesButton.addActionListener(l -> sendReportToClient(true));
+		reportYesButton.setFocusable(false);
 		c.gridy++;
 		c.weightx = 0.5;
 		c.gridwidth = 1;
-		panel.add(button, c);
+		panel.add(reportYesButton, c);
 
-		button = new JButton("No");
-		button.setForeground(HEADER_COLOR);
-		button.setFont(SMALL_FONT);
-		button.addActionListener(l -> sendReportToClient(false));
+		reportNoButton = new JButton("No");
+		reportNoButton.setForeground(HEADER_COLOR);
+		reportNoButton.setFont(SMALL_FONT);
+		reportNoButton.addActionListener(l -> sendReportToClient(false));
+		reportNoButton.setFocusable(false);
 		c.gridx++;
-		panel.add(button, c);
+		panel.add(reportNoButton, c);
 
 		return panel;
 	}
@@ -692,7 +703,7 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		statsLoading = loading;
 		playerStatsHeaderLabel.setIcon(loading ?
-			new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource("/loading_spinner_darker.gif")))
+			new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH)))
 			: null);
 	}
 
@@ -755,8 +766,35 @@ public class BotDetectorPanel extends PluginPanel
 				&& pred.getPlayerId() > 0)
 			{
 				CaseInsensitiveString name = normalizeAndWrapPlayerName(pred.getPlayerName());
-				predictionFeedbackPanel.setVisible(!plugin.getFeedbackedPlayers().containsKey(name));
-				predictionReportPanel.setVisible(sighting != null && !plugin.getReportedPlayers().containsKey(name));
+
+				// If the player has already been feedbacked/reported, ensure the panels reflect this
+				resetFeedbackPanel();
+				Boolean feedbacked = plugin.getFeedbackedPlayers().get(name);
+				if (feedbacked != null)
+				{
+					disableAndSetColorOnFeedback(feedbacked);
+				}
+				predictionFeedbackPanel.setVisible(true);
+
+				resetReportPanel();
+				if (sighting == null)
+				{
+					predictionReportPanel.setVisible(false);
+				}
+				else
+				{
+					Boolean reported = plugin.getReportedPlayers().get(name);
+					if (reported != null)
+					{
+						disableAndSetColorOnReport(reported);
+					}
+					predictionReportPanel.setVisible(true);
+				}
+			}
+			else
+			{
+				predictionFeedbackPanel.setVisible(false);
+				predictionReportPanel.setVisible(false);
 			}
 		}
 		else
@@ -871,30 +909,44 @@ public class BotDetectorPanel extends PluginPanel
 
 	private void sendFeedbackToClient(boolean feedback)
 	{
-		predictionFeedbackPanel.setVisible(false);
 		if (lastPrediction == null
 			|| !shouldAllowFeedbackOrReport())
 		{
 			return;
 		}
 
+		disableAndSetColorOnFeedback(feedback);
+
 		CaseInsensitiveString wrappedName = normalizeAndWrapPlayerName(lastPrediction.getPlayerName());
 		Map<CaseInsensitiveString, Boolean> feedbackMap = plugin.getFeedbackedPlayers();
 		feedbackMap.put(wrappedName, feedback);
 
+		feedbackLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
 		detectorClient.sendFeedback(lastPrediction, lastPredictionReporterName, feedback)
 			.whenComplete((b, ex) ->
 			{
+				boolean stillSame = lastPrediction != null &&
+					wrappedName.equals(normalizeAndWrapPlayerName(lastPrediction.getPlayerName()));
+
 				String message;
 				if (ex == null && b)
 				{
 					message = "Thank you for your prediction feedback for '%s'!";
+					if (stillSame)
+					{
+						feedbackLabel.setIcon(null);
+					}
 				}
 				else
 				{
 					message = "Error sending your prediction feedback for '%s'.";
 					// Didn't work so remove from feedback map
 					feedbackMap.remove(wrappedName);
+					if (stillSame)
+					{
+						resetFeedbackPanel();
+						feedbackLabel.setIcon(Icons.ERROR_ICON);
+					}
 				}
 
 				plugin.sendChatStatusMessage(String.format(message, wrappedName));
@@ -903,12 +955,13 @@ public class BotDetectorPanel extends PluginPanel
 
 	private void sendReportToClient(boolean doReport)
 	{
-		predictionReportPanel.setVisible(false);
 		if (lastPredictionPlayerSighting == null
 			|| !shouldAllowFeedbackOrReport())
 		{
 			return;
 		}
+
+		disableAndSetColorOnReport(doReport);
 
 		CaseInsensitiveString wrappedName = normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
 		Map<CaseInsensitiveString, Boolean> reportMap = plugin.getReportedPlayers();
@@ -920,19 +973,32 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
+		reportLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
 		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionReporterName, true)
 			.whenComplete((b, ex) ->
 			{
+				boolean stillSame = lastPredictionPlayerSighting != null &&
+					wrappedName.equals(normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName()));
+
 				String message;
 				if (ex == null && b)
 				{
-					message = "Thank you for flagging '%s' as a bot for us!";
+					message = "Thank you for flagging '%s' as a bot to us!";
+					if (stillSame)
+					{
+						reportLabel.setIcon(null);
+					}
 				}
 				else
 				{
 					message = "Error sending your bot flag for '%s'.";
 					// Didn't work so remove from report map
 					reportMap.remove(wrappedName);
+					if (stillSame)
+					{
+						resetReportPanel();
+						reportLabel.setIcon(Icons.ERROR_ICON);
+					}
 				}
 
 				plugin.sendChatStatusMessage(String.format(message, wrappedName));
@@ -943,6 +1009,52 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		return lastPredictionReporterName != null
 			&& !lastPredictionReporterName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
+	}
+
+	private void resetFeedbackPanel()
+	{
+		feedbackLabel.setIcon(null);
+		feedbackGoodButton.setBackground(null);
+		feedbackGoodButton.setEnabled(true);
+		feedbackBadButton.setBackground(null);
+		feedbackBadButton.setEnabled(true);
+	}
+
+	private void disableAndSetColorOnFeedback(boolean feedback)
+	{
+		feedbackGoodButton.setEnabled(false);
+		feedbackBadButton.setEnabled(false);
+		if (feedback)
+		{
+			feedbackGoodButton.setBackground(POSITIVE_BUTTON_COLOR);
+		}
+		else
+		{
+			feedbackBadButton.setBackground(NEGATIVE_BUTTON_COLOR);
+		}
+	}
+
+	private void resetReportPanel()
+	{
+		reportLabel.setIcon(null);
+		reportYesButton.setBackground(null);
+		reportYesButton.setEnabled(true);
+		reportNoButton.setBackground(null);
+		reportNoButton.setEnabled(true);
+	}
+
+	private void disableAndSetColorOnReport(boolean report)
+	{
+		reportYesButton.setEnabled(false);
+		reportNoButton.setEnabled(false);
+		if (report)
+		{
+			reportYesButton.setBackground(POSITIVE_BUTTON_COLOR);
+		}
+		else
+		{
+			reportNoButton.setBackground(NEGATIVE_BUTTON_COLOR);
+		}
 	}
 
 	public void setFontType(PanelFontType fontType)

@@ -91,6 +91,7 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.menus.MenuManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -168,6 +169,9 @@ public class BotDetectorPlugin extends Plugin
 
 	@Inject
 	private MenuManager menuManager;
+
+	@Inject
+	private ItemManager itemManager;
 
 	@Inject
 	private BotDetectorConfig config;
@@ -563,18 +567,32 @@ public class BotDetectorPlugin extends Plugin
 
 		// Get player's equipment item ids (botanicvelious/Equipment-Inspector)
 		Map<KitType, Integer> equipment = new HashMap<>();
+		int geValue = 0;
 		for (KitType kitType : KitType.values())
 		{
 			int itemId = player.getPlayerComposition().getEquipmentId(kitType);
 			if (itemId >= 0)
 			{
 				equipment.put(kitType, itemId);
+				// Use GE price, not Wiki price
+				geValue += itemManager.getItemPriceWithSource(itemId, false);
 			}
 		}
 
 		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
-		PlayerSighting p = new PlayerSighting(playerName, wp, equipment,
-			currentWorldNumber, isCurrentWorldMembers, isCurrentWorldPVP, Instant.now());
+		PlayerSighting p = PlayerSighting.builder()
+			.playerName(playerName)
+			.regionID(wp.getRegionID())
+			.worldX(wp.getX())
+			.worldY(wp.getY())
+			.plane(wp.getPlane())
+			.equipment(equipment)
+			.equipmentGEValue(geValue)
+			.timestamp(Instant.now())
+			.worldNumber(currentWorldNumber)
+			.inMembersWorld(isCurrentWorldMembers)
+			.inPVPWorld(isCurrentWorldPVP)
+			.build();
 
 		synchronized (sightingTable)
 		{
@@ -704,7 +722,7 @@ public class BotDetectorPlugin extends Plugin
 				}
 			}
 		}
-		event.setMenuEntries(menuEntries);
+		client.setMenuEntries(menuEntries);
 	}
 
 	@Subscribe
