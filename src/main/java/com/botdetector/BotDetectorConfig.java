@@ -118,7 +118,18 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 7,
+			position = 7,
+			keyName = "autocomplete",
+			name = "Autocomplete",
+			description = "Predict names when typing a name to lookup"
+	)
+	default boolean autocomplete()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		position = 8,
 		keyName = PANEL_FONT_TYPE_KEY,
 		name = "Panel Font Size",
 		description = "Sets the size of the label fields in the prediction panel."
@@ -129,7 +140,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 8,
+		position = 9,
 		keyName = ANONYMOUS_REPORTING_KEY,
 		name = "Anonymous Uploading",
 		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."

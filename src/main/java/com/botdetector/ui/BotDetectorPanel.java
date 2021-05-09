@@ -34,6 +34,7 @@ import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.Prediction;
+import com.botdetector.NameAutocompleter;
 import com.google.common.primitives.Doubles;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -41,6 +42,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Comparator;
@@ -147,6 +149,7 @@ public class BotDetectorPanel extends PluginPanel
 	private final BotDetectorPlugin plugin;
 	private final BotDetectorClient detectorClient;
 	private final BotDetectorConfig config;
+	private final NameAutocompleter nameAutocompleter;
 	private final EventBus eventBus;
 
 	private final Set<JComponent> switchableFontComponents = new HashSet<>();
@@ -189,11 +192,13 @@ public class BotDetectorPanel extends PluginPanel
 		BotDetectorPlugin plugin,
 		BotDetectorClient detectorClient,
 		BotDetectorConfig config,
+		NameAutocompleter nameAutocompleter,
 		EventBus eventBus)
 	{
 		this.plugin = plugin;
 		this.detectorClient = detectorClient;
 		this.config = config;
+		this.nameAutocompleter = nameAutocompleter;
 		this.eventBus = eventBus;
 
 		setBorder(new EmptyBorder(18, 10, 0, 10));
@@ -242,6 +247,13 @@ public class BotDetectorPanel extends PluginPanel
 		setPrediction(null);
 		setPlayerStats(null);
 		setFontType(config.panelFontType());
+
+		addInputKeyListener(nameAutocompleter);
+	}
+
+	void shutdown()
+	{
+		removeInputKeyListener(nameAutocompleter);
 	}
 
 	@Override
@@ -1138,5 +1150,15 @@ public class BotDetectorPanel extends PluginPanel
 					.append("'>").append(toPercentString(e.getValue())).append("</td></tr>"));
 
 		return sb.append(closingTags).toString();
+	}
+
+	void addInputKeyListener(KeyListener l)
+	{
+		this.searchBar.addKeyListener(l);
+	}
+
+	void removeInputKeyListener(KeyListener l)
+	{
+		this.searchBar.removeKeyListener(l);
 	}
 }
