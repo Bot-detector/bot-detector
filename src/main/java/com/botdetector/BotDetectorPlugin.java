@@ -704,7 +704,7 @@ public class BotDetectorPlugin extends Plugin
 				}
 			}
 		}
-		event.setMenuEntries(menuEntries);
+		client.setMenuEntries(menuEntries);
 	}
 
 	@Subscribe
