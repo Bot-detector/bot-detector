@@ -120,10 +120,10 @@ public interface BotDetectorConfig extends Config
 	@ConfigItem(
 			position = 7,
 			keyName = "autocomplete",
-			name = "Autocomplete",
-			description = "Predict names when typing a name to lookup"
+			name = "Prediction Autocomplete",
+			description = "Autocomplete names when typing a name to predict"
 	)
-	default boolean autocomplete()
+	default boolean panelAutocomplete()
 	{
 		return true;
 	}
