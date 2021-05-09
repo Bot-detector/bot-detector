@@ -921,12 +921,12 @@ public class BotDetectorPanel extends PluginPanel
 		Map<CaseInsensitiveString, Boolean> feedbackMap = plugin.getFeedbackedPlayers();
 		feedbackMap.put(wrappedName, feedback);
 
-		Prediction predictionAtFeedback = lastPrediction;
 		feedbackLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
 		detectorClient.sendFeedback(lastPrediction, lastPredictionReporterName, feedback)
 			.whenComplete((b, ex) ->
 			{
-				boolean stillSame = predictionAtFeedback == lastPrediction;
+				boolean stillSame = lastPrediction != null &&
+					wrappedName.equals(normalizeAndWrapPlayerName(lastPrediction.getPlayerName()));
 
 				String message;
 				if (ex == null && b)
@@ -973,12 +973,12 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		PlayerSighting sightingAtReport = lastPredictionPlayerSighting;
 		reportLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
 		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionReporterName, true)
 			.whenComplete((b, ex) ->
 			{
-				boolean stillSame = sightingAtReport == lastPredictionPlayerSighting;
+				boolean stillSame = lastPredictionPlayerSighting != null &&
+					wrappedName.equals(normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName()));
 
 				String message;
 				if (ex == null && b)
