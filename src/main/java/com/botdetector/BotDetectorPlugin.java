@@ -282,6 +282,8 @@ public class BotDetectorPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		panel.shutdown();
+
 		flushPlayersToClient(false);
 		persistentSightings.clear();
 		feedbackedPlayers.clear();
