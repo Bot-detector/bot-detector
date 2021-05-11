@@ -40,9 +40,10 @@ public class PlayerStats
 
 	public double getAccuracy()
 	{
-		if (reports > 0)
+		int divisor = incorrectReports + bans;
+		if (divisor > 0)
 		{
-			return bans / (double)(incorrectReports + bans);
+			return bans / (double)divisor;
 		}
 		return 0;
 	}
