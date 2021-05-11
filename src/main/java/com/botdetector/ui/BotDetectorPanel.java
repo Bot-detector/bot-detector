@@ -171,9 +171,11 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel playerStatsReportsLabel;
 	private JLabel playerStatsPossibleBansLabel;
 	private JLabel playerStatsConfirmedBansLabel;
+	private JLabel playerStatsIncorrectFlagsLabel;
+	private JLabel playerStatsFlagAccuracyLabel;
 	private final Map<WarningLabel, JLabel> warningLabels = new HashMap<>();
 	private Map<PlayerStatsType, PlayerStats> playerStatsMap;
-	private MaterialTabGroup playerStatsTabGroup;
+	private final MaterialTabGroup playerStatsTabGroup;
 	private PlayerStatsType currentPlayerStatsType = PLAYER_STAT_TYPES[0];
 
 	// Primary Prediction
@@ -450,6 +452,38 @@ public class BotDetectorPanel extends PluginPanel
 		c.weightx = 1;
 		reportingStatsPanel.add(playerStatsConfirmedBansLabel, c);
 		switchableFontComponents.add(playerStatsConfirmedBansLabel);
+
+		label = new JLabel("Incorrect Flags: ");
+		label.setToolTipText("How many of your flagged names were confirmed to have been real players by Jagex.");
+		label.setForeground(TEXT_COLOR);
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsIncorrectFlagsLabel = new JLabel();
+		playerStatsIncorrectFlagsLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsIncorrectFlagsLabel, c);
+		switchableFontComponents.add(playerStatsIncorrectFlagsLabel);
+
+		label = new JLabel("Flag Accuracy: ");
+		label.setToolTipText("How accurate your flagging has been.");
+		label.setForeground(TEXT_COLOR);
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsFlagAccuracyLabel = new JLabel();
+		playerStatsFlagAccuracyLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsFlagAccuracyLabel, c);
+		switchableFontComponents.add(playerStatsFlagAccuracyLabel);
 
 		c.gridy++;
 		c.gridx = 0;
@@ -743,12 +777,28 @@ public class BotDetectorPanel extends PluginPanel
 			playerStatsReportsLabel.setText(QuantityFormatter.formatNumber(ps.getReports()));
 			playerStatsConfirmedBansLabel.setText(QuantityFormatter.formatNumber(ps.getBans()));
 			playerStatsPossibleBansLabel.setText(QuantityFormatter.formatNumber(ps.getPossibleBans()));
+			if (pst.canDisplayAccuracy())
+			{
+				double accuracy = ps.getAccuracy();
+				playerStatsIncorrectFlagsLabel.setText(QuantityFormatter.formatNumber(ps.getIncorrectReports()));
+				playerStatsFlagAccuracyLabel.setText(toPercentString(accuracy));
+				playerStatsFlagAccuracyLabel.setForeground(getPredictionColor(accuracy));
+			}
+			else
+			{
+				playerStatsIncorrectFlagsLabel.setText(EMPTY_LABEL);
+				playerStatsFlagAccuracyLabel.setText(EMPTY_LABEL);
+				playerStatsFlagAccuracyLabel.setForeground(VALUE_COLOR);
+			}
 		}
 		else
 		{
 			playerStatsReportsLabel.setText(EMPTY_LABEL);
 			playerStatsConfirmedBansLabel.setText(EMPTY_LABEL);
 			playerStatsPossibleBansLabel.setText(EMPTY_LABEL);
+			playerStatsIncorrectFlagsLabel.setText(EMPTY_LABEL);
+			playerStatsFlagAccuracyLabel.setText(EMPTY_LABEL);
+			playerStatsFlagAccuracyLabel.setForeground(VALUE_COLOR);
 		}
 	}
 
