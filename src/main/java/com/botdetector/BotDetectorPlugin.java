@@ -32,8 +32,6 @@ import com.botdetector.model.AuthTokenPermission;
 import com.botdetector.model.AuthTokenType;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
-import com.botdetector.model.PlayerStats;
-import com.botdetector.model.PlayerStatsType;
 import com.botdetector.ui.BotDetectorPanel;
 import com.botdetector.events.BotDetectorPanelActivated;
 import com.google.common.collect.HashBasedTable;
@@ -423,7 +421,7 @@ public class BotDetectorPlugin extends Plugin
 		{
 			SwingUtilities.invokeLater(() ->
 			{
-				panel.setPlayerStats(null);
+				panel.setPlayerStatsMap(null);
 				panel.setPlayerStatsLoading(false);
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
@@ -452,13 +450,11 @@ public class BotDetectorPlugin extends Plugin
 					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false);
 				});
 
-				PlayerStats ps = psm != null ? psm.get(PlayerStatsType.TOTAL) : null;
-
-				if (ex == null && ps != null)
+				if (ex == null && psm != null)
 				{
 					SwingUtilities.invokeLater(() ->
 					{
-						panel.setPlayerStats(ps);
+						panel.setPlayerStatsMap(psm);
 						panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
 					});
 				}
