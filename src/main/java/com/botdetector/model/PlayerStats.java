@@ -32,15 +32,18 @@ import lombok.Value;
 public class PlayerStats
 {
 	int reports;
+	@SerializedName("incorrect_reports")
+	int incorrectReports;
 	int bans;
 	@SerializedName("possible_bans")
 	int possibleBans;
 
 	public double getAccuracy()
 	{
-		if (reports > 0)
+		int divisor = incorrectReports + bans;
+		if (divisor > 0)
 		{
-			return bans / (double)reports;
+			return bans / (double)divisor;
 		}
 		return 0;
 	}

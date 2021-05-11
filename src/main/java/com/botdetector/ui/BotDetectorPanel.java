@@ -33,6 +33,7 @@ import com.botdetector.http.BotDetectorClient;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
+import com.botdetector.model.PlayerStatsType;
 import com.botdetector.model.Prediction;
 import com.google.common.primitives.Doubles;
 import java.awt.Color;
@@ -40,6 +41,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
@@ -68,6 +70,8 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
+import net.runelite.client.ui.components.materialtabs.MaterialTab;
+import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.QuantityFormatter;
@@ -137,6 +141,10 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Border SUB_PANEL_BORDER = new EmptyBorder(5, 10, 10, 10);
 	private static final Dimension HEADER_PREFERRED_SIZE = new Dimension(0, 25);
 
+	private static final PlayerStatsType[] PLAYER_STAT_TYPES = {
+		PlayerStatsType.TOTAL, PlayerStatsType.PASSIVE, PlayerStatsType.MANUAL
+	};
+
 	private final IconTextField searchBar;
 	private final JPanel linksPanel;
 	private final JPanel reportingStatsPanel;
@@ -163,7 +171,12 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel playerStatsReportsLabel;
 	private JLabel playerStatsPossibleBansLabel;
 	private JLabel playerStatsConfirmedBansLabel;
+	private JLabel playerStatsIncorrectFlagsLabel;
+	private JLabel playerStatsFlagAccuracyLabel;
 	private final Map<WarningLabel, JLabel> warningLabels = new HashMap<>();
+	private Map<PlayerStatsType, PlayerStats> playerStatsMap;
+	private final MaterialTabGroup playerStatsTabGroup;
+	private PlayerStatsType currentPlayerStatsType = PLAYER_STAT_TYPES[0];
 
 	// Primary Prediction
 	private JLabel predictionPlayerIdTextLabel;
@@ -206,6 +219,8 @@ public class BotDetectorPanel extends PluginPanel
 
 		searchBar = playerSearchBar();
 		linksPanel = linksPanel();
+		// Used in the next panel, define now!
+		playerStatsTabGroup = playerStatsTabGroup();
 		reportingStatsPanel = reportingStatsPanel();
 		primaryPredictionPanel = primaryPredictionPanel();
 		predictionFeedbackPanel = predictionFeedbackPanel();
@@ -244,7 +259,7 @@ public class BotDetectorPanel extends PluginPanel
 
 		setPlayerIdVisible(false);
 		setPrediction(null);
-		setPlayerStats(null);
+		setPlayerStatsMap(null);
 		setFontType(config.panelFontType());
 
 		addInputKeyListener(nameAutocompleter);
@@ -290,6 +305,40 @@ public class BotDetectorPanel extends PluginPanel
 		}
 
 		return linksPanel;
+	}
+
+	private MaterialTabGroup playerStatsTabGroup()
+	{
+		MaterialTabGroup tabGroup = new MaterialTabGroup();
+		tabGroup.setLayout(new GridLayout(1, PLAYER_STAT_TYPES.length, 7, 7));
+
+		for (PlayerStatsType pst : PLAYER_STAT_TYPES)
+		{
+			MaterialTab tab = new MaterialTab(pst.getShorthand(), tabGroup, null);
+			tab.setToolTipText(pst.getDescription());
+			tab.setFont(SMALL_FONT);
+			tab.setOnSelectEvent(() ->
+			{
+				currentPlayerStatsType = pst;
+				return true;
+			});
+
+			tab.addMouseListener(new MouseAdapter()
+			{
+				@Override
+				public void mousePressed(MouseEvent mouseEvent)
+				{
+					setPlayerStatsForType(currentPlayerStatsType);
+				}
+			});
+			tabGroup.addTab(tab);
+			if (currentPlayerStatsType == pst)
+			{
+				tabGroup.select(tab);
+			}
+		}
+
+		return tabGroup;
 	}
 
 	private JPanel reportingStatsPanel()
@@ -338,7 +387,7 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.add(playerStatsPluginVersionLabel);
 
 		label = new JLabel("Current Uploads: ");
-		label.setToolTipText("How many names uploaded during the current Runelite session.");
+		label.setToolTipText("How many names passively uploaded during the current Runelite session.");
 		label.setForeground(TEXT_COLOR);
 
 		c.gridy++;
@@ -355,7 +404,7 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.add(playerStatsUploadedNamesLabel);
 
 		label = new JLabel("Total Uploads: ");
-		label.setToolTipText("How many unique names sent to us that were attributed to you, both passive uploads and manual flags.");
+		label.setToolTipText("How many unique names sent to us that were attributed to you.");
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
 		c.gridx = 0;
@@ -404,9 +453,44 @@ public class BotDetectorPanel extends PluginPanel
 		reportingStatsPanel.add(playerStatsConfirmedBansLabel, c);
 		switchableFontComponents.add(playerStatsConfirmedBansLabel);
 
+		label = new JLabel("Incorrect Flags: ");
+		label.setToolTipText("How many of your flagged names were confirmed to have been real players by Jagex.");
+		label.setForeground(TEXT_COLOR);
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsIncorrectFlagsLabel = new JLabel();
+		playerStatsIncorrectFlagsLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsIncorrectFlagsLabel, c);
+		switchableFontComponents.add(playerStatsIncorrectFlagsLabel);
+
+		label = new JLabel("Flag Accuracy: ");
+		label.setToolTipText("How accurate your flagging has been.");
+		label.setForeground(TEXT_COLOR);
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		reportingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsFlagAccuracyLabel = new JLabel();
+		playerStatsFlagAccuracyLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		reportingStatsPanel.add(playerStatsFlagAccuracyLabel, c);
+		switchableFontComponents.add(playerStatsFlagAccuracyLabel);
+
+		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 1;
 		c.gridwidth = 2;
+		reportingStatsPanel.add(playerStatsTabGroup, c);
+
 		c.ipady = WARNING_PAD;
 		for (WarningLabel wl : WarningLabel.values())
 		{
@@ -679,19 +763,42 @@ public class BotDetectorPanel extends PluginPanel
 		playerStatsUploadedNamesLabel.setText(QuantityFormatter.formatNumber(num));
 	}
 
-	public void setPlayerStats(PlayerStats ps)
+	public void setPlayerStatsMap(Map<PlayerStatsType, PlayerStats> psm)
 	{
+		playerStatsMap = psm;
+		setPlayerStatsForType(currentPlayerStatsType);
+	}
+
+	private void setPlayerStatsForType(PlayerStatsType pst)
+	{
+		PlayerStats ps = playerStatsMap != null ? playerStatsMap.get(pst) : null;
 		if (ps != null)
 		{
 			playerStatsReportsLabel.setText(QuantityFormatter.formatNumber(ps.getReports()));
 			playerStatsConfirmedBansLabel.setText(QuantityFormatter.formatNumber(ps.getBans()));
 			playerStatsPossibleBansLabel.setText(QuantityFormatter.formatNumber(ps.getPossibleBans()));
+			if (pst.canDisplayAccuracy())
+			{
+				double accuracy = ps.getAccuracy();
+				playerStatsIncorrectFlagsLabel.setText(QuantityFormatter.formatNumber(ps.getIncorrectReports()));
+				playerStatsFlagAccuracyLabel.setText(toPercentString(accuracy));
+				playerStatsFlagAccuracyLabel.setForeground(getPredictionColor(accuracy));
+			}
+			else
+			{
+				playerStatsIncorrectFlagsLabel.setText(EMPTY_LABEL);
+				playerStatsFlagAccuracyLabel.setText(EMPTY_LABEL);
+				playerStatsFlagAccuracyLabel.setForeground(VALUE_COLOR);
+			}
 		}
 		else
 		{
 			playerStatsReportsLabel.setText(EMPTY_LABEL);
 			playerStatsConfirmedBansLabel.setText(EMPTY_LABEL);
 			playerStatsPossibleBansLabel.setText(EMPTY_LABEL);
+			playerStatsIncorrectFlagsLabel.setText(EMPTY_LABEL);
+			playerStatsFlagAccuracyLabel.setText(EMPTY_LABEL);
+			playerStatsFlagAccuracyLabel.setForeground(VALUE_COLOR);
 		}
 	}
 
