@@ -32,6 +32,8 @@ import lombok.Value;
 public class PlayerStats
 {
 	int reports;
+	@SerializedName("incorrect_reports")
+	int incorrectReports;
 	int bans;
 	@SerializedName("possible_bans")
 	int possibleBans;
@@ -40,7 +42,7 @@ public class PlayerStats
 	{
 		if (reports > 0)
 		{
-			return bans / (double)reports;
+			return bans / (double)(incorrectReports + bans);
 		}
 		return 0;
 	}

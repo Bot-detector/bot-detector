@@ -27,6 +27,7 @@ package com.botdetector.http;
 
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
+import com.botdetector.model.PlayerStatsType;
 import com.botdetector.model.Prediction;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
@@ -323,8 +324,12 @@ public class BotDetectorClient
 		return future;
 	}
 
-	public CompletableFuture<PlayerStats> requestPlayerStats(String playerName)
+	public CompletableFuture<Map<PlayerStatsType, PlayerStats>> requestPlayerStats(String playerName)
 	{
+		Type mapType = new TypeToken<Map<PlayerStatsType, PlayerStats>>()
+		{
+		}.getType();
+
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
@@ -333,7 +338,7 @@ public class BotDetectorClient
 				.build())
 			.build();
 
-		CompletableFuture<PlayerStats> future = new CompletableFuture<>();
+		CompletableFuture<Map<PlayerStatsType, PlayerStats>> future = new CompletableFuture<>();
 		okHttpClient.newCall(request).enqueue(new Callback()
 		{
 			@Override
@@ -348,7 +353,7 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(processResponse(gson, response, PlayerStats.class));
+					future.complete(processResponse(gson, response, mapType));
 				}
 				catch (IOException e)
 				{
@@ -365,7 +370,7 @@ public class BotDetectorClient
 		return future;
 	}
 
-	private <T> T processResponse(Gson gson, Response response, Class<T> classOfT) throws IOException
+	private <T> T processResponse(Gson gson, Response response, Type t) throws IOException
 	{
 		if (!response.isSuccessful())
 		{
@@ -379,7 +384,7 @@ public class BotDetectorClient
 
 		try
 		{
-			return gson.fromJson(response.body().string(), classOfT);
+			return gson.fromJson(response.body().string(), t);
 		}
 		catch (IOException | JsonSyntaxException ex)
 		{

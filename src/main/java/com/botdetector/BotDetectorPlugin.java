@@ -32,6 +32,8 @@ import com.botdetector.model.AuthTokenPermission;
 import com.botdetector.model.AuthTokenType;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
+import com.botdetector.model.PlayerStats;
+import com.botdetector.model.PlayerStatsType;
 import com.botdetector.ui.BotDetectorPanel;
 import com.botdetector.events.BotDetectorPanelActivated;
 import com.google.common.collect.HashBasedTable;
@@ -435,7 +437,7 @@ public class BotDetectorPlugin extends Plugin
 
 		String nameAtRequest = loggedPlayerName;
 		detectorClient.requestPlayerStats(nameAtRequest)
-			.whenComplete((ps, ex) ->
+			.whenComplete((psm, ex) ->
 			{
 				// Player could have logged out in the mean time, don't update panel
 				// Player could also have switched to anon mode, don't update either.
@@ -449,6 +451,8 @@ public class BotDetectorPlugin extends Plugin
 					panel.setPlayerStatsLoading(false);
 					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false);
 				});
+
+				PlayerStats ps = psm != null ? psm.get(PlayerStatsType.TOTAL) : null;
 
 				if (ex == null && ps != null)
 				{
