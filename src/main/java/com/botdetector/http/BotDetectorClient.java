@@ -326,10 +326,6 @@ public class BotDetectorClient
 
 	public CompletableFuture<Map<PlayerStatsType, PlayerStats>> requestPlayerStats(String playerName)
 	{
-		Type mapType = new TypeToken<Map<PlayerStatsType, PlayerStats>>()
-		{
-		}.getType();
-
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
@@ -353,7 +349,10 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(processResponse(gson, response, mapType));
+					future.complete(processResponse(gson, response,
+						new TypeToken<Map<PlayerStatsType, PlayerStats>>()
+						{
+						}.getType()));
 				}
 				catch (IOException e)
 				{
@@ -370,7 +369,7 @@ public class BotDetectorClient
 		return future;
 	}
 
-	private <T> T processResponse(Gson gson, Response response, Type t) throws IOException
+	private <T> T processResponse(Gson gson, Response response, Type type) throws IOException
 	{
 		if (!response.isSuccessful())
 		{
@@ -384,7 +383,7 @@ public class BotDetectorClient
 
 		try
 		{
-			return gson.fromJson(response.body().string(), t);
+			return gson.fromJson(response.body().string(), type);
 		}
 		catch (IOException | JsonSyntaxException ex)
 		{
