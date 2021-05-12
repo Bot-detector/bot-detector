@@ -25,6 +25,7 @@
  */
 package com.botdetector;
 
+import com.botdetector.model.PlayerStatsType;
 import com.botdetector.ui.PanelFontType;
 import com.botdetector.ui.PredictHighlightMode;
 import net.runelite.client.config.Config;
@@ -130,6 +131,17 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 8,
+		keyName = "panelDefaultStatsType",
+		name = "Panel Default Stats Tab",
+		description = "Sets the initial player statistics tab in the prediction panel for when the plugin is launched."
+	)
+	default PlayerStatsType panelDefaultStatsType()
+	{
+		return PlayerStatsType.TOTAL;
+	}
+
+	@ConfigItem(
+		position = 9,
 		keyName = PANEL_FONT_TYPE_KEY,
 		name = "Panel Font Size",
 		description = "Sets the size of the label fields in the prediction panel."
@@ -140,7 +152,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 9,
+		position = 10,
 		keyName = ANONYMOUS_REPORTING_KEY,
 		name = "Anonymous Uploading",
 		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."
