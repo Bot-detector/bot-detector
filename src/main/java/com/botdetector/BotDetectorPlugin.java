@@ -214,15 +214,15 @@ public class BotDetectorPlugin extends Plugin
 	@Getter
 	private AuthToken authToken = AuthToken.EMPTY_TOKEN;
 
-	// Current login maps, clear on logout/shutdown. Feedback/Report map to selected value in panel.
-	// All map keys should get handled with normalizePlayerName() followed by toLowerCase()
+	// Current login maps, clear on logout/shutdown. Feedback/Flag map to selected value in panel.
+	// All map keys should get handled with normalizeAndWrapPlayerName() or using wrap() on an already normalized name
 	private final Table<CaseInsensitiveString, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
 	@Getter
 	private final Map<CaseInsensitiveString, PlayerSighting> persistentSightings = new ConcurrentHashMap<>();
 	@Getter
 	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new ConcurrentHashMap<>();
 	@Getter
-	private final Map<CaseInsensitiveString, Boolean> reportedPlayers = new ConcurrentHashMap<>();
+	private final Map<CaseInsensitiveString, Boolean> flaggedPlayers = new ConcurrentHashMap<>();
 
 	@Override
 	protected void startUp()
@@ -249,7 +249,7 @@ public class BotDetectorPlugin extends Plugin
 		panel = injector.getInstance(BotDetectorPanel.class);
 		SwingUtilities.invokeLater(() ->
 		{
-			panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
+			panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousUploading());
 			panel.setPluginVersion(detectorClient.getPluginVersion());
 			panel.setNamesUploaded(0);
 		});
@@ -287,7 +287,7 @@ public class BotDetectorPlugin extends Plugin
 		flushPlayersToClient(false);
 		persistentSightings.clear();
 		feedbackedPlayers.clear();
-		reportedPlayers.clear();
+		flaggedPlayers.clear();
 
 		if (client != null)
 		{
@@ -347,7 +347,7 @@ public class BotDetectorPlugin extends Plugin
 
 		int uniqueNames;
 		Collection<PlayerSighting> sightings;
-		int numReports;
+		int numUploads;
 		synchronized (sightingTable)
 		{
 			uniqueNames = sightingTable.rowKeySet().size();
@@ -358,18 +358,18 @@ public class BotDetectorPlugin extends Plugin
 
 			sightings = new ArrayList<>(sightingTable.values());
 			sightingTable.clear();
-			numReports = sightings.size();
+			numUploads = sightings.size();
 		}
 
 		lastFlush = Instant.now();
-		detectorClient.sendSightings(sightings, getReporterName(), false)
+		detectorClient.sendSightings(sightings, getUploaderName(), false)
 			.whenComplete((b, ex) ->
 			{
 				if (ex == null && b)
 				{
 					namesUploaded += uniqueNames;
 					SwingUtilities.invokeLater(() -> panel.setNamesUploaded(namesUploaded));
-					sendChatStatusMessage("Successfully uploaded " + numReports +
+					sendChatStatusMessage("Successfully uploaded " + numUploads +
 						" locations for " + uniqueNames + " unique players.",
 						forceChatNotification);
 				}
@@ -407,7 +407,7 @@ public class BotDetectorPlugin extends Plugin
 		{
 			Instant now = Instant.now();
 			// Only perform non-manual refreshes when a player is not anon, logged in and the panel is open
-			if (config.enableAnonymousReporting() || loggedPlayerName == null || !navButton.isSelected()
+			if (config.enableAnonymousUploading() || loggedPlayerName == null || !navButton.isSelected()
 				|| now.isBefore(lastStatsRefresh.plusSeconds(AUTO_REFRESH_STATS_COOLDOWN_SECONDS))
 				|| now.isBefore(lastFlush.plusSeconds(AUTO_REFRESH_LAST_FLUSH_GRACE_PERIOD_SECONDS)))
 			{
@@ -417,16 +417,16 @@ public class BotDetectorPlugin extends Plugin
 
 		lastStatsRefresh = Instant.now();
 
-		if (config.enableAnonymousReporting() || loggedPlayerName == null)
+		if (config.enableAnonymousUploading() || loggedPlayerName == null)
 		{
 			SwingUtilities.invokeLater(() ->
 			{
 				panel.setPlayerStatsMap(null);
 				panel.setPlayerStatsLoading(false);
-				panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousReporting());
+				panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousUploading());
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
 				panel.forceHideFeedbackPanel();
-				panel.forceHideReportPanel();
+				panel.forceHideFlaggingPanel();
 			});
 			return;
 		}
@@ -439,7 +439,7 @@ public class BotDetectorPlugin extends Plugin
 			{
 				// Player could have logged out in the mean time, don't update panel
 				// Player could also have switched to anon mode, don't update either.
-				if (config.enableAnonymousReporting() || !nameAtRequest.equals(loggedPlayerName))
+				if (config.enableAnonymousUploading() || !nameAtRequest.equals(loggedPlayerName))
 				{
 					return;
 				}
@@ -469,7 +469,7 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onBotDetectorPanelActivated(BotDetectorPanelActivated event)
 	{
-		if (!config.enableAnonymousReporting())
+		if (!config.enableAnonymousUploading())
 		{
 			refreshPlayerStats(false);
 		}
@@ -498,7 +498,7 @@ public class BotDetectorPlugin extends Plugin
 					}
 				}
 				break;
-			case BotDetectorConfig.ANONYMOUS_REPORTING_KEY:
+			case BotDetectorConfig.ANONYMOUS_UPLOADING_KEY:
 				refreshPlayerStats(true);
 				break;
 			case BotDetectorConfig.PANEL_FONT_TYPE_KEY:
@@ -521,7 +521,7 @@ public class BotDetectorPlugin extends Plugin
 				flushPlayersToClient(false);
 				persistentSightings.clear();
 				feedbackedPlayers.clear();
-				reportedPlayers.clear();
+				flaggedPlayers.clear();
 				loggedPlayerName = null;
 
 				refreshPlayerStats(true);
@@ -812,9 +812,9 @@ public class BotDetectorPlugin extends Plugin
 			panel.setWarningVisible(BotDetectorPanel.WarningLabel.BLOCKED_WORLD, isCurrentWorldBlocked));
 	}
 
-	public String getReporterName()
+	public String getUploaderName()
 	{
-		if (loggedPlayerName == null || config.enableAnonymousReporting())
+		if (loggedPlayerName == null || config.enableAnonymousUploading())
 		{
 			return ANONYMOUS_USER_NAME;
 		}
@@ -834,7 +834,7 @@ public class BotDetectorPlugin extends Plugin
 			case ALL:
 				return HIGHLIGHTED_PREDICT_OPTION;
 			case NOT_REPORTED:
-				return reportedPlayers.containsKey(normalizeAndWrapPlayerName(playerName)) ?
+				return flaggedPlayers.containsKey(normalizeAndWrapPlayerName(playerName)) ?
 					PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
 			default:
 				return PREDICT_OPTION;

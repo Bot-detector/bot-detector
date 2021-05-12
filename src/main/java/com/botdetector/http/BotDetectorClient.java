@@ -115,15 +115,15 @@ public class BotDetectorClient
 			.build();
 	}
 
-	public CompletableFuture<Boolean> sendSighting(PlayerSighting sighting, String reporter, boolean manual)
+	public CompletableFuture<Boolean> sendSighting(PlayerSighting sighting, String uploaderName, boolean manual)
 	{
-		return sendSightings(ImmutableList.of(sighting), reporter, manual);
+		return sendSightings(ImmutableList.of(sighting), uploaderName, manual);
 	}
 
-	public CompletableFuture<Boolean> sendSightings(Collection<PlayerSighting> sightings, String reporter, boolean manual)
+	public CompletableFuture<Boolean> sendSightings(Collection<PlayerSighting> sightings, String uploaderName, boolean manual)
 	{
 		List<PlayerSightingWrapper> wrappedList = sightings.stream()
-			.map(p -> new PlayerSightingWrapper(reporter, p)).collect(Collectors.toList());
+			.map(p -> new PlayerSightingWrapper(uploaderName, p)).collect(Collectors.toList());
 
 		Gson gson = gsonBuilder
 			.registerTypeAdapter(PlayerSightingWrapper.class, new PlayerSightingWrapperSerializer())
@@ -231,14 +231,14 @@ public class BotDetectorClient
 		return future;
 	}
 
-	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String reporterName, boolean feedback)
+	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String uploaderName, boolean feedback)
 	{
 		Gson gson = gsonBuilder.create();
 
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.FEEDBACK))
 			.post(RequestBody.create(JSON, gson.toJson(new PredictionFeedback(
-				reporterName,
+				uploaderName,
 				feedback ? 1 : -1,
 				pred.getPredictionLabel(),
 				pred.getConfidence(),
@@ -416,7 +416,8 @@ public class BotDetectorClient
 	@Value
 	private static class PlayerSightingWrapper
 	{
-		String reporter;
+		@SerializedName("reporter")
+		String uploaderName;
 		@SerializedName("sighting_data")
 		PlayerSighting sightingData;
 	}
@@ -449,7 +450,7 @@ public class BotDetectorClient
 		public JsonElement serialize(PlayerSightingWrapper src, Type typeOfSrc, JsonSerializationContext context)
 		{
 			JsonElement json = context.serialize(src.getSightingData());
-			json.getAsJsonObject().addProperty("reporter", src.getReporter());
+			json.getAsJsonObject().addProperty("reporter", src.getUploaderName());
 			return json;
 		}
 	}

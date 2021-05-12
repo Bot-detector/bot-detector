@@ -148,10 +148,10 @@ public class BotDetectorPanel extends PluginPanel
 
 	private final IconTextField searchBar;
 	private final JPanel linksPanel;
-	private final JPanel reportingStatsPanel;
+	private final JPanel playerStatsPanel;
 	private final JPanel primaryPredictionPanel;
 	private final JPanel predictionFeedbackPanel;
-	private final JPanel predictionReportPanel;
+	private final JPanel predictionFlaggingPanel;
 	private final JPanel predictionBreakdownPanel;
 
 	private final BotDetectorPlugin plugin;
@@ -169,7 +169,7 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel playerStatsHeaderLabel;
 	private JLabel playerStatsPluginVersionLabel;
 	private JLabel playerStatsUploadedNamesLabel;
-	private JLabel playerStatsReportsLabel;
+	private JLabel playerStatsTotalUploadsLabel;
 	private JLabel playerStatsPossibleBansLabel;
 	private JLabel playerStatsConfirmedBansLabel;
 	private JLabel playerStatsIncorrectFlagsLabel;
@@ -189,16 +189,16 @@ public class BotDetectorPanel extends PluginPanel
 	// Prediction Breakdown
 	private JLabel predictionBreakdownLabel;
 
-	// For feedback/report
-	private JLabel feedbackLabel;
+	// For feedback/flag
+	private JLabel feedbackHeaderLabel;
 	private JButton feedbackGoodButton;
 	private JButton feedbackBadButton;
-	private JLabel reportLabel;
-	private JButton reportYesButton;
-	private JButton reportNoButton;
+	private JLabel flaggingHeaderLabel;
+	private JButton flaggingYesButton;
+	private JButton flaggingNoButton;
 	private Prediction lastPrediction;
 	private PlayerSighting lastPredictionPlayerSighting;
-	private String lastPredictionReporterName;
+	private String lastPredictionUploaderName;
 
 	@Inject
 	public BotDetectorPanel(
@@ -224,12 +224,12 @@ public class BotDetectorPanel extends PluginPanel
 		linksPanel = linksPanel();
 		// Used in the next panel, define now!
 		playerStatsTabGroup = playerStatsTabGroup();
-		reportingStatsPanel = reportingStatsPanel();
+		playerStatsPanel = playerStatsPanel();
 		primaryPredictionPanel = primaryPredictionPanel();
 		predictionFeedbackPanel = predictionFeedbackPanel();
 		predictionFeedbackPanel.setVisible(false);
-		predictionReportPanel = predictionReportPanel();
-		predictionReportPanel.setVisible(false);
+		predictionFlaggingPanel = predictionFlaggingPanel();
+		predictionFlaggingPanel.setVisible(false);
 		predictionBreakdownPanel = predictionBreakdownPanel();
 		predictionBreakdownPanel.setVisible(false);
 
@@ -243,7 +243,7 @@ public class BotDetectorPanel extends PluginPanel
 		add(linksPanel, c);
 
 		c.gridy++;
-		add(reportingStatsPanel, c);
+		add(playerStatsPanel, c);
 
 		c.gridy++;
 		add(searchBar, c);
@@ -258,7 +258,7 @@ public class BotDetectorPanel extends PluginPanel
 		add(predictionFeedbackPanel, c);
 
 		c.gridy++;
-		add(predictionReportPanel, c);
+		add(predictionFlaggingPanel, c);
 
 		setPlayerIdVisible(false);
 		setPrediction(null);
@@ -344,15 +344,15 @@ public class BotDetectorPanel extends PluginPanel
 		return tabGroup;
 	}
 
-	private JPanel reportingStatsPanel()
+	private JPanel playerStatsPanel()
 	{
 		JLabel label;
 
-		JPanel reportingStatsPanel = new JPanel();
-		reportingStatsPanel.setBackground(SUB_BACKGROUND_COLOR);
-		reportingStatsPanel.setBorder(SUB_PANEL_BORDER);
+		JPanel uploadingStatsPanel = new JPanel();
+		uploadingStatsPanel.setBackground(SUB_BACKGROUND_COLOR);
+		uploadingStatsPanel.setBorder(SUB_PANEL_BORDER);
 
-		reportingStatsPanel.setLayout(new GridBagLayout());
+		uploadingStatsPanel.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 
@@ -368,7 +368,7 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridwidth = 2;
 		c.weightx = 1;
 		c.anchor = GridBagConstraints.NORTH;
-		reportingStatsPanel.add(playerStatsHeaderLabel, c);
+		uploadingStatsPanel.add(playerStatsHeaderLabel, c);
 
 		label = new JLabel("Plugin Version: ");
 		label.setToolTipText("The Bot Detector plugin version you're running.");
@@ -379,14 +379,14 @@ public class BotDetectorPanel extends PluginPanel
 		c.ipady = VALUE_PAD;
 		c.gridwidth = 1;
 		c.weightx = 0;
-		reportingStatsPanel.add(label, c);
+		uploadingStatsPanel.add(label, c);
 		switchableFontComponents.add(label);
 
 		playerStatsPluginVersionLabel = new JLabel();
 		playerStatsPluginVersionLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
-		reportingStatsPanel.add(playerStatsPluginVersionLabel, c);
+		uploadingStatsPanel.add(playerStatsPluginVersionLabel, c);
 		switchableFontComponents.add(playerStatsPluginVersionLabel);
 
 		label = new JLabel("Current Uploads: ");
@@ -396,14 +396,14 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 0;
-		reportingStatsPanel.add(label, c);
+		uploadingStatsPanel.add(label, c);
 		switchableFontComponents.add(label);
 
 		playerStatsUploadedNamesLabel = new JLabel();
 		playerStatsUploadedNamesLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
-		reportingStatsPanel.add(playerStatsUploadedNamesLabel, c);
+		uploadingStatsPanel.add(playerStatsUploadedNamesLabel, c);
 		switchableFontComponents.add(playerStatsUploadedNamesLabel);
 
 		label = new JLabel("Total Uploads: ");
@@ -412,15 +412,15 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 0;
-		reportingStatsPanel.add(label, c);
+		uploadingStatsPanel.add(label, c);
 		switchableFontComponents.add(label);
 
-		playerStatsReportsLabel = new JLabel();
-		playerStatsReportsLabel.setForeground(VALUE_COLOR);
+		playerStatsTotalUploadsLabel = new JLabel();
+		playerStatsTotalUploadsLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
-		reportingStatsPanel.add(playerStatsReportsLabel, c);
-		switchableFontComponents.add(playerStatsReportsLabel);
+		uploadingStatsPanel.add(playerStatsTotalUploadsLabel, c);
+		switchableFontComponents.add(playerStatsTotalUploadsLabel);
 
 		label = new JLabel("Possible Bans: ");
 		label.setToolTipText(
@@ -430,14 +430,14 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 0;
-		reportingStatsPanel.add(label, c);
+		uploadingStatsPanel.add(label, c);
 		switchableFontComponents.add(label);
 
 		playerStatsPossibleBansLabel = new JLabel();
 		playerStatsPossibleBansLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
-		reportingStatsPanel.add(playerStatsPossibleBansLabel, c);
+		uploadingStatsPanel.add(playerStatsPossibleBansLabel, c);
 		switchableFontComponents.add(playerStatsPossibleBansLabel);
 
 		label = new JLabel("Confirmed Bans: ");
@@ -446,14 +446,14 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 0;
-		reportingStatsPanel.add(label, c);
+		uploadingStatsPanel.add(label, c);
 		switchableFontComponents.add(label);
 
 		playerStatsConfirmedBansLabel = new JLabel();
 		playerStatsConfirmedBansLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
-		reportingStatsPanel.add(playerStatsConfirmedBansLabel, c);
+		uploadingStatsPanel.add(playerStatsConfirmedBansLabel, c);
 		switchableFontComponents.add(playerStatsConfirmedBansLabel);
 
 		label = new JLabel("Incorrect Flags: ");
@@ -462,14 +462,14 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 0;
-		reportingStatsPanel.add(label, c);
+		uploadingStatsPanel.add(label, c);
 		switchableFontComponents.add(label);
 
 		playerStatsIncorrectFlagsLabel = new JLabel();
 		playerStatsIncorrectFlagsLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
-		reportingStatsPanel.add(playerStatsIncorrectFlagsLabel, c);
+		uploadingStatsPanel.add(playerStatsIncorrectFlagsLabel, c);
 		switchableFontComponents.add(playerStatsIncorrectFlagsLabel);
 
 		label = new JLabel("Flag Accuracy: ");
@@ -478,21 +478,21 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 0;
-		reportingStatsPanel.add(label, c);
+		uploadingStatsPanel.add(label, c);
 		switchableFontComponents.add(label);
 
 		playerStatsFlagAccuracyLabel = new JLabel();
 		playerStatsFlagAccuracyLabel.setForeground(VALUE_COLOR);
 		c.gridx = 1;
 		c.weightx = 1;
-		reportingStatsPanel.add(playerStatsFlagAccuracyLabel, c);
+		uploadingStatsPanel.add(playerStatsFlagAccuracyLabel, c);
 		switchableFontComponents.add(playerStatsFlagAccuracyLabel);
 
 		c.gridy++;
 		c.gridx = 0;
 		c.weightx = 1;
 		c.gridwidth = 2;
-		reportingStatsPanel.add(playerStatsTabGroup, c);
+		uploadingStatsPanel.add(playerStatsTabGroup, c);
 
 		c.ipady = WARNING_PAD;
 		for (WarningLabel wl : WarningLabel.values())
@@ -504,11 +504,11 @@ public class BotDetectorPanel extends PluginPanel
 			label.setFont(NORMAL_FONT);
 			label.setForeground(HEADER_COLOR);
 			label.setVisible(false);
-			reportingStatsPanel.add(label, c);
+			uploadingStatsPanel.add(label, c);
 			warningLabels.put(wl, label);
 		}
 
-		return reportingStatsPanel;
+		return uploadingStatsPanel;
 	}
 
 	private IconTextField playerSearchBar()
@@ -645,17 +645,17 @@ public class BotDetectorPanel extends PluginPanel
 		String tooltip = "<html>Please tell us if this prediction seems %s to you!" +
 			"<br>Doing so will help us improve our model.</html>";
 
-		feedbackLabel = new JLabel("Is this prediction correct?");
-		feedbackLabel.setHorizontalTextPosition(JLabel.LEFT);
-		feedbackLabel.setFont(NORMAL_FONT);
-		feedbackLabel.setForeground(HEADER_COLOR);
-		feedbackLabel.setPreferredSize(HEADER_PREFERRED_SIZE);
+		feedbackHeaderLabel = new JLabel("Is this prediction correct?");
+		feedbackHeaderLabel.setHorizontalTextPosition(JLabel.LEFT);
+		feedbackHeaderLabel.setFont(NORMAL_FONT);
+		feedbackHeaderLabel.setForeground(HEADER_COLOR);
+		feedbackHeaderLabel.setPreferredSize(HEADER_PREFERRED_SIZE);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipady = HEADER_PAD;
 		c.gridwidth = 2;
 		c.weightx = 1;
-		panel.add(feedbackLabel, c);
+		panel.add(feedbackHeaderLabel, c);
 
 		feedbackGoodButton = new JButton("Looks fine!");
 		feedbackGoodButton.setToolTipText(String.format(tooltip, "correct"));
@@ -680,7 +680,7 @@ public class BotDetectorPanel extends PluginPanel
 		return panel;
 	}
 
-	private JPanel predictionReportPanel()
+	private JPanel predictionFlaggingPanel()
 	{
 		JPanel panel = new JPanel();
 		panel.setBackground(SUB_BACKGROUND_COLOR);
@@ -690,38 +690,38 @@ public class BotDetectorPanel extends PluginPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 
-		reportLabel = new JLabel("Flag this player as a bot?");
-		reportLabel.setHorizontalTextPosition(JLabel.LEFT);
-		reportLabel.setFont(NORMAL_FONT);
-		reportLabel.setForeground(HEADER_COLOR);
-		reportLabel.setPreferredSize(HEADER_PREFERRED_SIZE);
+		flaggingHeaderLabel = new JLabel("Flag this player as a bot?");
+		flaggingHeaderLabel.setHorizontalTextPosition(JLabel.LEFT);
+		flaggingHeaderLabel.setFont(NORMAL_FONT);
+		flaggingHeaderLabel.setForeground(HEADER_COLOR);
+		flaggingHeaderLabel.setPreferredSize(HEADER_PREFERRED_SIZE);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipady = HEADER_PAD;
 		c.gridwidth = 2;
 		c.weightx = 1;
-		panel.add(reportLabel, c);
+		panel.add(flaggingHeaderLabel, c);
 
-		reportYesButton = new JButton("Yes");
-		reportYesButton.setToolTipText(
+		flaggingYesButton = new JButton("Yes");
+		flaggingYesButton.setToolTipText(
 			"<html>This is <span style='color:red'>NOT</span> the same as reporting the player in-game!" +
 			"<br>Flagging a player as a bot tells us to pay more attention to them when training our model.</html>");
-		reportYesButton.setForeground(HEADER_COLOR);
-		reportYesButton.setFont(SMALL_FONT);
-		reportYesButton.addActionListener(l -> sendReportToClient(true));
-		reportYesButton.setFocusable(false);
+		flaggingYesButton.setForeground(HEADER_COLOR);
+		flaggingYesButton.setFont(SMALL_FONT);
+		flaggingYesButton.addActionListener(l -> sendFlagToClient(true));
+		flaggingYesButton.setFocusable(false);
 		c.gridy++;
 		c.weightx = 0.5;
 		c.gridwidth = 1;
-		panel.add(reportYesButton, c);
+		panel.add(flaggingYesButton, c);
 
-		reportNoButton = new JButton("No");
-		reportNoButton.setForeground(HEADER_COLOR);
-		reportNoButton.setFont(SMALL_FONT);
-		reportNoButton.addActionListener(l -> sendReportToClient(false));
-		reportNoButton.setFocusable(false);
+		flaggingNoButton = new JButton("No");
+		flaggingNoButton.setForeground(HEADER_COLOR);
+		flaggingNoButton.setFont(SMALL_FONT);
+		flaggingNoButton.addActionListener(l -> sendFlagToClient(false));
+		flaggingNoButton.setFocusable(false);
 		c.gridx++;
-		panel.add(reportNoButton, c);
+		panel.add(flaggingNoButton, c);
 
 		return panel;
 	}
@@ -777,13 +777,13 @@ public class BotDetectorPanel extends PluginPanel
 		PlayerStats ps = playerStatsMap != null ? playerStatsMap.get(pst) : null;
 		if (ps != null)
 		{
-			playerStatsReportsLabel.setText(QuantityFormatter.formatNumber(ps.getReports()));
-			playerStatsConfirmedBansLabel.setText(QuantityFormatter.formatNumber(ps.getBans()));
+			playerStatsTotalUploadsLabel.setText(QuantityFormatter.formatNumber(ps.getNamesUploaded()));
+			playerStatsConfirmedBansLabel.setText(QuantityFormatter.formatNumber(ps.getConfirmedBans()));
 			playerStatsPossibleBansLabel.setText(QuantityFormatter.formatNumber(ps.getPossibleBans()));
 			if (pst.canDisplayAccuracy())
 			{
 				double accuracy = ps.getAccuracy();
-				playerStatsIncorrectFlagsLabel.setText(QuantityFormatter.formatNumber(ps.getIncorrectReports()));
+				playerStatsIncorrectFlagsLabel.setText(QuantityFormatter.formatNumber(ps.getIncorrectFlags()));
 				playerStatsFlagAccuracyLabel.setText(wrapHTML(toColoredPercentSpan(accuracy), false));
 			}
 			else
@@ -794,7 +794,7 @@ public class BotDetectorPanel extends PluginPanel
 		}
 		else
 		{
-			playerStatsReportsLabel.setText(EMPTY_LABEL);
+			playerStatsTotalUploadsLabel.setText(EMPTY_LABEL);
 			playerStatsConfirmedBansLabel.setText(EMPTY_LABEL);
 			playerStatsPossibleBansLabel.setText(EMPTY_LABEL);
 			playerStatsIncorrectFlagsLabel.setText(EMPTY_LABEL);
@@ -836,9 +836,9 @@ public class BotDetectorPanel extends PluginPanel
 		predictionFeedbackPanel.setVisible(false);
 	}
 
-	public void forceHideReportPanel()
+	public void forceHideFlaggingPanel()
 	{
-		predictionReportPanel.setVisible(false);
+		predictionFlaggingPanel.setVisible(false);
 	}
 
 	private void setPredictionLabelsColor(Color color)
@@ -863,7 +863,7 @@ public class BotDetectorPanel extends PluginPanel
 			nameAutocompleter.addToSearchHistory(pred.getPlayerName().toLowerCase());
 			lastPrediction = pred;
 			lastPredictionPlayerSighting = sighting;
-			lastPredictionReporterName = plugin.getReporterName();
+			lastPredictionUploaderName = plugin.getUploaderName();
 			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
 			predictionPlayerNameLabel.setText(wrapHTML(pred.getPlayerName()));
 			predictionTypeLabel.setText(wrapHTML(normalizeLabel(pred.getPredictionLabel())));
@@ -880,46 +880,46 @@ public class BotDetectorPanel extends PluginPanel
 				predictionBreakdownPanel.setVisible(true);
 			}
 
-			if (shouldAllowFeedbackOrReport()
+			if (shouldAllowFeedbackOrFlagging()
 				&& pred.getPlayerId() > 0)
 			{
 				CaseInsensitiveString name = normalizeAndWrapPlayerName(pred.getPlayerName());
 
-				// If the player has already been feedbacked/reported, ensure the panels reflect this
+				// If the player has already been feedbacked/flagged, ensure the panels reflect this
 				resetFeedbackPanel();
 				Boolean feedbacked = plugin.getFeedbackedPlayers().get(name);
 				if (feedbacked != null)
 				{
-					disableAndSetColorOnFeedback(feedbacked);
+					disableAndSetColorOnFeedbackPanel(feedbacked);
 				}
 				predictionFeedbackPanel.setVisible(true);
 
-				resetReportPanel();
+				resetFlaggingPanel();
 				if (sighting == null)
 				{
-					predictionReportPanel.setVisible(false);
+					predictionFlaggingPanel.setVisible(false);
 				}
 				else
 				{
-					Boolean reported = plugin.getReportedPlayers().get(name);
-					if (reported != null)
+					Boolean flagged = plugin.getFlaggedPlayers().get(name);
+					if (flagged != null)
 					{
-						disableAndSetColorOnReport(reported);
+						disableAndSetColorOnFlaggingPanel(flagged);
 					}
-					predictionReportPanel.setVisible(true);
+					predictionFlaggingPanel.setVisible(true);
 				}
 			}
 			else
 			{
 				predictionFeedbackPanel.setVisible(false);
-				predictionReportPanel.setVisible(false);
+				predictionFlaggingPanel.setVisible(false);
 			}
 		}
 		else
 		{
 			lastPrediction = null;
 			lastPredictionPlayerSighting = null;
-			lastPredictionReporterName = null;
+			lastPredictionUploaderName = null;
 			predictionPlayerIdLabel.setText(EMPTY_LABEL);
 			predictionPlayerNameLabel.setText(EMPTY_LABEL);
 			predictionTypeLabel.setText(EMPTY_LABEL);
@@ -928,7 +928,7 @@ public class BotDetectorPanel extends PluginPanel
 
 			predictionBreakdownPanel.setVisible(false);
 			predictionFeedbackPanel.setVisible(false);
-			predictionReportPanel.setVisible(false);
+			predictionFlaggingPanel.setVisible(false);
 		}
 	}
 
@@ -1028,19 +1028,19 @@ public class BotDetectorPanel extends PluginPanel
 	private void sendFeedbackToClient(boolean feedback)
 	{
 		if (lastPrediction == null
-			|| !shouldAllowFeedbackOrReport())
+			|| !shouldAllowFeedbackOrFlagging())
 		{
 			return;
 		}
 
-		disableAndSetColorOnFeedback(feedback);
+		disableAndSetColorOnFeedbackPanel(feedback);
 
 		CaseInsensitiveString wrappedName = normalizeAndWrapPlayerName(lastPrediction.getPlayerName());
 		Map<CaseInsensitiveString, Boolean> feedbackMap = plugin.getFeedbackedPlayers();
 		feedbackMap.put(wrappedName, feedback);
 
-		feedbackLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
-		detectorClient.sendFeedback(lastPrediction, lastPredictionReporterName, feedback)
+		feedbackHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
+		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, feedback)
 			.whenComplete((b, ex) ->
 			{
 				boolean stillSame = lastPrediction != null &&
@@ -1052,7 +1052,7 @@ public class BotDetectorPanel extends PluginPanel
 					message = "Thank you for your prediction feedback for '%s'!";
 					if (stillSame)
 					{
-						feedbackLabel.setIcon(null);
+						feedbackHeaderLabel.setIcon(null);
 					}
 				}
 				else
@@ -1063,7 +1063,7 @@ public class BotDetectorPanel extends PluginPanel
 					if (stillSame)
 					{
 						resetFeedbackPanel();
-						feedbackLabel.setIcon(Icons.ERROR_ICON);
+						feedbackHeaderLabel.setIcon(Icons.ERROR_ICON);
 					}
 				}
 
@@ -1071,28 +1071,28 @@ public class BotDetectorPanel extends PluginPanel
 			});
 	}
 
-	private void sendReportToClient(boolean doReport)
+	private void sendFlagToClient(boolean doFlag)
 	{
 		if (lastPredictionPlayerSighting == null
-			|| !shouldAllowFeedbackOrReport())
+			|| !shouldAllowFeedbackOrFlagging())
 		{
 			return;
 		}
 
-		disableAndSetColorOnReport(doReport);
+		disableAndSetColorOnFlaggingPanel(doFlag);
 
 		CaseInsensitiveString wrappedName = normalizeAndWrapPlayerName(lastPredictionPlayerSighting.getPlayerName());
-		Map<CaseInsensitiveString, Boolean> reportMap = plugin.getReportedPlayers();
-		reportMap.put(wrappedName, doReport);
+		Map<CaseInsensitiveString, Boolean> flagMap = plugin.getFlaggedPlayers();
+		flagMap.put(wrappedName, doFlag);
 
-		// Didn't want to report? Work is done!
-		if (!doReport)
+		// Didn't want to flag? Work is done!
+		if (!doFlag)
 		{
 			return;
 		}
 
-		reportLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
-		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionReporterName, true)
+		flaggingHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
+		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionUploaderName, true)
 			.whenComplete((b, ex) ->
 			{
 				boolean stillSame = lastPredictionPlayerSighting != null &&
@@ -1104,18 +1104,18 @@ public class BotDetectorPanel extends PluginPanel
 					message = "Thank you for flagging '%s' as a bot to us!";
 					if (stillSame)
 					{
-						reportLabel.setIcon(null);
+						flaggingHeaderLabel.setIcon(null);
 					}
 				}
 				else
 				{
 					message = "Error sending your bot flag for '%s'.";
-					// Didn't work so remove from report map
-					reportMap.remove(wrappedName);
+					// Didn't work so remove from flagged map
+					flagMap.remove(wrappedName);
 					if (stillSame)
 					{
-						resetReportPanel();
-						reportLabel.setIcon(Icons.ERROR_ICON);
+						resetFlaggingPanel();
+						flaggingHeaderLabel.setIcon(Icons.ERROR_ICON);
 					}
 				}
 
@@ -1123,22 +1123,22 @@ public class BotDetectorPanel extends PluginPanel
 			});
 	}
 
-	private boolean shouldAllowFeedbackOrReport()
+	private boolean shouldAllowFeedbackOrFlagging()
 	{
-		return lastPredictionReporterName != null
-			&& !lastPredictionReporterName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
+		return lastPredictionUploaderName != null
+			&& !lastPredictionUploaderName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
 	}
 
 	private void resetFeedbackPanel()
 	{
-		feedbackLabel.setIcon(null);
+		feedbackHeaderLabel.setIcon(null);
 		feedbackGoodButton.setBackground(null);
 		feedbackGoodButton.setEnabled(true);
 		feedbackBadButton.setBackground(null);
 		feedbackBadButton.setEnabled(true);
 	}
 
-	private void disableAndSetColorOnFeedback(boolean feedback)
+	private void disableAndSetColorOnFeedbackPanel(boolean feedback)
 	{
 		feedbackGoodButton.setEnabled(false);
 		feedbackBadButton.setEnabled(false);
@@ -1152,26 +1152,26 @@ public class BotDetectorPanel extends PluginPanel
 		}
 	}
 
-	private void resetReportPanel()
+	private void resetFlaggingPanel()
 	{
-		reportLabel.setIcon(null);
-		reportYesButton.setBackground(null);
-		reportYesButton.setEnabled(true);
-		reportNoButton.setBackground(null);
-		reportNoButton.setEnabled(true);
+		flaggingHeaderLabel.setIcon(null);
+		flaggingYesButton.setBackground(null);
+		flaggingYesButton.setEnabled(true);
+		flaggingNoButton.setBackground(null);
+		flaggingNoButton.setEnabled(true);
 	}
 
-	private void disableAndSetColorOnReport(boolean report)
+	private void disableAndSetColorOnFlaggingPanel(boolean flagged)
 	{
-		reportYesButton.setEnabled(false);
-		reportNoButton.setEnabled(false);
-		if (report)
+		flaggingYesButton.setEnabled(false);
+		flaggingNoButton.setEnabled(false);
+		if (flagged)
 		{
-			reportYesButton.setBackground(POSITIVE_BUTTON_COLOR);
+			flaggingYesButton.setBackground(POSITIVE_BUTTON_COLOR);
 		}
 		else
 		{
-			reportNoButton.setBackground(NEGATIVE_BUTTON_COLOR);
+			flaggingNoButton.setBackground(NEGATIVE_BUTTON_COLOR);
 		}
 	}
 

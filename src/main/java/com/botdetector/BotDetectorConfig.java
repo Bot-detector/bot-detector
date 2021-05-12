@@ -42,7 +42,7 @@ public interface BotDetectorConfig extends Config
 	String AUTO_SEND_MINUTES_KEY = "autoSendMinutes";
 	String ADD_PREDICT_OPTION_KEY = "addDetectOption"; // I know it says detect, don't change it.
 	String HIGHLIGHT_PREDICT_KEY = "highlightPredictOption";
-	String ANONYMOUS_REPORTING_KEY = "enableAnonymousReporting";
+	String ANONYMOUS_UPLOADING_KEY = "enableAnonymousReporting";
 	String PANEL_FONT_TYPE_KEY = "panelFontType";
 	String AUTH_FULL_TOKEN_KEY = "authToken";
 
@@ -153,11 +153,11 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 10,
-		keyName = ANONYMOUS_REPORTING_KEY,
+		keyName = ANONYMOUS_UPLOADING_KEY,
 		name = "Anonymous Uploading",
 		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."
 	)
-	default boolean enableAnonymousReporting()
+	default boolean enableAnonymousUploading()
 	{
 		return true;
 	}
