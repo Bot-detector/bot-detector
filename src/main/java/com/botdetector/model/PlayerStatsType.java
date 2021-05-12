@@ -21,4 +21,10 @@ public enum PlayerStatsType
 	private final String description;
 	@Accessors(fluent = true)
 	private final boolean canDisplayAccuracy;
+
+	@Override
+	public String toString()
+	{
+		return shorthand;
+	}
 }

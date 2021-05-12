@@ -177,7 +177,7 @@ public class BotDetectorPanel extends PluginPanel
 	private final Map<WarningLabel, JLabel> warningLabels = new HashMap<>();
 	private Map<PlayerStatsType, PlayerStats> playerStatsMap;
 	private final MaterialTabGroup playerStatsTabGroup;
-	private PlayerStatsType currentPlayerStatsType = PLAYER_STAT_TYPES[0];
+	private PlayerStatsType currentPlayerStatsType;
 
 	// Primary Prediction
 	private JLabel predictionPlayerIdTextLabel;
@@ -217,6 +217,8 @@ public class BotDetectorPanel extends PluginPanel
 		setBorder(new EmptyBorder(18, 10, 0, 10));
 		setBackground(BACKGROUND_COLOR);
 		setLayout(new GridBagLayout());
+
+		currentPlayerStatsType = config.panelDefaultStatsType();
 
 		searchBar = playerSearchBar();
 		linksPanel = linksPanel();
