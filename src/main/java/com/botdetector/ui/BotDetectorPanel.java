@@ -46,6 +46,7 @@ import java.awt.Insets;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.DecimalFormat;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1232,7 +1233,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	private static String toPercentString(double percent)
 	{
-		return String.format("%.2f%%", percent * 100);
+		return new DecimalFormat("#.00%").format(percent);
 	}
 
 	private static String toPredictionBreakdownString(Map<String, Double> predictionMap)
