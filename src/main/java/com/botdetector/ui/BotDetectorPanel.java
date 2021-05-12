@@ -781,14 +781,12 @@ public class BotDetectorPanel extends PluginPanel
 			{
 				double accuracy = ps.getAccuracy();
 				playerStatsIncorrectFlagsLabel.setText(QuantityFormatter.formatNumber(ps.getIncorrectReports()));
-				playerStatsFlagAccuracyLabel.setText(toPercentString(accuracy));
-				playerStatsFlagAccuracyLabel.setForeground(getPredictionColor(accuracy));
+				playerStatsFlagAccuracyLabel.setText(wrapHTML(toColoredPercentSpan(accuracy), false));
 			}
 			else
 			{
 				playerStatsIncorrectFlagsLabel.setText(EMPTY_LABEL);
 				playerStatsFlagAccuracyLabel.setText(EMPTY_LABEL);
-				playerStatsFlagAccuracyLabel.setForeground(VALUE_COLOR);
 			}
 		}
 		else
@@ -798,7 +796,6 @@ public class BotDetectorPanel extends PluginPanel
 			playerStatsPossibleBansLabel.setText(EMPTY_LABEL);
 			playerStatsIncorrectFlagsLabel.setText(EMPTY_LABEL);
 			playerStatsFlagAccuracyLabel.setText(EMPTY_LABEL);
-			playerStatsFlagAccuracyLabel.setForeground(VALUE_COLOR);
 		}
 	}
 
@@ -867,8 +864,7 @@ public class BotDetectorPanel extends PluginPanel
 			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
 			predictionPlayerNameLabel.setText(wrapHTML(pred.getPlayerName()));
 			predictionTypeLabel.setText(wrapHTML(normalizeLabel(pred.getPredictionLabel())));
-			predictionConfidenceLabel.setText(toPercentString(pred.getConfidence()));
-			predictionConfidenceLabel.setForeground(getPredictionColor(pred.getConfidence()));
+			predictionConfidenceLabel.setText(wrapHTML(toColoredPercentSpan(pred.getConfidence()), false));
 
 			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
 			{
@@ -1204,7 +1200,14 @@ public class BotDetectorPanel extends PluginPanel
 	// This makes wrapping work on the labels that could wrap
 	private static String wrapHTML(String str)
 	{
-		return "<html>" + StringEscapeUtils.escapeHtml4(str) + "</html>";
+		return wrapHTML(str, true);
+	}
+
+	private static String wrapHTML(String str, boolean escape)
+	{
+		return "<html>"
+			+ (escape ? StringEscapeUtils.escapeHtml4(str) : str)
+			+ "</html>";
 	}
 
 	private static String sanitize(String lookup)
@@ -1222,17 +1225,24 @@ public class BotDetectorPanel extends PluginPanel
 		return VALID_RSN_PATTERN.matcher(playerName).matches();
 	}
 
-	private static Color getPredictionColor(double prediction)
+	private static Color getPercentColor(double percent)
 	{
-		prediction = Doubles.constrainToRange(prediction, 0, 1);
-		return prediction < 0.5 ?
-			ColorUtil.colorLerp(Color.RED, Color.YELLOW, prediction * 2)
-			: ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, (prediction - 0.5) * 2);
+		percent = Doubles.constrainToRange(percent, 0, 1);
+		return percent < 0.5 ?
+			ColorUtil.colorLerp(Color.RED, Color.YELLOW, percent * 2)
+			: ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, (percent - 0.5) * 2);
 	}
 
 	private static String toPercentString(double percent)
 	{
 		return String.format("%.2f%%", percent * 100);
+	}
+
+	private static String toColoredPercentSpan(double percent)
+	{
+		return String.format("<span style='color:%s'>%s</span>",
+			ColorUtil.toHexColor(getPercentColor(percent)),
+			toPercentString(percent));
 	}
 
 	private static String toPredictionBreakdownString(Map<String, Double> predictionMap)
@@ -1242,19 +1252,21 @@ public class BotDetectorPanel extends PluginPanel
 			return null;
 		}
 
-		String openingTags = "<html><body style='margin:0;padding:0;color:" + ColorUtil.toHexColor(TEXT_COLOR) + "'>" +
-			"<table border='0' cellspacing='0' cellpadding='0'>";
+		String openingTags = "<html><body style='margin:0;padding:0;color:"
+			+ ColorUtil.toHexColor(TEXT_COLOR) + "'>"
+			+ "<table border='0' cellspacing='0' cellpadding='0'>";
 		String closingTags = "</table></body></html>";
 
 		StringBuilder sb = new StringBuilder();
 		sb.append(openingTags);
 
+		String rowString = "<tr><td>%s:</td><td style='padding-left:5;text-align:right;color:%s'>%s</td></tr>";
 		predictionMap.entrySet().stream().filter(e -> e.getValue() > 0)
 			.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-			.forEach(e ->
-				sb.append("<tr><td>").append(normalizeLabel(e.getKey())).append(":</td>")
-					.append("<td style='padding-left:5;text-align:right;color:").append(ColorUtil.toHexColor(getPredictionColor(e.getValue())))
-					.append("'>").append(toPercentString(e.getValue())).append("</td></tr>"));
+			.forEach(e -> sb.append(String.format(rowString,
+				normalizeLabel(e.getKey()),
+				ColorUtil.toHexColor(getPercentColor(e.getValue())),
+				toPercentString(e.getValue()))));
 
 		return sb.append(closingTags).toString();
 	}
