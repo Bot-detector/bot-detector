@@ -34,6 +34,7 @@ import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
 import com.botdetector.events.BotDetectorPanelActivated;
+import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -210,6 +211,7 @@ public class BotDetectorPlugin extends Plugin
 	private boolean isCurrentWorldMembers;
 	private boolean isCurrentWorldPVP;
 	private boolean isCurrentWorldBlocked;
+	private EvictingQueue<GameState> previousTwoGameStates = EvictingQueue.create(2);
 
 	@Getter
 	private AuthToken authToken = AuthToken.EMPTY_TOKEN;
@@ -276,6 +278,8 @@ public class BotDetectorPlugin extends Plugin
 
 		authToken = AuthToken.fromFullToken(config.authFullToken());
 
+		previousTwoGameStates.offer(client.getGameState());
+
 		chatCommandManager.registerCommand(VERIFY_DISCORD_COMMAND, this::verifyDiscord);
 	}
 
@@ -302,6 +306,8 @@ public class BotDetectorPlugin extends Plugin
 		lastFlush = Instant.MIN;
 		lastStatsRefresh = Instant.MIN;
 		authToken = AuthToken.EMPTY_TOKEN;
+
+		previousTwoGameStates.clear();
 
 		chatCommandManager.unregisterCommand(VERIFY_DISCORD_COMMAND);
 	}
@@ -514,20 +520,32 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onGameStateChanged(GameStateChanged event)
 	{
-		if (event.getGameState() == GameState.LOGIN_SCREEN)
+		switch (event.getGameState())
 		{
-			if (loggedPlayerName != null)
-			{
-				flushPlayersToClient(false);
-				persistentSightings.clear();
-				feedbackedPlayers.clear();
-				flaggedPlayers.clear();
-				loggedPlayerName = null;
+			case LOGIN_SCREEN:
+				if (loggedPlayerName != null)
+				{
+					flushPlayersToClient(false);
+					persistentSightings.clear();
+					feedbackedPlayers.clear();
+					flaggedPlayers.clear();
+					loggedPlayerName = null;
 
-				refreshPlayerStats(true);
-				lastStatsRefresh = Instant.MIN;
-			}
+					refreshPlayerStats(true);
+					lastStatsRefresh = Instant.MIN;
+				}
+				break;
+			case LOGGED_IN:
+				// Reload Sighting cache when passing from LOGGED_IN -> LOADING -> LOGGED_IN
+				if (!isCurrentWorldBlocked && loggedPlayerName != null
+					&& previousTwoGameStates.contains(GameState.LOGGED_IN)
+					&& previousTwoGameStates.contains(GameState.LOADING))
+				{
+					client.getPlayers().forEach(this::processPlayer);
+				}
+				break;
 		}
+		previousTwoGameStates.offer(event.getGameState());
 	}
 
 	@Subscribe
@@ -889,6 +907,11 @@ public class BotDetectorPlugin extends Plugin
 		if (isCurrentWorldBlocked)
 		{
 			sendChatStatusMessage("Cannot refresh player sightings on a blocked world.", true);
+		}
+		else if (client.getGameState() != GameState.LOGGED_IN)
+		{
+			// Just in case!
+			sendChatStatusMessage("Current game state must be 'LOGGED_IN'!", true);
 		}
 		else
 		{
