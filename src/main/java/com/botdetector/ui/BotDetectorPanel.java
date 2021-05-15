@@ -1238,7 +1238,7 @@ public class BotDetectorPanel extends PluginPanel
 
 	private static String toPercentString(double percent)
 	{
-		return new DecimalFormat("#.00%").format(percent);
+		return new DecimalFormat("0.00%").format(percent);
 	}
 
 	private static String toColoredPercentSpan(double percent)
