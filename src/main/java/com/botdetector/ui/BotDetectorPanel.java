@@ -176,6 +176,8 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel playerStatsFlagAccuracyLabel;
 	private final Map<WarningLabel, JLabel> warningLabels = new HashMap<>();
 	private Map<PlayerStatsType, PlayerStats> playerStatsMap;
+	private int playerCurrentManualUploads;
+	private int playerCurrentPassiveUploads;
 	private final MaterialTabGroup playerStatsTabGroup;
 	private PlayerStatsType currentPlayerStatsType;
 
@@ -332,7 +334,7 @@ public class BotDetectorPanel extends PluginPanel
 				@Override
 				public void mousePressed(MouseEvent mouseEvent)
 				{
-					setPlayerStatsForType(currentPlayerStatsType);
+					updatePlayerStatsLabels();
 				}
 			});
 			tabGroup.addTab(tab);
@@ -391,7 +393,7 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.add(playerStatsPluginVersionLabel);
 
 		label = new JLabel("Current Uploads: ");
-		label.setToolTipText("How many names passively uploaded during the current Runelite session.");
+		label.setToolTipText("How many names uploaded during the current Runelite session.");
 		label.setForeground(TEXT_COLOR);
 
 		c.gridy++;
@@ -763,26 +765,34 @@ public class BotDetectorPanel extends PluginPanel
 		playerStatsPluginVersionLabel.setText(pluginVersion);
 	}
 
-	public void setNamesUploaded(int num)
+	public void setNamesUploaded(int num, boolean manual)
 	{
-		playerStatsUploadedNamesLabel.setText(QuantityFormatter.formatNumber(num));
+		if (manual)
+		{
+			playerCurrentManualUploads = num;
+		}
+		else
+		{
+			playerCurrentPassiveUploads = num;
+		}
+		updateCurrentUploadsLabel();
 	}
 
 	public void setPlayerStatsMap(Map<PlayerStatsType, PlayerStats> psm)
 	{
 		playerStatsMap = psm;
-		setPlayerStatsForType(currentPlayerStatsType);
+		updatePlayerStatsLabels();
 	}
 
-	private void setPlayerStatsForType(PlayerStatsType pst)
+	private void updatePlayerStatsLabels()
 	{
-		PlayerStats ps = playerStatsMap != null ? playerStatsMap.get(pst) : null;
+		PlayerStats ps = playerStatsMap != null ? playerStatsMap.get(currentPlayerStatsType) : null;
 		if (ps != null)
 		{
 			playerStatsTotalUploadsLabel.setText(QuantityFormatter.formatNumber(ps.getNamesUploaded()));
 			playerStatsConfirmedBansLabel.setText(QuantityFormatter.formatNumber(ps.getConfirmedBans()));
 			playerStatsPossibleBansLabel.setText(QuantityFormatter.formatNumber(ps.getPossibleBans()));
-			if (pst.canDisplayAccuracy())
+			if (currentPlayerStatsType.canDisplayAccuracy())
 			{
 				double accuracy = ps.getAccuracy();
 				playerStatsIncorrectFlagsLabel.setText(QuantityFormatter.formatNumber(ps.getIncorrectFlags()));
@@ -802,6 +812,25 @@ public class BotDetectorPanel extends PluginPanel
 			playerStatsIncorrectFlagsLabel.setText(EMPTY_LABEL);
 			playerStatsFlagAccuracyLabel.setText(EMPTY_LABEL);
 		}
+		updateCurrentUploadsLabel();
+	}
+
+	private void updateCurrentUploadsLabel()
+	{
+		int val;
+		switch (currentPlayerStatsType)
+		{
+			case MANUAL:
+				val = playerCurrentManualUploads;
+				break;
+			case PASSIVE:
+				val = playerCurrentPassiveUploads;
+				break;
+			default:
+				val = playerCurrentManualUploads + playerCurrentPassiveUploads;
+				break;
+		}
+		playerStatsUploadedNamesLabel.setText(QuantityFormatter.formatNumber(val));
 	}
 
 	public boolean getWarningVisible(WarningLabel wl)
@@ -1104,6 +1133,7 @@ public class BotDetectorPanel extends PluginPanel
 				if (ex == null && b)
 				{
 					message = "Thank you for flagging '%s' as a bot to us!";
+					setNamesUploaded(playerCurrentManualUploads + 1, true);
 					if (stillSame)
 					{
 						flaggingHeaderLabel.setIcon(null);

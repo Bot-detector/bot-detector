@@ -253,7 +253,8 @@ public class BotDetectorPlugin extends Plugin
 		{
 			panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousUploading());
 			panel.setPluginVersion(detectorClient.getPluginVersion());
-			panel.setNamesUploaded(0);
+			panel.setNamesUploaded(0, false);
+			panel.setNamesUploaded(0, true);
 		});
 
 		processCurrentWorld();
@@ -374,7 +375,7 @@ public class BotDetectorPlugin extends Plugin
 				if (ex == null && b)
 				{
 					namesUploaded += uniqueNames;
-					SwingUtilities.invokeLater(() -> panel.setNamesUploaded(namesUploaded));
+					SwingUtilities.invokeLater(() -> panel.setNamesUploaded(namesUploaded, false));
 					sendChatStatusMessage("Successfully uploaded " + numUploads +
 						" locations for " + uniqueNames + " unique players.",
 						forceChatNotification);
