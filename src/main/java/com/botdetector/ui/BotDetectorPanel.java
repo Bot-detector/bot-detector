@@ -321,6 +321,8 @@ public class BotDetectorPanel extends PluginPanel
 			MaterialTab tab = new MaterialTab(pst.getShorthand(), tabGroup, null);
 			tab.setToolTipText(pst.getDescription());
 			tab.setFont(SMALL_FONT);
+			tab.setHorizontalAlignment(JLabel.CENTER);
+
 			tab.setOnSelectEvent(() ->
 			{
 				currentPlayerStatsType = pst;
@@ -335,6 +337,7 @@ public class BotDetectorPanel extends PluginPanel
 					setPlayerStatsForType(currentPlayerStatsType);
 				}
 			});
+
 			tabGroup.addTab(tab);
 			if (currentPlayerStatsType == pst)
 			{
