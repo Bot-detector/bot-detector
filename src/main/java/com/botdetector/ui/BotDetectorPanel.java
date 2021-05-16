@@ -314,6 +314,7 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		MaterialTabGroup tabGroup = new MaterialTabGroup();
 		tabGroup.setLayout(new GridLayout(1, PLAYER_STAT_TYPES.length, 7, 7));
+		tabGroup.setBorder(new EmptyBorder(VALUE_PAD, 0, VALUE_PAD, 0));
 
 		for (PlayerStatsType pst : PLAYER_STAT_TYPES)
 		{
@@ -492,6 +493,7 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridx = 0;
 		c.weightx = 1;
 		c.gridwidth = 2;
+		c.ipady = 0;
 		uploadingStatsPanel.add(playerStatsTabGroup, c);
 
 		c.ipady = WARNING_PAD;
