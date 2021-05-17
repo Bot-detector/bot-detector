@@ -45,6 +45,7 @@ public interface BotDetectorConfig extends Config
 	String ANONYMOUS_UPLOADING_KEY = "enableAnonymousReporting";
 	String PANEL_FONT_TYPE_KEY = "panelFontType";
 	String AUTH_FULL_TOKEN_KEY = "authToken";
+	String SHOW_FEEDBACK_TEXTBOX = "showFeedbackTextbox";
 
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
 	int AUTO_SEND_MAXIMUM_MINUTES = 360;
@@ -131,6 +132,17 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 8,
+		keyName = SHOW_FEEDBACK_TEXTBOX,
+		name = "Show Feedback Textbox",
+		description = "Show a textbox on the prediction feedback panel where you can explain your feedback to us."
+	)
+	default boolean showFeedbackTextbox()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 9,
 		keyName = "panelDefaultStatsType",
 		name = "Panel Default Stats Tab",
 		description = "Sets the initial player statistics tab in the prediction panel for when the plugin is launched."
@@ -141,7 +153,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 9,
+		position = 10,
 		keyName = PANEL_FONT_TYPE_KEY,
 		name = "Panel Font Size",
 		description = "Sets the size of the label fields in the prediction panel."
@@ -152,7 +164,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 10,
+		position = 11,
 		keyName = ANONYMOUS_UPLOADING_KEY,
 		name = "Anonymous Uploading",
 		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."
