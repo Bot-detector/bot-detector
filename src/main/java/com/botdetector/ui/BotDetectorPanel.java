@@ -944,17 +944,23 @@ public class BotDetectorPanel extends PluginPanel
 			if (shouldAllowFeedbackOrFlagging()
 				&& pred.getPlayerId() > 0)
 			{
+				resetFeedbackPanel(true);
 				CaseInsensitiveString name = normalizeAndWrapPlayerName(pred.getPlayerName());
 
 				// If the player has already been feedbacked/flagged, ensure the panels reflect this
-				resetFeedbackPanel(true);
 				Boolean feedbacked = plugin.getFeedbackedPlayers().get(name);
 				if (feedbacked != null)
 				{
 					disableAndSetColorOnFeedbackPanel(feedbacked);
-					String txt = plugin.getFeedbackedPlayersText().get(name);
-					feedbackTextbox.setText(txt != null ? txt : "");
 				}
+
+				// If there was some feedback text from a previous send, either successful or failed
+				String feedbackText = plugin.getFeedbackedPlayersText().get(name);
+				if (feedbackText != null)
+				{
+					feedbackTextbox.setText(feedbackText);
+				}
+
 				predictionFeedbackPanel.setVisible(true);
 
 				resetFlaggingPanel();
