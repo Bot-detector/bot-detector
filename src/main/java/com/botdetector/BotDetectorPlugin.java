@@ -600,7 +600,9 @@ public class BotDetectorPlugin extends Plugin
 			}
 		}
 
-		WorldPoint wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
+		WorldPoint wp = !client.isInInstancedRegion() ? player.getWorldLocation()
+			: WorldPoint.fromLocalInstance(client, player.getLocalLocation());
+
 		PlayerSighting p = PlayerSighting.builder()
 			.playerName(playerName)
 			.regionID(wp.getRegionID())
