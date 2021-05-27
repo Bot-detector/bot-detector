@@ -231,7 +231,7 @@ public class BotDetectorClient
 		return future;
 	}
 
-	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String uploaderName, boolean feedback)
+	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String uploaderName, boolean feedback, String feedbackText)
 	{
 		Gson gson = gsonBuilder.create();
 
@@ -242,7 +242,8 @@ public class BotDetectorClient
 				feedback ? 1 : -1,
 				pred.getPredictionLabel(),
 				pred.getConfidence(),
-				pred.getPlayerId()
+				pred.getPlayerId(),
+				feedbackText
 			)))).build();
 
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
@@ -442,6 +443,8 @@ public class BotDetectorClient
 		double predictionConfidence;
 		@SerializedName("subject_id")
 		int targetId;
+		@SerializedName("feedback_text")
+		String feedbackText;
 	}
 
 	private static class PlayerSightingWrapperSerializer implements JsonSerializer<PlayerSightingWrapper>

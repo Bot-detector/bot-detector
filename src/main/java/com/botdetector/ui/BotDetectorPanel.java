@@ -35,6 +35,7 @@ import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.PlayerStatsType;
 import com.botdetector.model.Prediction;
+import com.botdetector.ui.components.JLimitedTextArea;
 import com.google.common.primitives.Doubles;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -61,6 +62,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
@@ -142,6 +144,8 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Border SUB_PANEL_BORDER = new EmptyBorder(5, 10, 10, 10);
 	private static final Dimension HEADER_PREFERRED_SIZE = new Dimension(0, 25);
 
+	private static final int MAX_FEEDBACK_TEXT_CHARS = 250;
+
 	private static final PlayerStatsType[] PLAYER_STAT_TYPES = {
 		PlayerStatsType.TOTAL, PlayerStatsType.PASSIVE, PlayerStatsType.MANUAL
 	};
@@ -195,6 +199,8 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel feedbackHeaderLabel;
 	private JButton feedbackGoodButton;
 	private JButton feedbackBadButton;
+	private JScrollPane feedbackTextScrollPane;
+	private JLimitedTextArea feedbackTextbox;
 	private JLabel flaggingHeaderLabel;
 	private JButton flaggingYesButton;
 	private JButton flaggingNoButton;
@@ -664,6 +670,22 @@ public class BotDetectorPanel extends PluginPanel
 		c.weightx = 1;
 		panel.add(feedbackHeaderLabel, c);
 
+		feedbackTextbox = new JLimitedTextArea(MAX_FEEDBACK_TEXT_CHARS);
+		feedbackTextbox.setToolTipText("Please explain your feedback (max " + MAX_FEEDBACK_TEXT_CHARS + " characters).");
+		feedbackTextbox.setForeground(HEADER_COLOR);
+		feedbackTextbox.setBackground(BACKGROUND_COLOR);
+		feedbackTextbox.setFont(SMALL_FONT);
+		feedbackTextbox.setWrapStyleWord(true);
+		feedbackTextbox.setLineWrap(true);
+		feedbackTextbox.setTabSize(2);
+		feedbackTextScrollPane = new JScrollPane(feedbackTextbox);
+		feedbackTextScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		feedbackTextScrollPane.setPreferredSize(new Dimension(0, 75));
+		feedbackTextScrollPane.setBorder(new EmptyBorder(0, 0, 10, 0));
+		feedbackTextScrollPane.setOpaque(false);
+		c.gridy++;
+		panel.add(feedbackTextScrollPane, c);
+
 		feedbackGoodButton = new JButton("Looks fine!");
 		feedbackGoodButton.setToolTipText(String.format(tooltip, "correct"));
 		feedbackGoodButton.setForeground(HEADER_COLOR);
@@ -865,6 +887,11 @@ public class BotDetectorPanel extends PluginPanel
 		predictionPlayerIdLabel.setVisible(visible);
 	}
 
+	public void setFeedbackTextboxVisible(boolean visible)
+	{
+		feedbackTextScrollPane.setVisible(visible);
+	}
+
 	public void forceHideFeedbackPanel()
 	{
 		predictionFeedbackPanel.setVisible(false);
@@ -917,15 +944,23 @@ public class BotDetectorPanel extends PluginPanel
 			if (shouldAllowFeedbackOrFlagging()
 				&& pred.getPlayerId() > 0)
 			{
+				resetFeedbackPanel(true);
 				CaseInsensitiveString name = normalizeAndWrapPlayerName(pred.getPlayerName());
 
 				// If the player has already been feedbacked/flagged, ensure the panels reflect this
-				resetFeedbackPanel();
 				Boolean feedbacked = plugin.getFeedbackedPlayers().get(name);
 				if (feedbacked != null)
 				{
 					disableAndSetColorOnFeedbackPanel(feedbacked);
 				}
+
+				// If there was some feedback text from a previous send, either successful or failed
+				String feedbackText = plugin.getFeedbackedPlayersText().get(name);
+				if (feedbackText != null)
+				{
+					feedbackTextbox.setText(feedbackText);
+				}
+
 				predictionFeedbackPanel.setVisible(true);
 
 				resetFlaggingPanel();
@@ -1073,8 +1108,19 @@ public class BotDetectorPanel extends PluginPanel
 		Map<CaseInsensitiveString, Boolean> feedbackMap = plugin.getFeedbackedPlayers();
 		feedbackMap.put(wrappedName, feedback);
 
+		String feedbackText = feedbackTextbox.getText().trim();
+		if (feedbackText.isEmpty())
+		{
+			feedbackText = null;
+		}
+		else
+		{
+			// Will not get reset upon send failure, so don't need to keep reference
+			plugin.getFeedbackedPlayersText().put(wrappedName, feedbackText);
+		}
+
 		feedbackHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
-		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, feedback)
+		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, feedback, feedbackText)
 			.whenComplete((b, ex) ->
 			{
 				boolean stillSame = lastPrediction != null &&
@@ -1096,7 +1142,7 @@ public class BotDetectorPanel extends PluginPanel
 					feedbackMap.remove(wrappedName);
 					if (stillSame)
 					{
-						resetFeedbackPanel();
+						resetFeedbackPanel(false);
 						feedbackHeaderLabel.setIcon(Icons.ERROR_ICON);
 					}
 				}
@@ -1164,19 +1210,25 @@ public class BotDetectorPanel extends PluginPanel
 			&& !lastPredictionUploaderName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
 	}
 
-	private void resetFeedbackPanel()
+	private void resetFeedbackPanel(boolean clearText)
 	{
 		feedbackHeaderLabel.setIcon(null);
 		feedbackGoodButton.setBackground(null);
 		feedbackGoodButton.setEnabled(true);
 		feedbackBadButton.setBackground(null);
 		feedbackBadButton.setEnabled(true);
+		feedbackTextbox.setEnabled(true);
+		if (clearText)
+		{
+			feedbackTextbox.setText("");
+		}
 	}
 
 	private void disableAndSetColorOnFeedbackPanel(boolean feedback)
 	{
 		feedbackGoodButton.setEnabled(false);
 		feedbackBadButton.setEnabled(false);
+		feedbackTextbox.setEnabled(false);
 		if (feedback)
 		{
 			feedbackGoodButton.setBackground(POSITIVE_BUTTON_COLOR);

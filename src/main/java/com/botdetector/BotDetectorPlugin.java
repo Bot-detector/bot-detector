@@ -224,6 +224,8 @@ public class BotDetectorPlugin extends Plugin
 	@Getter
 	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new ConcurrentHashMap<>();
 	@Getter
+	private final Map<CaseInsensitiveString, String> feedbackedPlayersText = new ConcurrentHashMap<>();
+	@Getter
 	private final Map<CaseInsensitiveString, Boolean> flaggedPlayers = new ConcurrentHashMap<>();
 
 	@Override
@@ -255,6 +257,7 @@ public class BotDetectorPlugin extends Plugin
 			panel.setPluginVersion(detectorClient.getPluginVersion());
 			panel.setNamesUploaded(0, false);
 			panel.setNamesUploaded(0, true);
+			panel.setFeedbackTextboxVisible(config.showFeedbackTextbox());
 		});
 
 		processCurrentWorld();
@@ -292,6 +295,7 @@ public class BotDetectorPlugin extends Plugin
 		flushPlayersToClient(false);
 		persistentSightings.clear();
 		feedbackedPlayers.clear();
+		feedbackedPlayersText.clear();
 		flaggedPlayers.clear();
 
 		if (client != null)
@@ -511,6 +515,9 @@ public class BotDetectorPlugin extends Plugin
 			case BotDetectorConfig.PANEL_FONT_TYPE_KEY:
 				SwingUtilities.invokeLater(() -> panel.setFontType(config.panelFontType()));
 				break;
+			case BotDetectorConfig.SHOW_FEEDBACK_TEXTBOX:
+				SwingUtilities.invokeLater(() -> panel.setFeedbackTextboxVisible(config.showFeedbackTextbox()));
+				break;
 			case BotDetectorConfig.AUTO_SEND_MINUTES_KEY:
 			case BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY:
 				updateTimeToAutoSend();
@@ -529,6 +536,7 @@ public class BotDetectorPlugin extends Plugin
 					flushPlayersToClient(false);
 					persistentSightings.clear();
 					feedbackedPlayers.clear();
+					feedbackedPlayersText.clear();
 					flaggedPlayers.clear();
 					loggedPlayerName = null;
 
