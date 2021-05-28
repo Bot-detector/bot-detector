@@ -697,13 +697,15 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		int groupId = WidgetInfo.TO_GROUP(event.getActionParam1());
+		final int componentId = event.getActionParam1();
+		int groupId = WidgetInfo.TO_GROUP(componentId);
 		String option = event.getOption();
 
 		if (groupId == WidgetInfo.FRIENDS_LIST.getGroupId() || groupId == WidgetInfo.FRIENDS_CHAT.getGroupId() ||
 			groupId == WidgetInfo.CHATBOX.getGroupId() && !KICK_OPTION.equals(option) ||
 			groupId == WidgetInfo.RAIDING_PARTY.getGroupId() || groupId == WidgetInfo.PRIVATE_CHAT_MESSAGE.getGroupId() ||
-			groupId == WidgetInfo.IGNORE_LIST.getGroupId())
+			groupId == WidgetInfo.IGNORE_LIST.getGroupId() ||
+			componentId == WidgetInfo.CLAN_MEMBER_LIST.getId() || componentId == WidgetInfo.CLAN_GUEST_MEMBER_LIST.getId())
 		{
 			if (!AFTER_OPTIONS.contains(option) || (option.equals(DELETE_OPTION) && groupId != WidgetInfo.IGNORE_LIST.getGroupId()))
 			{
