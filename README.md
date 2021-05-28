@@ -1,4 +1,4 @@
-# Bot Detector Plugin
+# Bot Detector Plugin [![](https://img.shields.io/endpoint?url=https://i.pluginhub.info/shields/rank/plugin/bot-detector)](https://runelite.net/plugin-hub) [![](https://img.shields.io/endpoint?url=https://i.pluginhub.info/shields/installs/plugin/bot-detector)](https://runelite.net/plugin-hub)
 
 # DISCORD -  https://discord.com/invite/JCAGpcjbfP
 --------------------------------------------------------------------------------------------------------
