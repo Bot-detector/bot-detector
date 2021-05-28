@@ -40,6 +40,10 @@ public class PlayerStats
 	@SerializedName("incorrect_reports")
 	int incorrectFlags;
 
+	/**
+	 * The accuracy represents {@link #confirmedBans} divided by
+	 * the sum of {@link #confirmedBans} and {@link #incorrectFlags}.
+	 */
 	public double getAccuracy()
 	{
 		int divisor = incorrectFlags + confirmedBans;

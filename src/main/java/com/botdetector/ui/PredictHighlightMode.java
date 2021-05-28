@@ -30,8 +30,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum PredictHighlightMode
 {
+	/** Never highlight the Predict player option. **/
 	NONE("No Highlight"),
+	/** Always highlight the Predict player option. **/
 	ALL("Highlight All"),
+	/** Stop highlighting the Predict player option if the player has had an option selected in the panel flagging buttons. **/
 	NOT_REPORTED("Only Unflagged")
 	;
 

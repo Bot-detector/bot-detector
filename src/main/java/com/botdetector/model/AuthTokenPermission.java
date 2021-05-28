@@ -25,7 +25,11 @@
  */
 package com.botdetector.model;
 
+/**
+ * Represents the operations that a given {@link AuthTokenType} should allow.
+ */
 public enum AuthTokenPermission
 {
+	/** Allows verification of RSN/Discord pairs in-game **/
 	VERIFY_DISCORD
 }

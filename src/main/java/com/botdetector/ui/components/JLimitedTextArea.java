@@ -32,10 +32,20 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.PlainDocument;
 
+/**
+ * An extension of {@link JTextArea} that automatically implements
+ * a default {@link Document} model that limits the number of characters
+ * that can be entered to the given {@code limit} in {@link #JLimitedTextArea(int)}.
+ */
 public class JLimitedTextArea extends JTextArea
 {
 	private final int limit;
 
+	/**
+	 * Instanciates a {@link JTextArea} implementing a default {@link Document} model
+	 * that limits the number of characters that can be entered.
+	 * @param limit The maximum number of characters that can be entered in the underlying {@link JTextArea}.
+	 */
 	public JLimitedTextArea(int limit)
 	{
 		super();

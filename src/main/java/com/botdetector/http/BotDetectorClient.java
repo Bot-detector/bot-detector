@@ -68,6 +68,9 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+/**
+ * Class containing various methods to interact with the Bot Detector API.
+ */
 @Slf4j
 @Singleton
 public class BotDetectorClient
@@ -104,6 +107,11 @@ public class BotDetectorClient
 	@Setter
 	private String pluginVersion;
 
+	/**
+	 * Constructs a base URL for the given {@code path}.
+	 * @param path The path to get the base URL for
+	 * @return The base URL for the given {@code path}.
+	 */
 	private HttpUrl getUrl(ApiPath path)
 	{
 		String version = (pluginVersion != null && !pluginVersion.isEmpty()) ?
@@ -115,11 +123,25 @@ public class BotDetectorClient
 			.build();
 	}
 
+	/**
+	 * Sends a single {@link PlayerSighting} to the API to be persisted in the Bot Detector database.
+	 * @param sighting The sighting to send.
+	 * @param uploaderName The user's player name, or {@link com.botdetector.BotDetectorPlugin#ANONYMOUS_USER_NAME}.
+	 * @param manual Whether or not the given sighting is to be manually flagged as a bot by the user.
+	 * @return A future that will eventually return a boolean indicating success.
+	 */
 	public CompletableFuture<Boolean> sendSighting(PlayerSighting sighting, String uploaderName, boolean manual)
 	{
 		return sendSightings(ImmutableList.of(sighting), uploaderName, manual);
 	}
 
+	/**
+	 * Sends a collection of {@link PlayerSighting}s to the API to be persisted in the Bot Detector database.
+	 * @param sightings The collection of sightings to send.
+	 * @param uploaderName The user's player name, or {@link com.botdetector.BotDetectorPlugin#ANONYMOUS_USER_NAME}.
+	 * @param manual Whether or not the given sightings are to be manually flagged as bots by the user.
+	 * @return A future that will eventually return a boolean indicating success.
+	 */
 	public CompletableFuture<Boolean> sendSightings(Collection<PlayerSighting> sightings, String uploaderName, boolean manual)
 	{
 		List<PlayerSightingWrapper> wrappedList = sightings.stream()
@@ -175,6 +197,13 @@ public class BotDetectorClient
 		return future;
 	}
 
+	/**
+	 * Tokenized API route to verify the given player name and code pair for Discord linking.
+	 * @param token The auth token to use.
+	 * @param nameToVerify The player name up for verification.
+	 * @param code The code given by the player.
+	 * @return A future that will eventually return a boolean indicating success.
+	 */
 	public CompletableFuture<Boolean> verifyDiscord(String token, String nameToVerify, String code)
 	{
 		Gson gson = gsonBuilder.create();
@@ -231,6 +260,14 @@ public class BotDetectorClient
 		return future;
 	}
 
+	/**
+	 * Sends a feedback to the API for the given prediction.
+	 * @param pred The prediction object to give a feedback for.
+	 * @param uploaderName The user's player name.
+	 * @param feedback The user's feedback.
+	 * @param feedbackText The user's feedback text to include with the feedback.
+	 * @return A future that will eventually return a boolean indicating success.
+	 */
 	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String uploaderName, boolean feedback, String feedbackText)
 	{
 		Gson gson = gsonBuilder.create();
@@ -283,6 +320,11 @@ public class BotDetectorClient
 		return future;
 	}
 
+	/**
+	 * Requests a bot prediction for the given {@code playerName}.
+	 * @param playerName The player name to predict.
+	 * @return A future that will eventually return the player's bot prediction.
+	 */
 	public CompletableFuture<Prediction> requestPrediction(String playerName)
 	{
 		Gson gson = gsonBuilder.create();
@@ -325,6 +367,11 @@ public class BotDetectorClient
 		return future;
 	}
 
+	/**
+	 * Requests the uploading contributions for the given {@code playerName}.
+	 * @param playerName The name to request the uploading contributions.
+	 * @return A future that will eventually return the player's statistics.
+	 */
 	public CompletableFuture<Map<PlayerStatsType, PlayerStats>> requestPlayerStats(String playerName)
 	{
 		Gson gson = gsonBuilder.create();
@@ -370,6 +417,15 @@ public class BotDetectorClient
 		return future;
 	}
 
+	/**
+	 * Processes the body of the given response and parses out the contained JSON object.
+	 * @param gson The {@link Gson} instance to use for parsing the JSON object in the {@code response}.
+	 * @param response The response containing the object to parse in {@link Response#body()}.
+	 * @param type The type of the JSON object to parse.
+	 * @param <T> The type of the JSON object to parse, inferred from {@code type}.
+	 * @return The parsed object, or {@code null} if the API returned a 404.
+	 * @throws IOException If the response is unsuccessful or the {@link Response#body()} contains malformed data.
+	 */
 	private <T> T processResponse(Gson gson, Response response, Type type) throws IOException
 	{
 		if (!response.isSuccessful())
@@ -392,6 +448,11 @@ public class BotDetectorClient
 		}
 	}
 
+	/**
+	 * Gets the {@link IOException} to return for when {@link Response#isSuccessful()} returns false.
+	 * @param response The response object to get the {@link IOException} for.
+	 * @return The {@link IOException} with the appropriate message for the given {@code response}.
+	 */
 	private IOException getIOException(Response response)
 	{
 		int code = response.code();
@@ -414,6 +475,9 @@ public class BotDetectorClient
 		return new IOException("Error " + code + " from API");
 	}
 
+	/**
+	 * For use with {@link PlayerSightingWrapperSerializer}.
+	 */
 	@Value
 	private static class PlayerSightingWrapper
 	{
@@ -447,6 +511,10 @@ public class BotDetectorClient
 		String feedbackText;
 	}
 
+	/**
+	 * Wrapper around the {@link PlayerSighting}'s json serializer.
+	 * Adds the reporter name as an element on the same level as the {@link PlayerSighting}'s fields.
+	 */
 	private static class PlayerSightingWrapperSerializer implements JsonSerializer<PlayerSightingWrapper>
 	{
 		@Override
@@ -458,6 +526,9 @@ public class BotDetectorClient
 		}
 	}
 
+	/**
+	 * Serializes a {@link Boolean} as the integers {@code 0} or {@code 1}.
+	 */
 	private static class BooleanToZeroOneSerializer implements JsonSerializer<Boolean>
 	{
 		@Override
@@ -467,6 +538,9 @@ public class BotDetectorClient
 		}
 	}
 
+	/**
+	 * Serializes/Unserializes {@link Instant} using {@link Instant#getEpochSecond()}/{@link Instant#ofEpochSecond(long)}
+	 */
 	private static class InstantSecondsConverter implements JsonSerializer<Instant>, JsonDeserializer<Instant>
 	{
 		@Override
