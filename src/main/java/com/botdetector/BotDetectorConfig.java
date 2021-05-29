@@ -46,6 +46,7 @@ public interface BotDetectorConfig extends Config
 	String PANEL_FONT_TYPE_KEY = "panelFontType";
 	String AUTH_FULL_TOKEN_KEY = "authToken";
 	String SHOW_FEEDBACK_TEXTBOX = "showFeedbackTextbox";
+	String SHOW_DISCORD_VERIFICATION_ERRORS = "showDiscordVerificationErrors";
 
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
 	int AUTO_SEND_MAXIMUM_MINUTES = 360;
@@ -202,5 +203,24 @@ public interface BotDetectorConfig extends Config
 		description = "",
 		hidden = true
 	)
-	String setAuthFullToken(String fullToken);
+	void setAuthFullToken(String fullToken);
+
+	@ConfigItem(
+		keyName = SHOW_DISCORD_VERIFICATION_ERRORS,
+		name = "",
+		description = "",
+		hidden = true
+	)
+	default boolean showDiscordVerificationErrors()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = SHOW_DISCORD_VERIFICATION_ERRORS,
+		name = "",
+		description = "",
+		hidden = true
+	)
+	void setShowDiscordVerificationErrors(boolean show);
 }
