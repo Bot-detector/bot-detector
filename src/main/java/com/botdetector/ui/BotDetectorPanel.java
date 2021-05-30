@@ -1035,7 +1035,7 @@ public class BotDetectorPanel extends PluginPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			searchBarLoading = false;
-			setPredictionError(target.substring(0, MAX_RSN_LENGTH - 1) + "...",
+			setPredictionError(target.substring(0, MAX_RSN_LENGTH) + "...",
 				"Name Input Error",
 				"Name cannot be longer than " + MAX_RSN_LENGTH + " characters");
 			return;
