@@ -108,6 +108,7 @@ import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import static com.botdetector.model.CaseInsensitiveString.wrap;
 import static com.botdetector.ui.PredictHighlightMode.*;
 
@@ -136,7 +137,8 @@ public class BotDetectorPlugin extends Plugin
 		ImmutableSet.of("Message", "Add ignore", "Remove friend", DELETE_OPTION, KICK_OPTION);
 
 	private static final String VERIFY_DISCORD_COMMAND = "!code";
-	private static final Pattern VERIFY_DISCORD_CODE_PATTERN = Pattern.compile("\\d{4}");
+	private static final int VERIFY_DISCORD_CODE_SIZE = 4;
+	private static final Pattern VERIFY_DISCORD_CODE_PATTERN = Pattern.compile("\\d{1," + VERIFY_DISCORD_CODE_SIZE + "}");
 
 	private static final String COMMAND_PREFIX = "bd";
 	private static final String MANUAL_FLUSH_COMMAND = COMMAND_PREFIX + "Flush";
@@ -671,7 +673,8 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		detectorClient.verifyDiscord(authToken.getToken(), author, code)
+		detectorClient.verifyDiscord(authToken.getToken(), author,
+			StringUtils.leftPad(code, VERIFY_DISCORD_CODE_SIZE, '0'))
 			.whenComplete((b, ex) ->
 			{
 				if (ex == null && b)
