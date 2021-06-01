@@ -131,10 +131,17 @@ public class BotDetectorPlugin extends Plugin
 
 	private static final String PREDICT_OPTION = "Predict";
 	private static final String HIGHLIGHTED_PREDICT_OPTION = ColorUtil.prependColorTag(PREDICT_OPTION, Color.RED);
+	private static final String REPORT_OPTION = "Report";
 	private static final String KICK_OPTION = "Kick";
 	private static final String DELETE_OPTION = "Delete";
 	private static final ImmutableSet<String> AFTER_OPTIONS =
 		ImmutableSet.of("Message", "Add ignore", "Remove friend", DELETE_OPTION, KICK_OPTION);
+
+	private static final ImmutableSet<MenuAction> PLAYER_MENU_ACTIONS = ImmutableSet.of(
+		MenuAction.PLAYER_FIRST_OPTION, MenuAction.PLAYER_SECOND_OPTION, MenuAction.PLAYER_THIRD_OPTION, MenuAction.PLAYER_FOURTH_OPTION,
+		MenuAction.PLAYER_FIFTH_OPTION, MenuAction.PLAYER_SIXTH_OPTION, MenuAction.PLAYER_SEVENTH_OPTION, MenuAction.PLAYER_EIGTH_OPTION
+	);
+
 
 	private static final String VERIFY_DISCORD_COMMAND = "!code";
 	private static final int VERIFY_DISCORD_CODE_SIZE = 4;
@@ -762,11 +769,14 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
-		if ((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-			&& event.getMenuOption().endsWith(PREDICT_OPTION))
+		if (((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
+				&& event.getMenuOption().endsWith(PREDICT_OPTION))
+			|| (config.predictOnReport() && (PLAYER_MENU_ACTIONS.contains(event.getMenuAction()) || event.getMenuAction() == MenuAction.CC_OP_LOW_PRIORITY)
+				&& event.getMenuOption().equals(REPORT_OPTION)))
 		{
 			String name;
-			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
+			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER
+				|| PLAYER_MENU_ACTIONS.contains(event.getMenuAction()))
 			{
 				Player player = client.getCachedPlayers()[event.getId()];
 
