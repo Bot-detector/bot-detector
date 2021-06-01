@@ -81,6 +81,7 @@ import net.runelite.api.MenuEntry;
 import net.runelite.api.MessageNode;
 import net.runelite.api.Player;
 import net.runelite.api.WorldType;
+import net.runelite.api.clan.ClanRank;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.CommandExecuted;
@@ -89,6 +90,7 @@ import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
+import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.WorldChanged;
 import net.runelite.api.kit.KitType;
 import net.runelite.api.widgets.WidgetInfo;
@@ -168,6 +170,7 @@ public class BotDetectorPlugin extends Plugin
 	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
 	private static final String TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND = COMMAND_PREFIX + "ToggleShowDiscordVerificationErrors";
 	private static final String TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND_ALIAS = COMMAND_PREFIX + "ToggleDVE";
+	private static final String GET_CLAN_RANK_UPDATES_COMMAND = COMMAND_PREFIX + "GetRankUpdates";
 
 	/** Command to method map to be used in {@link #onCommandExecuted(CommandExecuted)}. **/
 	private final ImmutableMap<CaseInsensitiveString, Consumer<String[]>> commandConsumerMap =
@@ -181,6 +184,7 @@ public class BotDetectorPlugin extends Plugin
 			.put(wrap(CLEAR_AUTH_TOKEN_COMMAND), s -> clearAuthTokenCommand())
 			.put(wrap(TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND), s -> toggleShowDiscordVerificationErrors())
 			.put(wrap(TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND_ALIAS), s -> toggleShowDiscordVerificationErrors())
+			.put(wrap(GET_CLAN_RANK_UPDATES_COMMAND), s -> getClanRankUpdatesCommand())
 			.build();
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
@@ -224,6 +228,9 @@ public class BotDetectorPlugin extends Plugin
 
 	@Inject
 	private BotDetectorClient detectorClient;
+
+	@Inject
+	private BotDetectorClanHighlighter clanHighlighter;
 
 	private BotDetectorPanel panel;
 	private NavigationButton navButton;
@@ -365,6 +372,8 @@ public class BotDetectorPlugin extends Plugin
 
 		chatCommandManager.registerCommand(VERIFY_DISCORD_COMMAND, this::verifyDiscord);
 		chatCommandManager.registerCommand(STATS_CHAT_COMMAND, this::statsChatCommand);
+
+		clanHighlighter.startUp();
 	}
 
 	@Override
@@ -395,6 +404,8 @@ public class BotDetectorPlugin extends Plugin
 
 		chatCommandManager.unregisterCommand(VERIFY_DISCORD_COMMAND);
 		chatCommandManager.unregisterCommand(STATS_CHAT_COMMAND);
+
+		clanHighlighter.shutDown();
 	}
 
 	/**
@@ -1044,6 +1055,17 @@ public class BotDetectorPlugin extends Plugin
 		processCurrentWorld();
 	}
 
+	@Subscribe
+	private void onScriptPostFired(ScriptPostFired event)
+	{
+		// If clan names list updates (4253)
+		// or clan rank selection pops up (4316)
+		if (event.getScriptId() == 4253 || event.getScriptId() == 4316)
+		{
+			clanHighlighter.updateHighlight();
+		}
+	}
+
 	/**
 	 * Opens the plugin panel and sends over {@code playerName} to {@link BotDetectorPanel#predictPlayer(String)} for prediction.
 	 * @param playerName The player name to predict.
@@ -1337,6 +1359,52 @@ public class BotDetectorPlugin extends Plugin
 		{
 			sendChatStatusMessage("Discord verification errors will no longer be shown in the chat", true);
 		}
+	}
+
+	/**
+	 * Gets the current clan members and their ranks, sends them over to {@link BotDetectorClient#requestClanRankUpdates(String, Map)}
+	 * to get players that need their ranks updated and then highlights them on the clan members interface using {@link #clanHighlighter}.
+	 */
+	private void getClanRankUpdatesCommand()
+	{
+		if (!authToken.getTokenType().getPermissions().contains(AuthTokenPermission.GET_CLAN_RANK_UPDATES))
+		{
+			sendChatStatusMessage("The currently set auth token does not permit this command.", true);
+			return;
+		}
+
+		Map<CaseInsensitiveString, ClanRank> ranks = clanHighlighter.getClanMemberRanks();
+		if (ranks == null || ranks.size() == 0)
+		{
+			sendChatStatusMessage("Could not get members/rank list from clan settings.", true);
+			return;
+		}
+
+		detectorClient.requestClanRankUpdates(authToken.getToken(), ranks).whenComplete((newRanks, ex) ->
+		{
+			if (ex == null)
+			{
+				int size = newRanks != null ? newRanks.size() : 0;
+				if (size == 0)
+				{
+					sendChatStatusMessage("No clan ranks to update.", true);
+					clientThread.invokeLater(() -> clanHighlighter.setHighlight(null));
+				}
+				else
+				{
+					sendChatStatusMessage("Received " + size + " clan rank updates from the API.", true);
+					clientThread.invokeLater(() -> clanHighlighter.setHighlight(newRanks));
+				}
+			}
+			else if (ex instanceof UnauthorizedTokenException)
+			{
+				sendChatStatusMessage("Invalid token for getting clan rank updates.", true);
+			}
+			else
+			{
+				sendChatStatusMessage("Error getting clan rank updates from the API.", true);
+			}
+		});
 	}
 
 	//endregion

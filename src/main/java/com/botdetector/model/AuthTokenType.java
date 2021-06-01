@@ -46,9 +46,14 @@ public enum AuthTokenType
 	DEV(Arrays.stream(AuthTokenPermission.values()).collect(ImmutableSet.toImmutableSet())),
 
 	/**
-	 * Can perform discord verification
+	 * Can perform discord verification and retrieve clan rank updates
 	 */
-	MOD(ImmutableSet.of(VERIFY_DISCORD))
+	MOD(ImmutableSet.of(VERIFY_DISCORD, GET_CLAN_RANK_UPDATES)),
+
+	/**
+	 * Can retrieve clan rank updates
+	 */
+	CLAN(ImmutableSet.of(GET_CLAN_RANK_UPDATES))
 	;
 
 	private final ImmutableSet<AuthTokenPermission> permissions;

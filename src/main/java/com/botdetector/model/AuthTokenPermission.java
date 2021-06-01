@@ -31,5 +31,7 @@ package com.botdetector.model;
 public enum AuthTokenPermission
 {
 	/** Allows verification of RSN/Discord pairs in-game **/
-	VERIFY_DISCORD
+	VERIFY_DISCORD,
+	/** Allows checking the clan roster for rank updates **/
+	GET_CLAN_RANK_UPDATES
 }
