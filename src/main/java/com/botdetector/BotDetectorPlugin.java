@@ -156,6 +156,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final String GET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "GetToken";
 	private static final String SET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "SetToken";
 	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
+	private static final String TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND = COMMAND_PREFIX + "ToggleShowDiscordVerificationErrors";
+	private static final String TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND_ALIAS = COMMAND_PREFIX + "ToggleDVE";
 
 	/** Command to method map to be used in {@link #onCommandExecuted(CommandExecuted)}. **/
 	private final ImmutableMap<CaseInsensitiveString, Consumer<String[]>> commandConsumerMap =
@@ -167,6 +169,8 @@ public class BotDetectorPlugin extends Plugin
 			.put(wrap(GET_AUTH_TOKEN_COMMAND), s -> putAuthTokenIntoClipboardCommand())
 			.put(wrap(SET_AUTH_TOKEN_COMMAND), s -> setAuthTokenFromClipboardCommand())
 			.put(wrap(CLEAR_AUTH_TOKEN_COMMAND), s -> clearAuthTokenCommand())
+			.put(wrap(TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND), s -> toggleShowDiscordVerificationErrors())
+			.put(wrap(TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND_ALIAS), s -> toggleShowDiscordVerificationErrors())
 			.build();
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
@@ -759,9 +763,9 @@ public class BotDetectorPlugin extends Plugin
 				{
 					sendChatStatusMessage("Invalid token for Discord verification, cannot verify '" + author + "'.", true);
 				}
-				else
+				else if (config.showDiscordVerificationErrors())
 				{
-					sendChatStatusMessage("Could not verify Discord for '" + author + "'.", true);
+					sendChatStatusMessage("Could not verify Discord for '" + author + "'" + (ex != null ? ": " + ex.getMessage() : "."), true);
 				}
 			});
 	}
@@ -1159,6 +1163,23 @@ public class BotDetectorPlugin extends Plugin
 		authToken = AuthToken.EMPTY_TOKEN;
 		config.setAuthFullToken(null);
 		sendChatStatusMessage("Auth token cleared.", true);
+	}
+
+	/**
+	 * Toggles the config value in {@link BotDetectorConfig#showDiscordVerificationErrors()} and notifies the user of the change.
+	 */
+	private void toggleShowDiscordVerificationErrors()
+	{
+		boolean newVal = !config.showDiscordVerificationErrors();
+		config.setShowDiscordVerificationErrors(newVal);
+		if (newVal)
+		{
+			sendChatStatusMessage("Discord verification errors will now be shown in the chat", true);
+		}
+		else
+		{
+			sendChatStatusMessage("Discord verification errors will no longer be shown in the chat", true);
+		}
 	}
 
 	//endregion
