@@ -164,6 +164,7 @@ public class BotDetectorPanel extends PluginPanel
 	private final NameAutocompleter nameAutocompleter;
 	private final EventBus eventBus;
 
+	/** Components that can have their font switched on the fly. See {@link #setFontType(PanelFontType)}. **/
 	private final Set<JComponent> switchableFontComponents = new HashSet<>();
 
 	private boolean statsLoading;
@@ -287,6 +288,10 @@ public class BotDetectorPanel extends PluginPanel
 		eventBus.post(new BotDetectorPanelActivated());
 	}
 
+	/**
+	 * Generates and sets variables related to the links panel.
+	 * @return The panel containing all the related elements.
+	 */
 	private JPanel linksPanel()
 	{
 		JPanel linksPanel = new JPanel();
@@ -318,6 +323,11 @@ public class BotDetectorPanel extends PluginPanel
 		return linksPanel;
 	}
 
+	/**
+	 * Generates a tab group object to be used in {@link #playerStatsPanel()},
+	 * allowing splitting stats by {@link #currentPlayerStatsType}.
+	 * @return The tab group object.
+	 */
 	private MaterialTabGroup playerStatsTabGroup()
 	{
 		MaterialTabGroup tabGroup = new MaterialTabGroup();
@@ -356,6 +366,10 @@ public class BotDetectorPanel extends PluginPanel
 		return tabGroup;
 	}
 
+	/**
+	 * Generates and sets variables related to the player contributions panel.
+	 * @return The panel containing all the related elements.
+	 */
 	private JPanel playerStatsPanel()
 	{
 		JLabel label;
@@ -524,6 +538,10 @@ public class BotDetectorPanel extends PluginPanel
 		return uploadingStatsPanel;
 	}
 
+	/**
+	 * Generates a search bar object to be placed in the plugin panel.
+	 * @return The seach bar object.
+	 */
 	private IconTextField playerSearchBar()
 	{
 		IconTextField searchBar = new IconTextField();
@@ -560,6 +578,10 @@ public class BotDetectorPanel extends PluginPanel
 		return searchBar;
 	}
 
+	/**
+	 * Generates and sets variables related to the main prediction panel.
+	 * @return The panel containing all the related elements.
+	 */
 	private JPanel primaryPredictionPanel()
 	{
 		JLabel label;
@@ -645,6 +667,10 @@ public class BotDetectorPanel extends PluginPanel
 		return primaryPredictionPanel;
 	}
 
+	/**
+	 * Generates and sets variables related to the prediction feedback panel.
+	 * @return The panel containing all the related elements.
+	 */
 	private JPanel predictionFeedbackPanel()
 	{
 		JPanel panel = new JPanel();
@@ -709,6 +735,10 @@ public class BotDetectorPanel extends PluginPanel
 		return panel;
 	}
 
+	/**
+	 * Generates and sets variables related to the prediction flagging panel.
+	 * @return The panel containing all the related elements.
+	 */
 	private JPanel predictionFlaggingPanel()
 	{
 		JPanel panel = new JPanel();
@@ -755,6 +785,10 @@ public class BotDetectorPanel extends PluginPanel
 		return panel;
 	}
 
+	/**
+	 * Generates and sets variables related to the prediction breakdown panel.
+	 * @return The panel containing all the related elements.
+	 */
 	private JPanel predictionBreakdownPanel()
 	{
 		JPanel predictionBreakdownPanel = new JPanel();
@@ -785,11 +819,20 @@ public class BotDetectorPanel extends PluginPanel
 		return predictionBreakdownPanel;
 	}
 
+	/**
+	 * Sets the displayed plugin version string in the panel.
+	 * @param pluginVersion The plugin version to display.
+	 */
 	public void setPluginVersion(String pluginVersion)
 	{
 		playerStatsPluginVersionLabel.setText(pluginVersion);
 	}
 
+	/**
+	 * Sets the number of passive/manual uploads, then updates the label (see {@link #updateCurrentUploadsLabel()}).
+	 * @param num The number of uploads to display.
+	 * @param manual Whether {@code num} is for passive or manual uploads.
+	 */
 	public void setNamesUploaded(int num, boolean manual)
 	{
 		if (manual)
@@ -803,12 +846,21 @@ public class BotDetectorPanel extends PluginPanel
 		updateCurrentUploadsLabel();
 	}
 
+	/**
+	 * Sets the current {@link #playerStatsMap}, then calls {@link #updatePlayerStatsLabels()}.
+	 * @param psm The player stats map to set.
+	 */
 	public void setPlayerStatsMap(Map<PlayerStatsType, PlayerStats> psm)
 	{
 		playerStatsMap = psm;
 		updatePlayerStatsLabels();
 	}
 
+	/**
+	 * Updates all the fields in the player contributions panel according to
+	 * {@link #playerStatsMap} and {@link #currentPlayerStatsType}.
+	 * If the map is null or there is no {@link PlayerStats} for the currently displayed type, the fields are cleared.
+	 */
 	private void updatePlayerStatsLabels()
 	{
 		PlayerStats ps = playerStatsMap != null ? playerStatsMap.get(currentPlayerStatsType) : null;
@@ -840,6 +892,10 @@ public class BotDetectorPanel extends PluginPanel
 		updateCurrentUploadsLabel();
 	}
 
+	/**
+	 * Updates the value in {@link #playerStatsUploadedNamesLabel} according to
+	 * {@link #currentPlayerStatsType}, {@link #playerCurrentManualUploads} and {@link #playerCurrentPassiveUploads}.
+	 */
 	private void updateCurrentUploadsLabel()
 	{
 		int val;
@@ -858,12 +914,22 @@ public class BotDetectorPanel extends PluginPanel
 		playerStatsUploadedNamesLabel.setText(QuantityFormatter.formatNumber(val));
 	}
 
+	/**
+	 * Gets the current visibility of the given warning label.
+	 * @param wl The warning label to get the visibility for.
+	 * @return True if the warning label is currently visible, false otherwise.
+	 */
 	public boolean getWarningVisible(WarningLabel wl)
 	{
 		JLabel label = warningLabels.get(wl);
 		return label != null && label.isVisible();
 	}
 
+	/**
+	 * Sets the visibility of the given warning in the player contributions panel.
+	 * @param wl The warning label to set visibility.
+	 * @param visible The visibility to set on the warning label.
+	 */
 	public void setWarningVisible(WarningLabel wl, boolean visible)
 	{
 		JLabel label = warningLabels.get(wl);
@@ -873,6 +939,10 @@ public class BotDetectorPanel extends PluginPanel
 		}
 	}
 
+	/**
+	 * Sets the player contributions panel to be in 'loading' mode.
+	 * @param loading Whether or not the player contributions panel is loading.
+	 */
 	public void setPlayerStatsLoading(boolean loading)
 	{
 		statsLoading = loading;
@@ -881,27 +951,45 @@ public class BotDetectorPanel extends PluginPanel
 			: null);
 	}
 
+	/**
+	 * Sets the visibility of the player ID field in the main prediction panel.
+	 * @param visible The visibility to apply on the player ID field.
+	 */
 	public void setPlayerIdVisible(boolean visible)
 	{
 		predictionPlayerIdTextLabel.setVisible(visible);
 		predictionPlayerIdLabel.setVisible(visible);
 	}
 
+	/**
+	 * Sets the visibility of the text box in the feedback panel.
+	 * @param visible The visibility to apply on the feedback text box.
+	 */
 	public void setFeedbackTextboxVisible(boolean visible)
 	{
 		feedbackTextScrollPane.setVisible(visible);
 	}
 
+	/**
+	 * Forcibly hides the feedback panel.
+	 */
 	public void forceHideFeedbackPanel()
 	{
 		predictionFeedbackPanel.setVisible(false);
 	}
 
+	/**
+	 * Forcibly hides the flagging panel.
+	 */
 	public void forceHideFlaggingPanel()
 	{
 		predictionFlaggingPanel.setVisible(false);
 	}
 
+	/**
+	 * Sets the given color on all value labels in the main prediction panel.
+	 * @param color The color to set on all value labels in the main prediction panel.
+	 */
 	private void setPredictionLabelsColor(Color color)
 	{
 		predictionPlayerIdLabel.setForeground(color);
@@ -910,11 +998,20 @@ public class BotDetectorPanel extends PluginPanel
 		predictionConfidenceLabel.setForeground(color);
 	}
 
+	/**
+	 * Sets up the prediction and feedback panels according to the given prediction.
+	 * @param pred The prediction to display. If {@code null}, clears and resets all panels.
+	 */
 	public void setPrediction(Prediction pred)
 	{
 		setPrediction(pred, null);
 	}
 
+	/**
+	 * Sets up the prediction, feedback and flagging panels according to the given parameters.
+	 * @param pred The prediction to display. If {@code null}, clears and resets all panels.
+	 * @param sighting The player sighting to associate with the prediction for the flagging panel.
+	 */
 	public void setPrediction(Prediction pred, PlayerSighting sighting)
 	{
 		setPredictionLabelsColor(VALUE_COLOR);
@@ -1001,11 +1098,22 @@ public class BotDetectorPanel extends PluginPanel
 		}
 	}
 
+	/**
+	 * Sets up the prediction panel to display the given error message without including a detailed error.
+	 * @param playerName The player's name.
+	 * @param error The short, main error descriptor.
+	 */
 	public void setPredictionError(String playerName, String error)
 	{
 		setPredictionError(playerName, error, EMPTY_LABEL);
 	}
 
+	/**
+	 * Sets up the prediction panel to display the given error message.
+	 * @param playerName The player's name.
+	 * @param error The short, main error descriptor.
+	 * @param details The detailed error explanation.
+	 */
 	public void setPredictionError(String playerName, String error, String details)
 	{
 		setPrediction(null);
@@ -1016,12 +1124,19 @@ public class BotDetectorPanel extends PluginPanel
 		predictionConfidenceLabel.setText(wrapHTML(details));
 	}
 
+	/**
+	 * Sets the given {@code playerName} in the panel's {@link #searchBar}, then calls {@link #predictPlayer()}.
+	 * @param playerName The player to predict.
+	 */
 	public void predictPlayer(String playerName)
 	{
 		searchBar.setText(playerName);
 		predictPlayer();
 	}
 
+	/**
+	 * Hits up the API and retrieves the bot prediction for the player name in the panel's {@link #searchBar}.
+	 */
 	private void predictPlayer()
 	{
 		String target = sanitize(searchBar.getText());
@@ -1094,6 +1209,10 @@ public class BotDetectorPanel extends PluginPanel
 			}));
 	}
 
+	/**
+	 * Processes the user input from the prediction feedback panel.
+	 * @param feedback The intended feedback from the user for {@link #lastPrediction} to be sent to the API.
+	 */
 	private void sendFeedbackToClient(boolean feedback)
 	{
 		if (lastPrediction == null
@@ -1151,6 +1270,10 @@ public class BotDetectorPanel extends PluginPanel
 			});
 	}
 
+	/**
+	 * Processes the user input from the flagging panel.
+	 * @param doFlag Whether or not the user intends to flag {@link #lastPredictionPlayerSighting} to the API.
+	 */
 	private void sendFlagToClient(boolean doFlag)
 	{
 		if (lastPredictionPlayerSighting == null
@@ -1204,12 +1327,19 @@ public class BotDetectorPanel extends PluginPanel
 			});
 	}
 
+	/**
+	 * Checks if feedback or flagging should be allowed.
+	 * @return True if the user is logged in and not {@link BotDetectorPlugin#ANONYMOUS_USER_NAME}, false otherwise.
+	 */
 	private boolean shouldAllowFeedbackOrFlagging()
 	{
 		return lastPredictionUploaderName != null
 			&& !lastPredictionUploaderName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
 	}
 
+	/**
+	 * Clears and re-enables the components in the feedback panel.
+	 */
 	private void resetFeedbackPanel(boolean clearText)
 	{
 		feedbackHeaderLabel.setIcon(null);
@@ -1224,6 +1354,10 @@ public class BotDetectorPanel extends PluginPanel
 		}
 	}
 
+	/**
+	 * Disables the feedback panel and sets a color on either the 'Yes' or 'No' button according to the parameter.
+	 * @param feedback If true, highlight the 'Yes' button, otherwise highlight the 'No' button.
+	 */
 	private void disableAndSetColorOnFeedbackPanel(boolean feedback)
 	{
 		feedbackGoodButton.setEnabled(false);
@@ -1239,6 +1373,9 @@ public class BotDetectorPanel extends PluginPanel
 		}
 	}
 
+	/**
+	 * Clears and re-enables the components in the flagging panel.
+	 */
 	private void resetFlaggingPanel()
 	{
 		flaggingHeaderLabel.setIcon(null);
@@ -1248,6 +1385,10 @@ public class BotDetectorPanel extends PluginPanel
 		flaggingNoButton.setEnabled(true);
 	}
 
+	/**
+	 * Disables the flagging panel and sets a color on either the 'Yes' or 'No' button according to the parameter.
+	 * @param flagged If true, highlight the 'Yes' button, otherwise highlight the 'No' button.
+	 */
 	private void disableAndSetColorOnFlaggingPanel(boolean flagged)
 	{
 		flaggingYesButton.setEnabled(false);
@@ -1262,6 +1403,10 @@ public class BotDetectorPanel extends PluginPanel
 		}
 	}
 
+	/**
+	 * Sets the appropriate font for every components in {@link #switchableFontComponents}.
+	 * @param fontType The font type to apply.
+	 */
 	public void setFontType(PanelFontType fontType)
 	{
 		Font f;
@@ -1282,17 +1427,34 @@ public class BotDetectorPanel extends PluginPanel
 		switchableFontComponents.forEach(c -> c.setFont(f));
 	}
 
+	/**
+	 * Normalizes the given prediction label by separating word
+	 * with spaces and making each word capitalized.
+	 * @param label The label to normalize.
+	 * @return The normalized label.
+	 */
 	private static String normalizeLabel(String label)
 	{
 		return WordUtils.capitalize(label.replace('_', ' ').trim(), ' ');
 	}
 
-	// This makes wrapping work on the labels that could wrap
+	/**
+	 * Wraps the given string in HTML tags. The input string is escaped for HTML.
+	 * Use this in {@link JLabel#setText(String)} to make text wrapping work.
+	 * @param str The string to wrap with HTML tags.
+	 * @return The wrapped string.
+	 */
 	private static String wrapHTML(String str)
 	{
 		return wrapHTML(str, true);
 	}
 
+	/**
+	 * Wraps the given string in HTML tags.
+	 * @param str The string to wrap with HTML tags.
+	 * @param escape Whether or not to escape the input string for HTML.
+	 * @return The wrapped string.
+	 */
 	private static String wrapHTML(String str, boolean escape)
 	{
 		return "<html>"
@@ -1300,11 +1462,21 @@ public class BotDetectorPanel extends PluginPanel
 			+ "</html>";
 	}
 
+	/**
+	 * Replaces {@code NBSP}s in the given string with spaces.
+	 * @param lookup The string to sanitize.
+	 * @return The sanitized string.
+	 */
 	private static String sanitize(String lookup)
 	{
 		return lookup.replace('\u00A0', ' ');
 	}
 
+	/**
+	 * Checks if the given player name is a valid Jagex name.
+	 * @param playerName The player name to check.
+	 * @return True if the name is valid, false otherwise.
+	 */
 	private static boolean isValidPlayerName(String playerName)
 	{
 		if (playerName == null || playerName.length() > MAX_RSN_LENGTH)
@@ -1315,6 +1487,11 @@ public class BotDetectorPanel extends PluginPanel
 		return VALID_RSN_PATTERN.matcher(playerName).matches();
 	}
 
+	/**
+	 * Gets the {@link Color} to use for the given double value.
+	 * @param percent A double representing a percent value from {@code 0.0} to {@code 1.0}.
+	 * @return The recommended {@link Color}.
+	 */
 	private static Color getPercentColor(double percent)
 	{
 		percent = Doubles.constrainToRange(percent, 0, 1);
@@ -1323,11 +1500,22 @@ public class BotDetectorPanel extends PluginPanel
 			: ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, (percent - 0.5) * 2);
 	}
 
+	/**
+	 * Formats the given double into a percent string with two decimal points (ex.: {@code 0.57458 -> 57.46%}).
+	 * @param percent The double percent value to format.
+	 * @return The formatted percent value.
+	 */
 	private static String toPercentString(double percent)
 	{
 		return new DecimalFormat("0.00%").format(percent);
 	}
 
+	/**
+	 * Wraps the given percent double in a HTML span tag, with color and text format
+	 * from {@link #getPercentColor(double)} and {@link #toPercentString(double)} respectively.
+	 * @param percent The double percent value to wrap and format.
+	 * @return The formatted percent value wrapped in a HTML span tag.
+	 */
 	private static String toColoredPercentSpan(double percent)
 	{
 		return String.format("<span style='color:%s'>%s</span>",
@@ -1335,6 +1523,11 @@ public class BotDetectorPanel extends PluginPanel
 			toPercentString(percent));
 	}
 
+	/**
+	 * Creates a HTML table string for the given prediction breakdown map.
+	 * @param predictionMap The prediction breakdown map to process.
+	 * @return A HTML table string containing the data from the given prediction breakdown map.
+	 */
 	private static String toPredictionBreakdownString(Map<String, Double> predictionMap)
 	{
 		if (predictionMap == null || predictionMap.size() == 0)

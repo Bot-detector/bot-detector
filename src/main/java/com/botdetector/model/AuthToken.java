@@ -29,22 +29,36 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Value;
 
+/**
+ * Wrapper class for a {@link AuthTokenType} and {@link String} (token) pair.
+ */
 @Value
 public class AuthToken
 {
 	AuthTokenType tokenType;
 	String token;
 
+	/**
+	 * The default token when no valid token is present.
+	 * Contains {@link AuthTokenType#NONE} along with an empty token {@link String}.
+	 */
 	public static final AuthToken EMPTY_TOKEN = new AuthToken(AuthTokenType.NONE, "");
+	/** The separator between the prefix (token type) and suffix (token) part of a full token **/
 	public static final String AUTH_TOKEN_SEPARATOR = "|";
 	public static final Pattern AUTH_TOKEN_PATTERN = Pattern.compile("^([a-zA-Z_]+)"
 		+ Pattern.quote(AUTH_TOKEN_SEPARATOR)
 		+ "([\\w\\-]{12,32})$");
 
+	/** Should describe {@link #AUTH_TOKEN_PATTERN} in a human readable form. **/
 	public static final String AUTH_TOKEN_DESCRIPTION_MESSAGE =
 		"Auth token in clipboard must be of format 'prefix|Suffix_Alpha-numeric'" +
 			" with a valid prefix and a suffix between 12 and 32 characters long.";
 
+	/**
+	 * Parses out an {@link AuthToken} from the given {@code fullToken}. Also see {@link #toFullToken()}.
+	 * @param fullToken The full token to parse.
+	 * @return The parsed {@link AuthToken}, or {@link AuthToken#EMPTY_TOKEN} if {@code fullToken} was invalid.
+	 */
 	public static AuthToken fromFullToken(String fullToken)
 	{
 		if (fullToken == null)
@@ -63,6 +77,10 @@ public class AuthToken
 		}
 	}
 
+	/**
+	 * Converts this {@link AuthToken} back into a pure {@link String} form parsable with {@link #fromFullToken(String)}.
+	 * @return The full token {@link String} form for this {@link AuthToken}.
+	 */
 	public String toFullToken()
 	{
 		return tokenType.name() + AUTH_TOKEN_SEPARATOR + token;

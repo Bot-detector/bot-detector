@@ -121,6 +121,7 @@ import static com.botdetector.ui.PredictHighlightMode.*;
 )
 public class BotDetectorPlugin extends Plugin
 {
+	/** {@link PlayerSighting} should not be created if the player is logged into one of these {@link WorldType}s. **/
 	private static final ImmutableSet<WorldType> BLOCKED_WORLD_TYPES =
 		ImmutableSet.of(
 			WorldType.LEAGUE,
@@ -155,6 +156,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final String GET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "GetToken";
 	private static final String SET_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "SetToken";
 	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
+
+	/** Command to method map to be used in {@link #onCommandExecuted(CommandExecuted)}. **/
 	private final ImmutableMap<CaseInsensitiveString, Consumer<String[]>> commandConsumerMap =
 		ImmutableMap.<CaseInsensitiveString, Consumer<String[]>>builder()
 			.put(wrap(MANUAL_FLUSH_COMMAND), s -> manualFlushCommand())
@@ -210,30 +213,65 @@ public class BotDetectorPlugin extends Plugin
 		return configManager.getConfig(BotDetectorConfig.class);
 	}
 
+	/** The currently logged in player name, or {@code null} if the user is logged out. **/
 	@Getter
 	private String loggedPlayerName;
+	/** The next time an automatic call to {@link #flushPlayersToClient(boolean)} should be allowed to run. **/
 	private Instant timeToAutoSend;
+	/** The total number of names uploaded in the current login session. **/
 	private int namesUploaded;
+	/** The last time a {@link #flushPlayersToClient(boolean)} was successfully attempted. **/
 	private Instant lastFlush = Instant.MIN;
+	/** The last time a {@link #refreshPlayerStats(boolean)}} was successfully attempted. **/
 	private Instant lastStatsRefresh = Instant.MIN;
+	/** See {@link #processCurrentWorld()}. **/
 	private int currentWorldNumber;
+	/** See {@link #processCurrentWorld()}. **/
 	private boolean isCurrentWorldMembers;
+	/** See {@link #processCurrentWorld()}. **/
 	private boolean isCurrentWorldPVP;
+	/** Blocked world types should not log player sightings (see {@link #processCurrentWorld()} and {@link #BLOCKED_WORLD_TYPES}). **/
 	private boolean isCurrentWorldBlocked;
+	/** A queue containing the last two {@link GameState}s from {@link #onGameStateChanged(GameStateChanged)}. **/
 	private EvictingQueue<GameState> previousTwoGameStates = EvictingQueue.create(2);
 
+	/** The currently loaded token or {@link AuthToken#EMPTY_TOKEN} if no valid token is loaded. **/
 	@Getter
 	private AuthToken authToken = AuthToken.EMPTY_TOKEN;
 
-	// Current login maps, clear on logout/shutdown. Feedback/Flag map to selected value in panel.
-	// All map keys should get handled with normalizeAndWrapPlayerName() or using wrap() on an already normalized name
+	/**
+	 * Contains the last {@link PlayerSighting} for the given {@code player} and {@code regionId}
+	 * since the last successful call to {@link #flushPlayersToClient(boolean, boolean)}.
+	 * Always use {@link #normalizeAndWrapPlayerName(String)} when keying into this table.
+	 */
+	@Getter
 	private final Table<CaseInsensitiveString, Integer, PlayerSighting> sightingTable = Tables.synchronizedTable(HashBasedTable.create());
+
+	/**
+	 * Contains the last {@link PlayerSighting} for the given {@code player} for the current login session.
+	 * Always use {@link #normalizeAndWrapPlayerName(String)} when keying into this map.
+	 */
 	@Getter
 	private final Map<CaseInsensitiveString, PlayerSighting> persistentSightings = new ConcurrentHashMap<>();
+
+	/**
+	 * Contains the feedbacks (good/not good) sent per {@code player} for the current login session.
+	 * Always use {@link #normalizeAndWrapPlayerName(String)} when keying into this map.
+	 */
 	@Getter
 	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new ConcurrentHashMap<>();
+
+	/**
+	 * Contains the feedback texts sent per {@code player} for the current login session.
+	 * Always use {@link #normalizeAndWrapPlayerName(String)} when keying into this map.
+	 */
 	@Getter
 	private final Map<CaseInsensitiveString, String> feedbackedPlayersText = new ConcurrentHashMap<>();
+
+	/**
+	 * Contains the flagging (yes/no) sent per {@code player} for the current login session.
+	 * Always use {@link #normalizeAndWrapPlayerName(String)} when keying into this map.
+	 */
 	@Getter
 	private final Map<CaseInsensitiveString, Boolean> flaggedPlayers = new ConcurrentHashMap<>();
 
@@ -326,6 +364,9 @@ public class BotDetectorPlugin extends Plugin
 		chatCommandManager.unregisterCommand(VERIFY_DISCORD_COMMAND);
 	}
 
+	/**
+	 * Updates {@link #timeToAutoSend} according to {@link BotDetectorConfig#autoSendMinutes()}.
+	 */
 	private void updateTimeToAutoSend()
 	{
 		timeToAutoSend = Instant.now().plusSeconds(60L *
@@ -334,8 +375,10 @@ public class BotDetectorPlugin extends Plugin
 				BotDetectorConfig.AUTO_SEND_MAXIMUM_MINUTES));
 	}
 
-	@Schedule(period = API_HIT_SCHEDULE_SECONDS,
-		unit = ChronoUnit.SECONDS, asynchronous = true)
+	/**
+	 * Do not call this method in code. Continuously calls the automatic variants of API calling methods.
+	 */
+	@Schedule(period = API_HIT_SCHEDULE_SECONDS, unit = ChronoUnit.SECONDS, asynchronous = true)
 	public void hitApi()
 	{
 		if (loggedPlayerName == null)
@@ -351,11 +394,22 @@ public class BotDetectorPlugin extends Plugin
 		refreshPlayerStats(false);
 	}
 
+	/**
+	 * Attempts to send the contents of {@link #sightingTable} to {@link BotDetectorClient#sendSightings(Collection, String, boolean)}.
+	 * @param restoreOnFailure The table is cleared before sending. If {@code true}, re-insert the cleared sightings into the table on failure.
+	 * @return {@code true} if there were any names to attempt to send, {@code false} otherwise.
+	 */
 	public synchronized boolean flushPlayersToClient(boolean restoreOnFailure)
 	{
 		return flushPlayersToClient(restoreOnFailure, false);
 	}
 
+	/**
+	 * Attempts to send the contents of {@link #sightingTable} to {@link BotDetectorClient#sendSightings(Collection, String, boolean)}.
+	 * @param restoreOnFailure The table is cleared before sending. If {@code true}, re-insert the cleared sightings into the table on failure.
+	 * @param forceChatNotification Force displays the chat notifications.
+	 * @return {@code true} if there were any names to attempt to send, {@code false} otherwise.
+	 */
 	public synchronized boolean flushPlayersToClient(boolean restoreOnFailure, boolean forceChatNotification)
 	{
 		if (loggedPlayerName == null)
@@ -419,8 +473,10 @@ public class BotDetectorPlugin extends Plugin
 		return true;
 	}
 
-	// Atomic, just to make sure a non-forced call (e.g. auto refresh)
-	// can't get past the checks while another call is setting the last refresh value.
+	/**
+	 * Attempts to refresh the current player uploading statistics on the plugin panel according to various checks.
+	 * @param forceRefresh If {@code true}, ignore checks in place meant for the automatic calling of this method.
+	 */
 	public synchronized void refreshPlayerStats(boolean forceRefresh)
 	{
 		if (!forceRefresh)
@@ -572,6 +628,10 @@ public class BotDetectorPlugin extends Plugin
 		processPlayer(event.getPlayer());
 	}
 
+	/**
+	 * Processes the given {@code player}, creating and saving a {@link PlayerSighting}.
+	 * @param player The player to process.
+	 */
 	private void processPlayer(Player player)
 	{
 		if (player == null)
@@ -651,6 +711,13 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Parses the Author and Code from the given message arguments and sends them over to
+	 * {@link BotDetectorClient#verifyDiscord(String, String, String)} for verification.
+	 * Requires that {@link #authToken} has the {@link AuthTokenPermission#VERIFY_DISCORD} permission.
+	 * @param chatMessage The ChatMessage event object.
+	 * @param message The actual chat message.
+	 */
 	private void verifyDiscord(ChatMessage chatMessage, String message)
 	{
 		if (!authToken.getTokenType().getPermissions().contains(AuthTokenPermission.VERIFY_DISCORD))
@@ -810,6 +877,10 @@ public class BotDetectorPlugin extends Plugin
 		processCurrentWorld();
 	}
 
+	/**
+	 * Opens the plugin panel and sends over {@code playerName} to {@link BotDetectorPanel#predictPlayer(String)} for prediction.
+	 * @param playerName The player name to predict.
+	 */
 	public void predictPlayer(String playerName)
 	{
 		SwingUtilities.invokeLater(() ->
@@ -823,11 +894,20 @@ public class BotDetectorPlugin extends Plugin
 		});
 	}
 
+	/**
+	 * Sends a message to the in-game chatbox if {@link BotDetectorConfig#enableChatStatusMessages()} is {@code true}.
+	 * @param msg The message to send.
+	 */
 	public void sendChatStatusMessage(String msg)
 	{
 		sendChatStatusMessage(msg, false);
 	}
 
+	/**
+	 * Sends a message to the in-game chatbox.
+	 * @param msg The message to send.
+	 * @param forceShow If {@code true}, bypasses {@link BotDetectorConfig#enableChatStatusMessages()}.
+	 */
 	public void sendChatStatusMessage(String msg, boolean forceShow)
 	{
 		if ((forceShow || config.enableChatStatusMessages()) && loggedPlayerName != null)
@@ -845,6 +925,9 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Sets various class variables and panel warnings according to what {@link Client#getWorld()} returns.
+	 */
 	private void processCurrentWorld()
 	{
 		currentWorldNumber = client.getWorld();
@@ -856,6 +939,11 @@ public class BotDetectorPlugin extends Plugin
 			panel.setWarningVisible(BotDetectorPanel.WarningLabel.BLOCKED_WORLD, isCurrentWorldBlocked));
 	}
 
+	/**
+	 * Gets the name that should be used when an uploader name is required,
+	 * according to {@link BotDetectorConfig#enableAnonymousUploading()}.
+	 * @return {@link #loggedPlayerName} or {@link #ANONYMOUS_USER_NAME}.
+	 */
 	public String getUploaderName()
 	{
 		if (loggedPlayerName == null || config.enableAnonymousUploading())
@@ -866,11 +954,20 @@ public class BotDetectorPlugin extends Plugin
 		return loggedPlayerName;
 	}
 
+	/**
+	 * Gets the correct variant of {@link #PREDICT_OPTION} to show ({@code player} agnostic version).
+	 * @return A variant of {@link #PREDICT_OPTION} or {@link #HIGHLIGHTED_PREDICT_OPTION}.
+	 */
 	private String getPredictOption()
 	{
 		return getPredictOption(null);
 	}
 
+	/**
+	 * Gets the correct variant of {@link #PREDICT_OPTION} to show for the given {@code player}.
+	 * @param playerName The player to get the menu option string for.
+	 * @return A variant of {@link #PREDICT_OPTION} or {@link #HIGHLIGHTED_PREDICT_OPTION}.
+	 */
 	private String getPredictOption(String playerName)
 	{
 		switch (config.highlightPredictOption())
@@ -885,6 +982,11 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Helper function to insert a {@link MenuEntry} in {@link Client#setMenuEntries(MenuEntry[])}.
+	 * @param newEntry The entry to add.
+	 * @param entries The current entries (usually from {@link Client#getMenuEntries()}.
+	 */
 	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
 	{
 		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
@@ -893,6 +995,12 @@ public class BotDetectorPlugin extends Plugin
 		client.setMenuEntries(newMenu);
 	}
 
+	/**
+	 * Normalizes the given {@code playerName} by sanitizing the player name string,
+	 * removing any Jagex tags and replacing any {@code _} or {@code -} with spaces.
+	 * @param playerName The player name to normalize.
+	 * @return The normalized {@code playerName}.
+	 */
 	public static String normalizePlayerName(String playerName)
 	{
 		if (playerName == null)
@@ -903,6 +1011,12 @@ public class BotDetectorPlugin extends Plugin
 		return Text.removeTags(Text.toJagexName(playerName));
 	}
 
+	/**
+	 * Normalizes the given {@code playerName} using {@link #normalizePlayerName(String)},
+	 * then wraps the resulting {@link String} with {@link CaseInsensitiveString#wrap(String)}.
+	 * @param playerName The player name to normalize and wrap.
+	 * @return A {@link CaseInsensitiveString} containing the normalized {@code playerName}.
+	 */
 	public static CaseInsensitiveString normalizeAndWrapPlayerName(String playerName)
 	{
 		return wrap(normalizePlayerName(playerName));
@@ -910,6 +1024,10 @@ public class BotDetectorPlugin extends Plugin
 
 	//region Commands
 
+	/**
+	 * Manually executes {@link #flushPlayersToClient(boolean, boolean)},
+	 * first checking that {@link #lastFlush} did not occur within {@link #MANUAL_FLUSH_COOLDOWN_SECONDS}.
+	 */
 	private void manualFlushCommand()
 	{
 		Instant canFlush = lastFlush.plusSeconds(MANUAL_FLUSH_COOLDOWN_SECONDS);
@@ -928,6 +1046,9 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Manually force a full rescan of all players in {@link Client#getPlayers()} using {@link #processPlayer(Player)}.
+	 */
 	private void manualSightCommand()
 	{
 		if (isCurrentWorldBlocked)
@@ -946,12 +1067,19 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Manually force executes {@link #refreshPlayerStats(boolean)}.
+	 */
 	private void manualRefreshStatsCommand()
 	{
 		refreshPlayerStats(true);
 		sendChatStatusMessage("Refreshing player stats...", true);
 	}
 
+	/**
+	 * Shows or hides the player ID field in the plugin panel using {@link BotDetectorPanel#setPlayerIdVisible(boolean)}.
+	 * @param args String arguments from {@link CommandExecuted#getArguments()}, requires 1 argument being either "0" or "1".
+	 */
 	private void showHideIdCommand(String[] args)
 	{
 		String arg = args.length > 0 ? args[0] : "";
@@ -971,6 +1099,9 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Gets the currently loaded {@link AuthToken} and copies it into the user's system clipboard.
+	 */
 	private void putAuthTokenIntoClipboardCommand()
 	{
 		if (authToken.getTokenType() == AuthTokenType.NONE)
@@ -985,6 +1116,10 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Sets the {@link AuthToken} saved in {@link BotDetectorConfig#authFullToken()} to the contents of the clipboard,
+	 * assuming the contents respect the defined token format in {@link AuthToken#AUTH_TOKEN_PATTERN}.
+	 */
 	private void setAuthTokenFromClipboardCommand()
 	{
 		final String clipboardText;
@@ -1016,6 +1151,9 @@ public class BotDetectorPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Clears the current {@link AuthToken} saved in {@link BotDetectorConfig#authFullToken()}.
+	 */
 	private void clearAuthTokenCommand()
 	{
 		authToken = AuthToken.EMPTY_TOKEN;
@@ -1025,7 +1163,10 @@ public class BotDetectorPlugin extends Plugin
 
 	//endregion
 
-	// This isn't perfect but really shouldn't ever happen!
+
+	/**
+	 * Displays an error message about being unable to parse a plugin version and links to the Bot Detector Discord.
+	 */
 	private void displayPluginVersionError()
 	{
 		JEditorPane ep = new JEditorPane("text/html",

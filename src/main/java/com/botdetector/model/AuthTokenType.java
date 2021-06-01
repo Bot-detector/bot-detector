@@ -53,6 +53,11 @@ public enum AuthTokenType
 
 	private final ImmutableSet<AuthTokenPermission> permissions;
 
+	/**
+	 * Parses the token type from the given {@code prefix}.
+	 * @param prefix The prefix to parse.
+	 * @return The token type if parsed successfully, {@link #NONE} otherwise.
+	 */
 	public static AuthTokenType fromPrefix(String prefix)
 	{
 		if (prefix == null)

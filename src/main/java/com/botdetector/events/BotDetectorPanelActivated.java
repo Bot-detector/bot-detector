@@ -25,6 +25,9 @@
  */
 package com.botdetector.events;
 
+/**
+ * Event for when the {@link com.botdetector.ui.BotDetectorPanel} is activated.
+ */
 public class BotDetectorPanelActivated
 {
 }
