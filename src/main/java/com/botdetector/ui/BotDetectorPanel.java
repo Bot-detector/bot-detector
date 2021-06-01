@@ -941,27 +941,32 @@ public class BotDetectorPanel extends PluginPanel
 				predictionBreakdownPanel.setVisible(true);
 			}
 
-			if (shouldAllowFeedbackOrFlagging()
-				&& pred.getPlayerId() > 0)
+			if (shouldAllowFeedbackOrFlagging())
 			{
 				resetFeedbackPanel(true);
 				CaseInsensitiveString name = normalizeAndWrapPlayerName(pred.getPlayerName());
-
-				// If the player has already been feedbacked/flagged, ensure the panels reflect this
-				Boolean feedbacked = plugin.getFeedbackedPlayers().get(name);
-				if (feedbacked != null)
+				if (pred.getPlayerId() <= 0)
 				{
-					disableAndSetColorOnFeedbackPanel(feedbacked);
+					predictionFeedbackPanel.setVisible(false);
 				}
-
-				// If there was some feedback text from a previous send, either successful or failed
-				String feedbackText = plugin.getFeedbackedPlayersText().get(name);
-				if (feedbackText != null)
+				else
 				{
-					feedbackTextbox.setText(feedbackText);
-				}
+					// If the player has already been feedbacked/flagged, ensure the panels reflect this
+					Boolean feedbacked = plugin.getFeedbackedPlayers().get(name);
+					if (feedbacked != null)
+					{
+						disableAndSetColorOnFeedbackPanel(feedbacked);
+					}
 
-				predictionFeedbackPanel.setVisible(true);
+					// If there was some feedback text from a previous send, either successful or failed
+					String feedbackText = plugin.getFeedbackedPlayersText().get(name);
+					if (feedbackText != null)
+					{
+						feedbackTextbox.setText(feedbackText);
+					}
+
+					predictionFeedbackPanel.setVisible(true);
+				}
 
 				resetFlaggingPanel();
 				if (sighting == null)
