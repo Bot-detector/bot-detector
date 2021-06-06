@@ -712,7 +712,7 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridy++;
 		panel.add(feedbackTextScrollPane, c);
 
-		feedbackGoodButton = new JButton("Looks fine!");
+		feedbackGoodButton = new JButton("Looks good");
 		feedbackGoodButton.setToolTipText(String.format(tooltip, "correct"));
 		feedbackGoodButton.setForeground(HEADER_COLOR);
 		feedbackGoodButton.setFont(SMALL_FONT);
@@ -723,7 +723,7 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridwidth = 1;
 		panel.add(feedbackGoodButton, c);
 
-		feedbackBadButton = new JButton("Not sure...");
+		feedbackBadButton = new JButton("It's wrong");
 		feedbackBadButton.setToolTipText(String.format(tooltip, "incorrect"));
 		feedbackBadButton.setForeground(HEADER_COLOR);
 		feedbackBadButton.setFont(SMALL_FONT);
