@@ -1374,25 +1374,28 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		Map<CaseInsensitiveString, ClanRank> ranks = clanHighlighter.getClanMemberRanks();
-		if (ranks == null || ranks.size() == 0)
+		int numMembers = ranks != null ? ranks.size() : 0;
+		if (numMembers == 0)
 		{
 			sendChatStatusMessage("Could not get members/rank list from clan settings.", true);
 			return;
 		}
 
+		sendChatStatusMessage("Checking rank updates for " + numMembers + " clan members.", true);
+
 		detectorClient.requestClanRankUpdates(authToken.getToken(), ranks).whenComplete((newRanks, ex) ->
 		{
 			if (ex == null)
 			{
-				int size = newRanks != null ? newRanks.size() : 0;
-				if (size == 0)
+				int numUpdates = newRanks != null ? newRanks.size() : 0;
+				if (numUpdates == 0)
 				{
 					sendChatStatusMessage("No clan ranks to update.", true);
 					clientThread.invokeLater(() -> clanHighlighter.setHighlight(null));
 				}
 				else
 				{
-					sendChatStatusMessage("Received " + size + " clan rank updates from the API.", true);
+					sendChatStatusMessage("Received " + numUpdates + " clan rank updates from the API.", true);
 					clientThread.invokeLater(() -> clanHighlighter.setHighlight(newRanks));
 				}
 			}
