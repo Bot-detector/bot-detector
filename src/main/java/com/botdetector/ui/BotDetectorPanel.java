@@ -43,7 +43,6 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.Insets;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -56,6 +55,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -141,10 +142,12 @@ public class BotDetectorPanel extends PluginPanel
 	private static final int HEADER_PAD = 3;
 	private static final int WARNING_PAD = 5;
 	private static final int VALUE_PAD = 2;
+	private static final int SUB_PANEL_SEPARATION_HEIGHT = 10;
 	private static final Border SUB_PANEL_BORDER = new EmptyBorder(5, 10, 10, 10);
 	private static final Dimension HEADER_PREFERRED_SIZE = new Dimension(0, 25);
 
 	private static final int MAX_FEEDBACK_TEXT_CHARS = 250;
+	private static final Dimension FEEDBACK_TEXTBOX_PREFERRED_SIZE = new Dimension(0, 75);
 
 	private static final PlayerStatsType[] PLAYER_STAT_TYPES = {
 		PlayerStatsType.TOTAL, PlayerStatsType.PASSIVE, PlayerStatsType.MANUAL
@@ -223,9 +226,9 @@ public class BotDetectorPanel extends PluginPanel
 		this.nameAutocompleter = nameAutocompleter;
 		this.eventBus = eventBus;
 
-		setBorder(new EmptyBorder(18, 10, 0, 10));
+		setBorder(new EmptyBorder(18, 10, 10, 10));
 		setBackground(BACKGROUND_COLOR);
-		setLayout(new GridBagLayout());
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
 		currentPlayerStatsType = config.panelDefaultStatsType();
 
@@ -235,39 +238,29 @@ public class BotDetectorPanel extends PluginPanel
 		playerStatsTabGroup = playerStatsTabGroup();
 		playerStatsPanel = playerStatsPanel();
 		primaryPredictionPanel = primaryPredictionPanel();
-		predictionFeedbackPanel = predictionFeedbackPanel();
+		predictionFeedbackPanel = putInBoxPanelWithVerticalSeparator(predictionFeedbackPanel());
 		predictionFeedbackPanel.setVisible(false);
-		predictionFlaggingPanel = predictionFlaggingPanel();
+		predictionFlaggingPanel = putInBoxPanelWithVerticalSeparator(predictionFlaggingPanel());
 		predictionFlaggingPanel.setVisible(false);
-		predictionBreakdownPanel = predictionBreakdownPanel();
+		predictionBreakdownPanel = putInBoxPanelWithVerticalSeparator(predictionBreakdownPanel());
 		predictionBreakdownPanel.setVisible(false);
 
-		GridBagConstraints c = new GridBagConstraints();
-		c.fill = GridBagConstraints.HORIZONTAL;
-		c.gridx = 0;
-		c.gridy = 0;
-		c.weightx = 1;
-		c.weighty = 0;
-		c.insets = new Insets(0, 0, 10, 0);
-		add(linksPanel, c);
+		add(linksPanel);
 
-		c.gridy++;
-		add(playerStatsPanel, c);
+		add(Box.createVerticalStrut(SUB_PANEL_SEPARATION_HEIGHT));
+		add(playerStatsPanel);
 
-		c.gridy++;
-		add(searchBar, c);
+		add(Box.createVerticalStrut(SUB_PANEL_SEPARATION_HEIGHT));
+		add(searchBar);
 
-		c.gridy++;
-		add(primaryPredictionPanel, c);
+		add(Box.createVerticalStrut(SUB_PANEL_SEPARATION_HEIGHT));
+		add(primaryPredictionPanel);
 
-		c.gridy++;
-		add(predictionBreakdownPanel, c);
+		add(predictionBreakdownPanel);
 
-		c.gridy++;
-		add(predictionFeedbackPanel, c);
+		add(predictionFeedbackPanel);
 
-		c.gridy++;
-		add(predictionFlaggingPanel, c);
+		add(predictionFlaggingPanel);
 
 		setPlayerIdVisible(false);
 		setPrediction(null);
@@ -286,6 +279,21 @@ public class BotDetectorPanel extends PluginPanel
 	public void onActivate()
 	{
 		eventBus.post(new BotDetectorPanelActivated());
+	}
+
+	/**
+	 * Puts the panel in a box layout panel with a vertical pad above ({@link #SUB_PANEL_SEPARATION_HEIGHT}).
+	 * @param panel The panel.
+	 * @return A panel containing the previous panel with a vertical padding element above.
+	 */
+	private static JPanel putInBoxPanelWithVerticalSeparator(JPanel panel)
+	{
+		JPanel newPanel = new JPanel();
+		newPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+		newPanel.setLayout(new BoxLayout(newPanel, BoxLayout.Y_AXIS));
+		newPanel.add(Box.createVerticalStrut(SUB_PANEL_SEPARATION_HEIGHT));
+		newPanel.add(panel);
+		return newPanel;
 	}
 
 	/**
@@ -387,6 +395,7 @@ public class BotDetectorPanel extends PluginPanel
 		playerStatsHeaderLabel.setFont(BOLD_FONT);
 		playerStatsHeaderLabel.setForeground(HEADER_COLOR);
 		playerStatsHeaderLabel.setPreferredSize(HEADER_PREFERRED_SIZE);
+		playerStatsHeaderLabel.setMinimumSize(HEADER_PREFERRED_SIZE);
 
 		c.gridx = 0;
 		c.gridy = 0;
@@ -598,6 +607,7 @@ public class BotDetectorPanel extends PluginPanel
 		label.setFont(BOLD_FONT);
 		label.setForeground(HEADER_COLOR);
 		label.setPreferredSize(HEADER_PREFERRED_SIZE);
+		label.setMinimumSize(HEADER_PREFERRED_SIZE);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipady = HEADER_PAD;
@@ -689,6 +699,7 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackHeaderLabel.setFont(NORMAL_FONT);
 		feedbackHeaderLabel.setForeground(HEADER_COLOR);
 		feedbackHeaderLabel.setPreferredSize(HEADER_PREFERRED_SIZE);
+		feedbackHeaderLabel.setMinimumSize(HEADER_PREFERRED_SIZE);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipady = HEADER_PAD;
@@ -706,7 +717,8 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackTextbox.setTabSize(2);
 		feedbackTextScrollPane = new JScrollPane(feedbackTextbox);
 		feedbackTextScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		feedbackTextScrollPane.setPreferredSize(new Dimension(0, 75));
+		feedbackTextScrollPane.setPreferredSize(FEEDBACK_TEXTBOX_PREFERRED_SIZE);
+		feedbackTextScrollPane.setMinimumSize(FEEDBACK_TEXTBOX_PREFERRED_SIZE);
 		feedbackTextScrollPane.setBorder(new EmptyBorder(0, 0, 10, 0));
 		feedbackTextScrollPane.setOpaque(false);
 		c.gridy++;
@@ -754,6 +766,7 @@ public class BotDetectorPanel extends PluginPanel
 		flaggingHeaderLabel.setFont(NORMAL_FONT);
 		flaggingHeaderLabel.setForeground(HEADER_COLOR);
 		flaggingHeaderLabel.setPreferredSize(HEADER_PREFERRED_SIZE);
+		flaggingHeaderLabel.setMinimumSize(HEADER_PREFERRED_SIZE);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipady = HEADER_PAD;
@@ -803,6 +816,7 @@ public class BotDetectorPanel extends PluginPanel
 		label.setFont(BOLD_FONT);
 		label.setForeground(HEADER_COLOR);
 		label.setPreferredSize(HEADER_PREFERRED_SIZE);
+		label.setMinimumSize(HEADER_PREFERRED_SIZE);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.weightx = 1.0;
