@@ -102,7 +102,15 @@ public class BotDetectorClient
 		final String path;
 	}
 
+	/**
+	 * Runelite's okHttpClient with a connect/read timeout of 30 seconds each and no pinging.
+	 */
 	public OkHttpClient okHttpClient;
+
+	/**
+	 * Same as {@link #okHttpClient}, but with a read timeout of 60 seconds.
+	 */
+	public OkHttpClient longTimeoutHttpClient;
 
 	@Inject
 	private Gson gson;
@@ -142,6 +150,10 @@ public class BotDetectorClient
 					.build();
 				return chain.proceed(headerRequest);
 			})
+			.build();
+
+		longTimeoutHttpClient = okHttpClient.newBuilder()
+			.readTimeout(60, TimeUnit.SECONDS)
 			.build();
 	}
 
@@ -454,7 +466,7 @@ public class BotDetectorClient
 			.build();
 
 		CompletableFuture<Map<CaseInsensitiveString, ClanRank>> future = new CompletableFuture<>();
-		okHttpClient.newCall(request).enqueue(new Callback()
+		longTimeoutHttpClient.newCall(request).enqueue(new Callback()
 		{
 			@Override
 			public void onFailure(Call call, IOException e)
