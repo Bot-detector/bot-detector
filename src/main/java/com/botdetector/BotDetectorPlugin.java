@@ -1381,7 +1381,7 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		sendChatStatusMessage("Checking rank updates for " + numMembers + " clan members.", true);
+		sendChatStatusMessage("Checking rank updates for " + numMembers + " clan members. Please wait, this may take some time.", true);
 
 		detectorClient.requestClanRankUpdates(authToken.getToken(), ranks).whenComplete((newRanks, ex) ->
 		{

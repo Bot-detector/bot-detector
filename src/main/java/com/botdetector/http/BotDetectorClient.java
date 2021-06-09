@@ -108,7 +108,7 @@ public class BotDetectorClient
 	public OkHttpClient okHttpClient;
 
 	/**
-	 * Same as {@link #okHttpClient}, but with a read timeout of 60 seconds.
+	 * Same as {@link #okHttpClient}, but with a read timeout of 120 seconds.
 	 */
 	public OkHttpClient longTimeoutHttpClient;
 
@@ -153,7 +153,7 @@ public class BotDetectorClient
 			.build();
 
 		longTimeoutHttpClient = okHttpClient.newBuilder()
-			.readTimeout(60, TimeUnit.SECONDS)
+			.readTimeout(120, TimeUnit.SECONDS)
 			.build();
 	}
 
