@@ -27,6 +27,11 @@ Q: "This plugin is worthless"
 A: Not really a question - but hopefully it'll help Jagex a little bit in solving their botting crisis - and maybe even repair the OSRS economy.
 
 
+Q: "The plugin says I'm a bot! Am I going to get banned?"
+
+A: If you know you have never botted on your account, you have nothing to worry about. While it's possible we may submit your name to Jagex for review, our metrics have no bearing on their decision to take action or not. Again, if you did not bot, you will not get banned, and also know that we are always working towards improving the accuracy of our predictions.
+
+
 Q: "How can I help contribute to the plugin?"
 
 A: "Fork and pull request, I'll approve if it's not malicious"
