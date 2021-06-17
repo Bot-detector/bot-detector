@@ -58,6 +58,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -92,6 +93,7 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.menus.MenuManager;
 import net.runelite.client.plugins.Plugin;
@@ -401,9 +403,9 @@ public class BotDetectorPlugin extends Plugin
 	/**
 	 * Attempts to send the contents of {@link #sightingTable} to {@link BotDetectorClient#sendSightings(Collection, String, boolean)}.
 	 * @param restoreOnFailure The table is cleared before sending. If {@code true}, re-insert the cleared sightings into the table on failure.
-	 * @return {@code true} if there were any names to attempt to send, {@code false} otherwise.
+	 * @return A completable future if there were any names to attempt to send, {@code null} otherwise.
 	 */
-	public synchronized boolean flushPlayersToClient(boolean restoreOnFailure)
+	public synchronized CompletableFuture<Boolean> flushPlayersToClient(boolean restoreOnFailure)
 	{
 		return flushPlayersToClient(restoreOnFailure, false);
 	}
@@ -412,13 +414,13 @@ public class BotDetectorPlugin extends Plugin
 	 * Attempts to send the contents of {@link #sightingTable} to {@link BotDetectorClient#sendSightings(Collection, String, boolean)}.
 	 * @param restoreOnFailure The table is cleared before sending. If {@code true}, re-insert the cleared sightings into the table on failure.
 	 * @param forceChatNotification Force displays the chat notifications.
-	 * @return {@code true} if there were any names to attempt to send, {@code false} otherwise.
+	 * @return A completable future if there were any names to attempt to send, {@code null} otherwise.
 	 */
-	public synchronized boolean flushPlayersToClient(boolean restoreOnFailure, boolean forceChatNotification)
+	public synchronized CompletableFuture<Boolean> flushPlayersToClient(boolean restoreOnFailure, boolean forceChatNotification)
 	{
 		if (loggedPlayerName == null)
 		{
-			return false;
+			return null;
 		}
 
 		updateTimeToAutoSend();
@@ -431,7 +433,7 @@ public class BotDetectorPlugin extends Plugin
 			uniqueNames = sightingTable.rowKeySet().size();
 			if (uniqueNames <= 0)
 			{
-				return false;
+				return null;
 			}
 
 			sightings = new ArrayList<>(sightingTable.values());
@@ -440,7 +442,7 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		lastFlush = Instant.now();
-		detectorClient.sendSightings(sightings, getUploaderName(), false)
+		return detectorClient.sendSightings(sightings, getUploaderName(), false)
 			.whenComplete((b, ex) ->
 			{
 				if (ex == null && b)
@@ -473,8 +475,6 @@ public class BotDetectorPlugin extends Plugin
 					}
 				}
 			});
-
-		return true;
 	}
 
 	/**
@@ -712,6 +712,19 @@ public class BotDetectorPlugin extends Plugin
 		if (consumer != null)
 		{
 			consumer.accept(event.getArguments());
+		}
+	}
+
+	@Subscribe
+	private void onClientShutdown(ClientShutdown event)
+	{
+		if (config.uploadOnShutdown())
+		{
+			CompletableFuture<Boolean> future = flushPlayersToClient(false);
+			if (future != null)
+			{
+				event.waitFor(future);
+			}
 		}
 	}
 
@@ -1038,7 +1051,7 @@ public class BotDetectorPlugin extends Plugin
 		Instant now = Instant.now();
 		if (now.isAfter(canFlush))
 		{
-			if (!flushPlayersToClient(true, true))
+			if (flushPlayersToClient(true, true) == null)
 			{
 				sendChatStatusMessage("No player sightings to flush!", true);
 			}
