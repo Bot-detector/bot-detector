@@ -33,7 +33,7 @@ import lombok.Value;
 public class Prediction
 {
 	@SerializedName("player_id")
-	int playerId;
+	long playerId;
 	@SerializedName("player_name")
 	String playerName;
 	@SerializedName("prediction_label")
