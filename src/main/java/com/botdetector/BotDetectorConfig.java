@@ -150,7 +150,7 @@ public interface BotDetectorConfig extends Config
 	)
 	default boolean showFeedbackTextbox()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
