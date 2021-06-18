@@ -55,7 +55,7 @@ public class PlayerSighting
 	Map<KitType, Integer> equipment;
 
 	@SerializedName("equipment_ge")
-	int equipmentGEValue;
+	long equipmentGEValue;
 
 	@SerializedName("world_number")
 	int worldNumber;

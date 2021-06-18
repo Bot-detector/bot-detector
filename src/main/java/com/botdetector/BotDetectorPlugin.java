@@ -669,7 +669,7 @@ public class BotDetectorPlugin extends Plugin
 
 		// Get player's equipment item ids (botanicvelious/Equipment-Inspector)
 		Map<KitType, Integer> equipment = new HashMap<>();
-		int geValue = 0;
+		long geValue = 0;
 		for (KitType kitType : KitType.values())
 		{
 			int itemId = player.getPlayerComposition().getEquipmentId(kitType);
