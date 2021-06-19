@@ -135,7 +135,7 @@ public interface BotDetectorConfig extends Config
 			position = 8,
 			keyName = "autocomplete",
 			name = "Prediction Autocomplete",
-			description = "Autocomplete names when typing a name to predict"
+			description = "Autocomplete names when typing a name to predict in the prediction panel."
 	)
 	default boolean panelAutocomplete()
 	{
