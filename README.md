@@ -37,10 +37,10 @@ Identifies bots by sending nearby players' information to a third-party machine 
 | Show Feedback Textbox | Adds a textbox to the prediction feedback panel, so you can explain your choice in up to 250 characters. Make sure you type your feedback *before* you make your choice! |
 | Panel Default Stats Tab | Sets panel default stats tab when the Plugin turns on. |
 | Panel Font Size | Sets the font size of most of the Plugin's Panel elements. |
-| Anonymous Uploading | When enabled, your username will not sent with your uploads. You also cannot manually flag players or send in prediction feedbacks. |
+| Anonymous Uploading | When enabled, your username will not be sent with your uploads. You also cannot manually flag players or send in prediction feedbacks. |
 
 ### ⚠️ Anonymous Mode ⚠️
-**Anonymous Mode** is enabled by default, which means your username will not sent with your uploads. However, we cannot tally your uploads, and you will not be able to manually flag players or send in prediction feedbacks.
+**Anonymous Mode** is enabled by default, which means your username will not be sent with your uploads. However, we cannot tally your uploads, and you will not be able to manually flag players or send in prediction feedbacks.
 
 ### Understanding The Plugin Panel
 #### The Player Statistics Panel
