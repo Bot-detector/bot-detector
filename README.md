@@ -134,13 +134,13 @@ There are several ways you can contribute to the Bot Detector Project:
 No, the plugin will grab the data for every player that renders on your screen passively. Manually flagging a player uploads the same data as the passive collection does, but tells us to pay more attention to that data when training our models.
 
 ## Does this replace manual in-game reporting?
-No, reporting players in-game sends a ton data which we cannot collect directly to Jagex and we urge you to continue using that feature when you are confident someone is botting! Also, please keep in mind that even if our plugin predicts a player might be a bot, it does not mean it is true! Investigate the players yourself before making your decision to report.
+No, reporting players in-game sends a ton of data which we cannot collect directly to Jagex and we urge you to continue using that feature whenever you are confident someone is botting! Also, please keep in mind that even if our plugin predicts a player as a bot, it does not mean it is true! Investigate the players yourself before making your decision to report. Please be kind to these players and do not falsely accuse or harrass them based upon a prediction that could be faulty.
 
 ## I checked myself with the Plugin and my Primary Prediction says I'm a bot! Will I get banned?
-No, at least, not by that alone. We take into account not only the Machine Learning's response but also review the names manually prior to sending to Jagex. All we send over are the names of suspected bot accounts and are treated no differently than using tipoff@jagex.com for their decision process. If you know you didn't bot, you have nothing to worry about.
+No, at least, not by that alone. We take into account not only the Machine Learning's response but also review the names manually prior to sending to Jagex. All we send over are the names of suspected bot accounts and are treated no differently than any other user would whenever submitting leads to tipoff@jagex.com in Jagex's decision process. If you know you didn't bot, you have nothing to worry about.
 
 ## My Primary Prediction says I'm a Real Player, but it isn't 100% confident and includes several bot labels in the breakdown. What is going on?
-The model's ability to evaluate a prediction must take into account a variety of factors. Stats, gear, location, and more is used to determine a predictive score. It is very unlikely, and uncommon, to be rated as a 100% Real Player. Usually if the primary prediction label is at any Real Player percent, the account will not show up in our manual reviews.
+The model's ability to evaluate a prediction must take into account a variety of factors. Stats, gear, location, and more are used to determine a predictive score. It is very unlikely, and uncommon, to be rated as a 100% Real Player. Usually if the primary prediction label is at any Real Player percent, the account will not show up in our manual reviews.
 
 ## Can you ban accounts?
 No, as said before, all we do is send over lists of suspicious accounts as you would through tipoff@jagex.com.
@@ -149,7 +149,7 @@ No, as said before, all we do is send over lists of suspicious accounts as you w
 No, for that you will have to file an appeal with [Jagex](http://jgx.game/Ban).
 
 ## I've seen some of these cool heatmaps, how can I generate more of them?
-Generating a heatmap is currently only available to our Patrons. You could ask one to generate a map for you, but we do encourage that you support us on our Patreon. If you do, you will have access to an exclusive channel on our Discord server where you can execute the heatmap command at any time.
+Generating a heatmap is currently only available to our Patrons. You could ask one to generate a map for you, but we do ask for your consideration in supporting us on our Patreon. If you do, you will have access to an exclusive channel on our Discord server where you can execute the heatmap command at any time. Our Patrons are what make this all possible! 
 
 ## This FAQ did not answer my questions.
 Come talk to us on our Discord server, look for the **Plugin Issues** and **Plugin Discussion** channels.
