@@ -512,7 +512,11 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		SwingUtilities.invokeLater(() -> panel.setPlayerStatsLoading(true));
+		SwingUtilities.invokeLater(() ->
+		{
+			panel.setPlayerStatsLoading(true);
+			panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false);
+		});
 
 		String nameAtRequest = loggedPlayerName;
 		detectorClient.requestPlayerStats(nameAtRequest)
@@ -525,11 +529,7 @@ public class BotDetectorPlugin extends Plugin
 					return;
 				}
 
-				SwingUtilities.invokeLater(() ->
-				{
-					panel.setPlayerStatsLoading(false);
-					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false);
-				});
+				SwingUtilities.invokeLater(() -> panel.setPlayerStatsLoading(false));
 
 				if (ex == null && psm != null)
 				{
