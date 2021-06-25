@@ -506,7 +506,10 @@ public class BotDetectorPlugin extends Plugin
 				panel.setPlayerStatsLoading(false);
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousUploading());
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
-				panel.forceHideFeedbackPanel();
+				if (loggedPlayerName == null)
+				{
+					panel.forceHideFeedbackPanel();
+				}
 				panel.forceHideFlaggingPanel();
 			});
 			return;
