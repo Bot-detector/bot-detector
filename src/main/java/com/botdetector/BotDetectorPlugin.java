@@ -416,7 +416,8 @@ public class BotDetectorPlugin extends Plugin
 	 */
 	public synchronized boolean flushPlayersToClient(boolean restoreOnFailure, boolean forceChatNotification)
 	{
-		if (loggedPlayerName == null)
+		String uploader = getUploaderName();
+		if (uploader == null)
 		{
 			return false;
 		}
@@ -440,7 +441,7 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		lastFlush = Instant.now();
-		detectorClient.sendSightings(sightings, getUploaderName(), false)
+		detectorClient.sendSightings(sightings, uploader, false)
 			.whenComplete((b, ex) ->
 			{
 				if (ex == null && b)
@@ -580,6 +581,11 @@ public class BotDetectorPlugin extends Plugin
 				break;
 			case BotDetectorConfig.ANONYMOUS_UPLOADING_KEY:
 				refreshPlayerStats(true);
+				SwingUtilities.invokeLater(() ->
+				{
+					panel.forceHideFeedbackPanel();
+					panel.forceHideFlaggingPanel();
+				});
 				break;
 			case BotDetectorConfig.PANEL_FONT_TYPE_KEY:
 				SwingUtilities.invokeLater(() -> panel.setFontType(config.panelFontType()));
@@ -946,16 +952,16 @@ public class BotDetectorPlugin extends Plugin
 	/**
 	 * Gets the name that should be used when an uploader name is required,
 	 * according to {@link BotDetectorConfig#enableAnonymousUploading()}.
-	 * @return {@link #loggedPlayerName} or {@link #ANONYMOUS_USER_NAME}.
+	 * @return {@link #loggedPlayerName} or {@link #ANONYMOUS_USER_NAME}. Returns {@code null} if logged out.
 	 */
 	public String getUploaderName()
 	{
-		if (loggedPlayerName == null || config.enableAnonymousUploading())
+		if (loggedPlayerName == null)
 		{
-			return ANONYMOUS_USER_NAME;
+			return null;
 		}
 
-		return loggedPlayerName;
+		return config.enableAnonymousUploading() ? ANONYMOUS_USER_NAME : loggedPlayerName;
 	}
 
 	/**

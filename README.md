@@ -37,10 +37,10 @@ Identifies bots by sending nearby players' information to a third-party machine 
 | Show Feedback Textbox | Adds a textbox to the prediction feedback panel, so you can explain your choice in up to 250 characters. Make sure you type your feedback *before* you make your choice! |
 | Panel Default Stats Tab | Sets panel default stats tab when the Plugin turns on. |
 | Panel Font Size | Sets the font size of most of the Plugin's Panel elements. |
-| Anonymous Uploading | When enabled, your username will not be sent with your uploads. You also cannot manually flag players or send in prediction feedbacks. |
+| Anonymous Uploading | When enabled, your username will not be sent with your uploads. You also cannot manually flag players. |
 
 ### ⚠️ Anonymous Mode ⚠️
-**Anonymous Mode** is enabled by default, which means your username will not be sent with your uploads. However, we cannot tally your uploads, and you will not be able to manually flag players or send in prediction feedbacks.
+**Anonymous Mode** is enabled by default, which means your username will not be sent with your uploads. However, we cannot tally your uploads, and you will not be able to manually flag players.
 
 ### Understanding The Plugin Panel
 #### The Player Statistics Panel
@@ -66,7 +66,7 @@ Identifies bots by sending nearby players' information to a third-party machine 
 | Prediction Feedback  | Allows the user to send in a feedback for the **Primary Prediction**. |
 | Manual Flagging      | Allows the user to upload the most recent sighting for the predicted player with an extra flag to tell us to pay more attention to that player. |
 
-**Note for ⚠️ Anonymous Users ⚠️**: The *Prediction Feedback* and *Manual Flagging* panels are disabled.
+**Note for ⚠️ Anonymous Users ⚠️**: The *Manual Flagging* panel is disabled.
 
 ### Understanding How the Plugin Works
 You, as a plugin user, automatically and passively send some information about every player you come across in-game to our servers.
@@ -110,8 +110,8 @@ RuneLite's APIs allow us to easily collect nearby players' location, gear and ge
 ## When I try to install the Plugin, I get a warning about it needing my IP address. What is this about?
 That is simply how the Internet works. As the Plugin needs to connect to our servers to send and receive data, your IP comes along for the ride. We do not log your IP address and **Anonymous Mode** is enabled by default, which means that we will not receive your Runescape Name with the data you send. You may however turn off the option yourself in the Plugin's settings to access extra features.
 
-## I installed the Plugin, and it works, but it's not tallying my uploads? I also can't manually flag players as bots or send in prediction feedbacks!
-**Anonymous Mode** is enabled by default. If it is enabled, we cannot associate your uploads with your Runescape Name. If you wish to tally your uploads, you'll need to disable Anonymous Mode in the Plugin's settings. In addition, we've disabled manual flagging and prediction feedbacks for Anonymous users.
+## I installed the Plugin, and it works, but it's not tallying my uploads? I also can't manually flag players as bots!
+**Anonymous Mode** is enabled by default. If it is enabled, we cannot associate your uploads with your Runescape Name. If you wish to tally your uploads, you'll need to disable Anonymous Mode in the Plugin's settings. In addition, we've disabled manual flagging for Anonymous users.
 
 ## I changed my Runescape Name and my tallies got reset!
 The only way we can easily attribute uploads is through the sender's Runescape Name. If you have a way of confirming to us your previous name, come talk to us on our Discord server where we may be able to transfer your tallies. If you've used our account linking feature on our Discord with your previous name, this process should be even easier for us.
