@@ -777,7 +777,7 @@ public class BotDetectorPanel extends PluginPanel
 		flaggingYesButton = new JButton("Yes");
 		flaggingYesButton.setToolTipText(
 			"<html>This is <span style='color:red'>NOT</span> the same as reporting the player in-game!" +
-				"<br>Flagging a player as a bot tells us to pay more attention to them when training our model.</html>");
+			"<br>Flagging a player as a bot tells us to pay more attention to them when training our model.</html>");
 		flaggingYesButton.setForeground(HEADER_COLOR);
 		flaggingYesButton.setFont(SMALL_FONT);
 		flaggingYesButton.addActionListener(l -> sendFlagToClient(true));
