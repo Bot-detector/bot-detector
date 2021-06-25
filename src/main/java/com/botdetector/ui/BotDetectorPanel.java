@@ -106,7 +106,7 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		ANONYMOUS(Icons.WARNING_ICON, " Anonymous Uploading Active",
 			"<html>Your name will not be included with your uploads and your tallies will not increase."
-				+ "<br>Prediction feedback and manual bot flagging are also disabled.</html>"),
+				+ "<br>Manual bot flagging is also disabled.</html>"),
 		BLOCKED_WORLD(Icons.WARNING_ICON, " No Uploading For Current World",
 			"<html>You are currently logged into a world where player sightings are not being collected."
 				+ "<br>Your tallies will not increase from seeing players in this world.</html>"),
@@ -460,7 +460,7 @@ public class BotDetectorPanel extends PluginPanel
 		label = new JLabel("Possible Bans: ");
 		label.setToolTipText(
 			"<html>How many of your uploaded names may have been banned." +
-			"<br>For example: Names that no longer appear on the Hiscores.</html>");
+				"<br>For example: Names that no longer appear on the Hiscores.</html>");
 		label.setForeground(TEXT_COLOR);
 		c.gridy++;
 		c.gridx = 0;
@@ -777,7 +777,7 @@ public class BotDetectorPanel extends PluginPanel
 		flaggingYesButton = new JButton("Yes");
 		flaggingYesButton.setToolTipText(
 			"<html>This is <span style='color:red'>NOT</span> the same as reporting the player in-game!" +
-			"<br>Flagging a player as a bot tells us to pay more attention to them when training our model.</html>");
+				"<br>Flagging a player as a bot tells us to pay more attention to them when training our model.</html>");
 		flaggingYesButton.setForeground(HEADER_COLOR);
 		flaggingYesButton.setFont(SMALL_FONT);
 		flaggingYesButton.addActionListener(l -> sendFlagToClient(true));
@@ -1052,33 +1052,33 @@ public class BotDetectorPanel extends PluginPanel
 				predictionBreakdownPanel.setVisible(true);
 			}
 
-			if (shouldAllowFeedbackOrFlagging())
+
+			resetFeedbackPanel(true);
+			CaseInsensitiveString name = normalizeAndWrapPlayerName(pred.getPlayerName());
+			if (pred.getPlayerId() <= 0)
 			{
-				resetFeedbackPanel(true);
-				CaseInsensitiveString name = normalizeAndWrapPlayerName(pred.getPlayerName());
-				if (pred.getPlayerId() <= 0)
+				predictionFeedbackPanel.setVisible(false);
+			}
+			else
+			{
+				// If the player has already been feedbacked/flagged, ensure the panels reflect this
+				Boolean feedbacked = plugin.getFeedbackedPlayers().get(name);
+				if (feedbacked != null)
 				{
-					predictionFeedbackPanel.setVisible(false);
-				}
-				else
-				{
-					// If the player has already been feedbacked/flagged, ensure the panels reflect this
-					Boolean feedbacked = plugin.getFeedbackedPlayers().get(name);
-					if (feedbacked != null)
-					{
-						disableAndSetColorOnFeedbackPanel(feedbacked);
-					}
-
-					// If there was some feedback text from a previous send, either successful or failed
-					String feedbackText = plugin.getFeedbackedPlayersText().get(name);
-					if (feedbackText != null)
-					{
-						feedbackTextbox.setText(feedbackText);
-					}
-
-					predictionFeedbackPanel.setVisible(true);
+					disableAndSetColorOnFeedbackPanel(feedbacked);
 				}
 
+				// If there was some feedback text from a previous send, either successful or failed
+				String feedbackText = plugin.getFeedbackedPlayersText().get(name);
+				if (feedbackText != null)
+				{
+					feedbackTextbox.setText(feedbackText);
+				}
+				predictionFeedbackPanel.setVisible(true);
+			}
+
+			if (shouldAllowFlagging())
+			{
 				resetFlaggingPanel();
 				if (sighting == null)
 				{
@@ -1096,7 +1096,6 @@ public class BotDetectorPanel extends PluginPanel
 			}
 			else
 			{
-				predictionFeedbackPanel.setVisible(false);
 				predictionFlaggingPanel.setVisible(false);
 			}
 		}
@@ -1234,8 +1233,7 @@ public class BotDetectorPanel extends PluginPanel
 	 */
 	private void sendFeedbackToClient(boolean feedback)
 	{
-		if (lastPrediction == null
-			|| !shouldAllowFeedbackOrFlagging())
+		if (lastPrediction == null)
 		{
 			return;
 		}
@@ -1296,7 +1294,7 @@ public class BotDetectorPanel extends PluginPanel
 	private void sendFlagToClient(boolean doFlag)
 	{
 		if (lastPredictionPlayerSighting == null
-			|| !shouldAllowFeedbackOrFlagging())
+			|| !shouldAllowFlagging())
 		{
 			return;
 		}
@@ -1347,10 +1345,10 @@ public class BotDetectorPanel extends PluginPanel
 	}
 
 	/**
-	 * Checks if feedback or flagging should be allowed.
+	 * Checks if flagging should be allowed.
 	 * @return True if the user is logged in and not {@link BotDetectorPlugin#ANONYMOUS_USER_NAME}, false otherwise.
 	 */
-	private boolean shouldAllowFeedbackOrFlagging()
+	private boolean shouldAllowFlagging()
 	{
 		return lastPredictionUploaderName != null
 			&& !lastPredictionUploaderName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
