@@ -979,7 +979,8 @@ public class BotDetectorPlugin extends Plugin
 			case ALL:
 				return HIGHLIGHTED_PREDICT_OPTION;
 			case NOT_REPORTED:
-				return flaggedPlayers.containsKey(normalizeAndWrapPlayerName(playerName)) ?
+				CaseInsensitiveString name = normalizeAndWrapPlayerName(playerName);
+				return (feedbackedPlayers.containsKey(name) || flaggedPlayers.containsKey(name)) ?
 					PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
 			default:
 				return PREDICT_OPTION;

@@ -34,8 +34,8 @@ public enum PredictHighlightMode
 	NONE("No Highlight"),
 	/** Always highlight the Predict player option. **/
 	ALL("Highlight All"),
-	/** Stop highlighting the Predict player option if the player has had an option selected in the panel flagging buttons. **/
-	NOT_REPORTED("Only Unflagged")
+	/** Stop highlighting the Predict player option if the player has had an option selected in the panel feedback or flagging buttons. **/
+	NOT_REPORTED("Not Voted/Flagged")
 	;
 
 	private final String name;
