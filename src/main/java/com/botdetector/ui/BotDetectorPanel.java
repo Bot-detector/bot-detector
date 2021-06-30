@@ -1035,7 +1035,7 @@ public class BotDetectorPanel extends PluginPanel
 			nameAutocompleter.addToSearchHistory(pred.getPlayerName().toLowerCase());
 			lastPrediction = pred;
 			lastPredictionPlayerSighting = sighting;
-			lastPredictionUploaderName = plugin.getUploaderName();
+			lastPredictionUploaderName = plugin.getUploaderName(true);
 			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
 			predictionPlayerNameLabel.setText(wrapHTML(pred.getPlayerName()));
 			predictionTypeLabel.setText(wrapHTML(normalizeLabel(pred.getPredictionLabel())));
@@ -1350,12 +1350,12 @@ public class BotDetectorPanel extends PluginPanel
 
 	/**
 	 * Checks if flagging should be allowed.
-	 * @return True if the user is logged in and not {@link BotDetectorPlugin#ANONYMOUS_USER_NAME}, false otherwise.
+	 * @return True if {@link BotDetectorPlugin#getUploaderName()} indicates a logged user that isn't in anonymous mode.
 	 */
 	private boolean shouldAllowFlagging()
 	{
 		return lastPredictionUploaderName != null
-			&& !lastPredictionUploaderName.equals(BotDetectorPlugin.ANONYMOUS_USER_NAME);
+			&& !lastPredictionUploaderName.startsWith(BotDetectorPlugin.ANONYMOUS_USER_NAME);
 	}
 
 	/**
