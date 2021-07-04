@@ -697,7 +697,7 @@ public class BotDetectorPanel extends PluginPanel
 		String tooltip = "<html>Tell us if the <b>primary prediction</b> seems %s to you! Doing so will help us improve our model." +
 			"<br><span style='color:red'>Please</span>, do not vote against a prediction simply because the percentage is not high enough.</html>";
 
-		feedbackHeaderLabel = new JLabel("Is this prediction correct?");
+		feedbackHeaderLabel = new JLabel("Is 'Primary Prediction' correct?");
 		feedbackHeaderLabel.setHorizontalTextPosition(JLabel.LEFT);
 		feedbackHeaderLabel.setFont(NORMAL_FONT);
 		feedbackHeaderLabel.setForeground(HEADER_COLOR);
