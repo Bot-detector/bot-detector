@@ -25,6 +25,7 @@
  */
 package com.botdetector.http;
 
+import com.botdetector.BotDetectorPlugin;
 import com.botdetector.model.FeedbackValue;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
@@ -127,7 +128,7 @@ public class BotDetectorClient
 	/**
 	 * Sends a single {@link PlayerSighting} to the API to be persisted in the Bot Detector database.
 	 * @param sighting The sighting to send.
-	 * @param uploaderName The user's player name, or {@link com.botdetector.BotDetectorPlugin#ANONYMOUS_USER_NAME}.
+	 * @param uploaderName The user's player name (See {@link BotDetectorPlugin#getUploaderName()}).
 	 * @param manual Whether or not the given sighting is to be manually flagged as a bot by the user.
 	 * @return A future that will eventually return a boolean indicating success.
 	 */
@@ -139,7 +140,7 @@ public class BotDetectorClient
 	/**
 	 * Sends a collection of {@link PlayerSighting}s to the API to be persisted in the Bot Detector database.
 	 * @param sightings The collection of sightings to send.
-	 * @param uploaderName The user's player name, or {@link com.botdetector.BotDetectorPlugin#ANONYMOUS_USER_NAME}.
+	 * @param uploaderName The user's player name (See {@link BotDetectorPlugin#getUploaderName()}).
 	 * @param manual Whether or not the given sightings are to be manually flagged as bots by the user.
 	 * @return A future that will eventually return a boolean indicating success.
 	 */
@@ -264,7 +265,7 @@ public class BotDetectorClient
 	/**
 	 * Sends a feedback to the API for the given prediction.
 	 * @param pred The prediction object to give a feedback for.
-	 * @param uploaderName The user's player name.
+	 * @param uploaderName The user's player name (See {@link BotDetectorPlugin#getUploaderName()}).
 	 * @param feedback The user's feedback.
 	 * @param feedbackText The user's feedback text to include with the feedback.
 	 * @return A future that will eventually return a boolean indicating success.

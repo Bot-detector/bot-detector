@@ -47,6 +47,7 @@ public interface BotDetectorConfig extends Config
 	String AUTH_FULL_TOKEN_KEY = "authToken";
 	String SHOW_FEEDBACK_TEXTBOX = "showFeedbackTextbox";
 	String SHOW_DISCORD_VERIFICATION_ERRORS = "showDiscordVerificationErrors";
+	String ANONYMOUS_UUID_KEY = "anonymousUUID";
 
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
 	int AUTO_SEND_MAXIMUM_MINUTES = 360;

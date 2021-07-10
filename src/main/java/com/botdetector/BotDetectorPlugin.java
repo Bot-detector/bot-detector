@@ -59,6 +59,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -133,6 +134,8 @@ public class BotDetectorPlugin extends Plugin
 			WorldType.TOURNAMENT
 		);
 
+	private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
+
 	private static final String PREDICT_OPTION = "Predict";
 	private static final String HIGHLIGHTED_PREDICT_OPTION = ColorUtil.prependColorTag(PREDICT_OPTION, Color.RED);
 	private static final String REPORT_OPTION = "Report";
@@ -183,9 +186,13 @@ public class BotDetectorPlugin extends Plugin
 
 	private static final String CHAT_MESSAGE_HEADER = "[Bot Detector] ";
 	public static final String ANONYMOUS_USER_NAME = "AnonymousUser";
+	public static final String ANONYMOUS_USER_NAME_UUID_FORMAT = ANONYMOUS_USER_NAME + "_%s";
 
 	@Inject
 	private Client client;
+
+	@Inject
+	private ConfigManager configManager;
 
 	@Inject
 	private MenuManager menuManager;
@@ -246,6 +253,9 @@ public class BotDetectorPlugin extends Plugin
 	@Getter
 	private AuthToken authToken = AuthToken.EMPTY_TOKEN;
 
+	/** The currently loaded anonymous UUID. **/
+	private String anonymousUUID;
+
 	/**
 	 * Contains the last {@link PlayerSighting} for the given {@code player} and {@code regionId}
 	 * since the last successful call to {@link #flushPlayersToClient(boolean, boolean)}.
@@ -302,6 +312,14 @@ public class BotDetectorPlugin extends Plugin
 			displayPluginVersionError();
 
 			return;
+		}
+
+		// Load up the anonymous UUID
+		anonymousUUID = configManager.getConfiguration(BotDetectorConfig.CONFIG_GROUP, BotDetectorConfig.ANONYMOUS_UUID_KEY);
+		if (StringUtils.isBlank(anonymousUUID) || !UUID_PATTERN.matcher(anonymousUUID).matches())
+		{
+			anonymousUUID = UUID.randomUUID().toString();
+			configManager.setConfiguration(BotDetectorConfig.CONFIG_GROUP, BotDetectorConfig.ANONYMOUS_UUID_KEY, anonymousUUID);
 		}
 
 		panel = injector.getInstance(BotDetectorPanel.class);
@@ -419,7 +437,8 @@ public class BotDetectorPlugin extends Plugin
 	 */
 	public synchronized CompletableFuture<Boolean> flushPlayersToClient(boolean restoreOnFailure, boolean forceChatNotification)
 	{
-		if (loggedPlayerName == null)
+		String uploader = getUploaderName();
+		if (uploader == null)
 		{
 			return null;
 		}
@@ -443,8 +462,9 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		lastFlush = Instant.now();
+
 		return detectorClient.sendSightings(sightings, getUploaderName(), false)
-			.whenComplete((b, ex) ->
+		  .whenComplete((b, ex) ->
 			{
 				if (ex == null && b)
 				{
@@ -506,13 +526,20 @@ public class BotDetectorPlugin extends Plugin
 				panel.setPlayerStatsLoading(false);
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousUploading());
 				panel.setWarningVisible(BotDetectorPanel.WarningLabel.PLAYER_STATS_ERROR, false);
-				panel.forceHideFeedbackPanel();
+				if (loggedPlayerName == null)
+				{
+					panel.forceHideFeedbackPanel();
+				}
 				panel.forceHideFlaggingPanel();
 			});
 			return;
 		}
 
-		SwingUtilities.invokeLater(() -> panel.setPlayerStatsLoading(true));
+		SwingUtilities.invokeLater(() ->
+		{
+			panel.setPlayerStatsLoading(true);
+			panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false);
+		});
 
 		String nameAtRequest = loggedPlayerName;
 		detectorClient.requestPlayerStats(nameAtRequest)
@@ -525,11 +552,7 @@ public class BotDetectorPlugin extends Plugin
 					return;
 				}
 
-				SwingUtilities.invokeLater(() ->
-				{
-					panel.setPlayerStatsLoading(false);
-					panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, false);
-				});
+				SwingUtilities.invokeLater(() -> panel.setPlayerStatsLoading(false));
 
 				if (ex == null && psm != null)
 				{
@@ -581,6 +604,11 @@ public class BotDetectorPlugin extends Plugin
 				break;
 			case BotDetectorConfig.ANONYMOUS_UPLOADING_KEY:
 				refreshPlayerStats(true);
+				SwingUtilities.invokeLater(() ->
+				{
+					panel.forceHideFeedbackPanel();
+					panel.forceHideFlaggingPanel();
+				});
 				break;
 			case BotDetectorConfig.PANEL_FONT_TYPE_KEY:
 				SwingUtilities.invokeLater(() -> panel.setFontType(config.panelFontType()));
@@ -960,13 +988,34 @@ public class BotDetectorPlugin extends Plugin
 	/**
 	 * Gets the name that should be used when an uploader name is required,
 	 * according to {@link BotDetectorConfig#enableAnonymousUploading()}.
-	 * @return {@link #loggedPlayerName} or {@link #ANONYMOUS_USER_NAME}.
+	 * @return {@link #loggedPlayerName} or {@link #ANONYMOUS_USER_NAME}. Returns {@code null} if logged out.
 	 */
 	public String getUploaderName()
 	{
-		if (loggedPlayerName == null || config.enableAnonymousUploading())
+		return getUploaderName(false);
+	}
+
+	/**
+	 * Gets the name that should be used when an uploader name is required,
+	 * according to {@link BotDetectorConfig#enableAnonymousUploading()}.
+	 * @param useAnonymousUUIDFormat Whether or not to use the UUID anonymous username format.
+	 * @return {@link #loggedPlayerName} if not anonymous. When anonymous, returns
+	 * {@link #ANONYMOUS_USER_NAME_UUID_FORMAT} with {@link #anonymousUUID}
+	 * or simply {@link #ANONYMOUS_USER_NAME} depending on {@code useAnonymousUUIDFormat}.
+	 * Returns {@code null} if logged out.
+	 */
+	public String getUploaderName(boolean useAnonymousUUIDFormat)
+	{
+		if (loggedPlayerName == null)
 		{
-			return ANONYMOUS_USER_NAME;
+			return null;
+		}
+
+		if (config.enableAnonymousUploading())
+		{
+			return useAnonymousUUIDFormat ?
+				String.format(ANONYMOUS_USER_NAME_UUID_FORMAT, anonymousUUID)
+				: ANONYMOUS_USER_NAME;
 		}
 
 		return loggedPlayerName;
