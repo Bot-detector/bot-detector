@@ -31,6 +31,7 @@ import com.botdetector.model.AuthToken;
 import com.botdetector.model.AuthTokenPermission;
 import com.botdetector.model.AuthTokenType;
 import com.botdetector.model.CaseInsensitiveString;
+import com.botdetector.model.FeedbackValue;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.ui.BotDetectorPanel;
 import com.botdetector.events.BotDetectorPanelActivated;
@@ -261,11 +262,11 @@ public class BotDetectorPlugin extends Plugin
 	private final Map<CaseInsensitiveString, PlayerSighting> persistentSightings = new ConcurrentHashMap<>();
 
 	/**
-	 * Contains the feedbacks (good/not good) sent per {@code player} for the current login session.
+	 * Contains the feedbacks (See {@link FeedbackValue}) sent per {@code player} for the current login session.
 	 * Always use {@link #normalizeAndWrapPlayerName(String)} when keying into this map.
 	 */
 	@Getter
-	private final Map<CaseInsensitiveString, Boolean> feedbackedPlayers = new ConcurrentHashMap<>();
+	private final Map<CaseInsensitiveString, FeedbackValue> feedbackedPlayers = new ConcurrentHashMap<>();
 
 	/**
 	 * Contains the feedback texts sent per {@code player} for the current login session.
