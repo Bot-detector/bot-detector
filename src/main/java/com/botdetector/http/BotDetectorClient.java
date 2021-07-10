@@ -26,6 +26,7 @@
 package com.botdetector.http;
 
 import com.botdetector.BotDetectorPlugin;
+import com.botdetector.model.FeedbackValue;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.PlayerStatsType;
@@ -269,7 +270,7 @@ public class BotDetectorClient
 	 * @param feedbackText The user's feedback text to include with the feedback.
 	 * @return A future that will eventually return a boolean indicating success.
 	 */
-	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String uploaderName, boolean feedback, String feedbackText)
+	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String uploaderName, FeedbackValue feedback, String feedbackText)
 	{
 		Gson gson = gsonBuilder.create();
 
@@ -277,7 +278,7 @@ public class BotDetectorClient
 			.url(getUrl(ApiPath.FEEDBACK))
 			.post(RequestBody.create(JSON, gson.toJson(new PredictionFeedback(
 				uploaderName,
-				feedback ? 1 : -1,
+				feedback.getApiValue(),
 				pred.getPredictionLabel(),
 				pred.getConfidence(),
 				pred.getPlayerId(),
@@ -507,7 +508,7 @@ public class BotDetectorClient
 		@SerializedName("confidence")
 		double predictionConfidence;
 		@SerializedName("subject_id")
-		int targetId;
+		long targetId;
 		@SerializedName("feedback_text")
 		String feedbackText;
 	}

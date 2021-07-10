@@ -25,33 +25,17 @@
  */
 package com.botdetector.model;
 
-import com.google.gson.annotations.SerializedName;
-import lombok.Value;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@Value
-public class PlayerStats
+@Getter
+@RequiredArgsConstructor
+public enum FeedbackValue
 {
-	@SerializedName("reports")
-	long namesUploaded;
-	@SerializedName("bans")
-	long confirmedBans;
-	@SerializedName("possible_bans")
-	long possibleBans;
-	@SerializedName("incorrect_reports")
-	long incorrectFlags;
+	POSITIVE(1),
+	NEGATIVE(-1),
+	NEUTRAL(0)
+	;
 
-	/**
-	 * The accuracy represents {@link #confirmedBans} divided by
-	 * the sum of {@link #confirmedBans} and {@link #incorrectFlags}.
-	 */
-	public double getAccuracy()
-	{
-		long divisor = incorrectFlags + confirmedBans;
-		if (divisor > 0)
-		{
-			return confirmedBans / (double)divisor;
-		}
-		return 0;
-	}
-
+	private final int apiValue;
 }

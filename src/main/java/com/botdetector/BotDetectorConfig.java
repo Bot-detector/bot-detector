@@ -57,7 +57,8 @@ public interface BotDetectorConfig extends Config
 		keyName = ONLY_SEND_AT_LOGOUT_KEY,
 		name = "Send Names Only After Logout",
 		description = "Waits to upload names until you've logged out. Use this if you have a poor connection."
-			+ "<br><span style='color:red'>WARNING:</span> Names <b>cannot</b> be sent if Runelite is closed completely before logging out."
+			+ "<br><span style='color:red'>WARNING:</span> Names <b>will not</b> be sent if Runelite is closed completely"
+			+ "<br>before logging out, unless 'Attempt Send on Close' is turned on."
 	)
 	default boolean onlySendAtLogout()
 	{
@@ -66,6 +67,19 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 2,
+		keyName = "uploadOnShutdown",
+		name = "Attempt Send on Close",
+		description = "Attempts to upload names when closing Runelite while being logged in."
+			+ "<br><span style='color:red'>WARNING:</span> This may cause the client to take significantly longer to close"
+			+ "<br>in the event that the Bot Detector server is being slow or unresponsive."
+	)
+	default boolean uploadOnShutdown()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 3,
 		keyName = AUTO_SEND_MINUTES_KEY,
 		name = "Send Names Every",
 		description = "Sets the amount of time between automatic name uploads."
@@ -78,7 +92,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 3,
+		position = 4,
 		keyName = "enableChatNotifications",
 		name = "Enable Chat Status Messages",
 		description = "Show various plugin status messages in the game chat."
@@ -89,7 +103,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 4,
+		position = 5,
 		keyName = ADD_PREDICT_OPTION_KEY,
 		name = "Right-click 'Predict' Players",
 		description = "Adds an entry to player menus to quickly check them in the prediction panel."
@@ -100,7 +114,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 5,
+		position = 6,
 		keyName = "predictOnReport",
 		name = "'Predict' on Right-click 'Report'",
 		description = "Makes the in-game right-click 'Report' option also open the prediction panel."
@@ -111,7 +125,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 6,
+		position = 7,
 		keyName = "predictOptionCopyName",
 		name = "'Predict' Copy Name to Clipboard",
 		description = "Copies the player's name to the clipboard when right-click predicting a player."
@@ -122,7 +136,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 7,
+		position = 8,
 		keyName = HIGHLIGHT_PREDICT_KEY,
 		name = "Highlight 'Predict' Option",
 		description = "When right-clicking on a player, the predict option will be highlighted to be easier to identify."
@@ -133,7 +147,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-			position = 8,
+			position = 9,
 			keyName = "autocomplete",
 			name = "Prediction Autocomplete",
 			description = "Autocomplete names when typing a name to predict in the prediction panel."
@@ -144,7 +158,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 9,
+		position = 10,
 		keyName = SHOW_FEEDBACK_TEXTBOX,
 		name = "Show Feedback Textbox",
 		description = "Show a textbox on the prediction feedback panel where you can explain your feedback to us."
@@ -155,7 +169,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 10,
+		position = 11,
 		keyName = "panelDefaultStatsType",
 		name = "Panel Default Stats Tab",
 		description = "Sets the initial player statistics tab in the prediction panel for when the plugin is launched."
@@ -166,7 +180,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 11,
+		position = 12,
 		keyName = PANEL_FONT_TYPE_KEY,
 		name = "Panel Font Size",
 		description = "Sets the size of the label fields in the prediction panel."
@@ -177,7 +191,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 12,
+		position = 13,
 		keyName = ANONYMOUS_UPLOADING_KEY,
 		name = "Anonymous Uploading",
 		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."

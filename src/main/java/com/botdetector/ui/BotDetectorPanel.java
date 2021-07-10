@@ -31,6 +31,7 @@ import static com.botdetector.BotDetectorPlugin.normalizeAndWrapPlayerName;
 import com.botdetector.events.BotDetectorPanelActivated;
 import com.botdetector.http.BotDetectorClient;
 import com.botdetector.model.CaseInsensitiveString;
+import com.botdetector.model.FeedbackValue;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.PlayerStatsType;
@@ -134,6 +135,7 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Color VALUE_COLOR = Color.WHITE;
 	private static final Color ERROR_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
 	private static final Color POSITIVE_BUTTON_COLOR = ColorScheme.PROGRESS_COMPLETE_COLOR;
+	private static final Color NEUTRAL_BUTTON_COLOR = ColorScheme.PROGRESS_INPROGRESS_COLOR;
 	private static final Color NEGATIVE_BUTTON_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
 
 	private static final String EMPTY_LABEL = "---";
@@ -202,6 +204,7 @@ public class BotDetectorPanel extends PluginPanel
 	// For feedback/flag
 	private JLabel feedbackHeaderLabel;
 	private JButton feedbackGoodButton;
+	private JButton feedbackNeutralButton;
 	private JButton feedbackBadButton;
 	private JScrollPane feedbackTextScrollPane;
 	private JLimitedTextArea feedbackTextbox;
@@ -694,7 +697,7 @@ public class BotDetectorPanel extends PluginPanel
 		String tooltip = "<html>Tell us if the <b>primary prediction</b> seems %s to you! Doing so will help us improve our model." +
 			"<br><span style='color:red'>Please</span>, do not vote against a prediction simply because the percentage is not high enough.</html>";
 
-		feedbackHeaderLabel = new JLabel("Is this prediction correct?");
+		feedbackHeaderLabel = new JLabel("Is 'Primary Prediction' correct?");
 		feedbackHeaderLabel.setHorizontalTextPosition(JLabel.LEFT);
 		feedbackHeaderLabel.setFont(NORMAL_FONT);
 		feedbackHeaderLabel.setForeground(HEADER_COLOR);
@@ -703,7 +706,7 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipady = HEADER_PAD;
-		c.gridwidth = 2;
+		c.gridwidth = 3;
 		c.weightx = 1;
 		panel.add(feedbackHeaderLabel, c);
 
@@ -724,22 +727,32 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridy++;
 		panel.add(feedbackTextScrollPane, c);
 
-		feedbackGoodButton = new JButton("Looks good");
+		feedbackGoodButton = new JButton("Yes");
 		feedbackGoodButton.setToolTipText(String.format(tooltip, "correct"));
 		feedbackGoodButton.setForeground(HEADER_COLOR);
 		feedbackGoodButton.setFont(SMALL_FONT);
-		feedbackGoodButton.addActionListener(l -> sendFeedbackToClient(true));
+		feedbackGoodButton.addActionListener(l -> sendFeedbackToClient(FeedbackValue.POSITIVE));
 		feedbackGoodButton.setFocusable(false);
 		c.gridy++;
-		c.weightx = 0.5;
+		c.weightx = 1.0 / 3;
 		c.gridwidth = 1;
 		panel.add(feedbackGoodButton, c);
 
-		feedbackBadButton = new JButton("It's wrong");
+		feedbackNeutralButton = new JButton("Unsure");
+		feedbackNeutralButton.setToolTipText("<html>Are you unsure? Please leave a message explaining why!" +
+			"<br>If there is no textbox above, please turn on 'Show Feedback Textbox' in the plugin's config.</html>");
+		feedbackNeutralButton.setForeground(HEADER_COLOR);
+		feedbackNeutralButton.setFont(SMALL_FONT);
+		feedbackNeutralButton.addActionListener(l -> sendFeedbackToClient(FeedbackValue.NEUTRAL));
+		feedbackNeutralButton.setFocusable(false);
+		c.gridx++;
+		panel.add(feedbackNeutralButton, c);
+
+		feedbackBadButton = new JButton("No");
 		feedbackBadButton.setToolTipText(String.format(tooltip, "incorrect"));
 		feedbackBadButton.setForeground(HEADER_COLOR);
 		feedbackBadButton.setFont(SMALL_FONT);
-		feedbackBadButton.addActionListener(l -> sendFeedbackToClient(false));
+		feedbackBadButton.addActionListener(l -> sendFeedbackToClient(FeedbackValue.NEGATIVE));
 		feedbackBadButton.setFocusable(false);
 		c.gridx++;
 		panel.add(feedbackBadButton, c);
@@ -1063,8 +1076,9 @@ public class BotDetectorPanel extends PluginPanel
 				}
 				else
 				{
-					// If the player has already been feedbacked, ensure the panels reflect this
-					Boolean feedbacked = plugin.getFeedbackedPlayers().get(name);
+					// If the player has already been feedbacked/flagged, ensure the panels reflect this
+					FeedbackValue feedbacked = plugin.getFeedbackedPlayers().get(name);
+          
 					if (feedbacked != null)
 					{
 						disableAndSetColorOnFeedbackPanel(feedbacked);
@@ -1234,7 +1248,7 @@ public class BotDetectorPanel extends PluginPanel
 	 * Processes the user input from the prediction feedback panel.
 	 * @param feedback The intended feedback from the user for {@link #lastPrediction} to be sent to the API.
 	 */
-	private void sendFeedbackToClient(boolean feedback)
+	private void sendFeedbackToClient(FeedbackValue feedback)
 	{
 		if (lastPrediction == null
 			|| lastPredictionUploaderName == null)
@@ -1245,7 +1259,7 @@ public class BotDetectorPanel extends PluginPanel
 		disableAndSetColorOnFeedbackPanel(feedback);
 
 		CaseInsensitiveString wrappedName = normalizeAndWrapPlayerName(lastPrediction.getPlayerName());
-		Map<CaseInsensitiveString, Boolean> feedbackMap = plugin.getFeedbackedPlayers();
+		Map<CaseInsensitiveString, FeedbackValue> feedbackMap = plugin.getFeedbackedPlayers();
 		feedbackMap.put(wrappedName, feedback);
 
 		String feedbackText = feedbackTextbox.getText().trim();
@@ -1366,6 +1380,8 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackHeaderLabel.setIcon(null);
 		feedbackGoodButton.setBackground(null);
 		feedbackGoodButton.setEnabled(true);
+		feedbackNeutralButton.setBackground(null);
+		feedbackNeutralButton.setEnabled(true);
 		feedbackBadButton.setBackground(null);
 		feedbackBadButton.setEnabled(true);
 		feedbackTextbox.setEnabled(true);
@@ -1376,21 +1392,26 @@ public class BotDetectorPanel extends PluginPanel
 	}
 
 	/**
-	 * Disables the feedback panel and sets a color on either the 'Yes' or 'No' button according to the parameter.
-	 * @param feedback If true, highlight the 'Yes' button, otherwise highlight the 'No' button.
+	 * Disables the feedback panel and sets a color on either the 'Yes', 'Neutral' or 'No' button according to the parameter.
+	 * @param feedback The applied feedback.
 	 */
-	private void disableAndSetColorOnFeedbackPanel(boolean feedback)
+	private void disableAndSetColorOnFeedbackPanel(FeedbackValue feedback)
 	{
 		feedbackGoodButton.setEnabled(false);
+		feedbackNeutralButton.setEnabled(false);
 		feedbackBadButton.setEnabled(false);
 		feedbackTextbox.setEnabled(false);
-		if (feedback)
+		switch (feedback)
 		{
-			feedbackGoodButton.setBackground(POSITIVE_BUTTON_COLOR);
-		}
-		else
-		{
-			feedbackBadButton.setBackground(NEGATIVE_BUTTON_COLOR);
+			case POSITIVE:
+				feedbackGoodButton.setBackground(POSITIVE_BUTTON_COLOR);
+				break;
+			case NEUTRAL:
+				feedbackNeutralButton.setBackground(NEUTRAL_BUTTON_COLOR);
+				break;
+			case NEGATIVE:
+				feedbackBadButton.setBackground(NEGATIVE_BUTTON_COLOR);
+				break;
 		}
 	}
 
