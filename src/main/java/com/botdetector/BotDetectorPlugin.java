@@ -464,7 +464,7 @@ public class BotDetectorPlugin extends Plugin
 		lastFlush = Instant.now();
 
 		return detectorClient.sendSightings(sightings, getUploaderName(), false)
-		  .whenComplete((b, ex) ->
+			.whenComplete((b, ex) ->
 			{
 				if (ex == null && b)
 				{
