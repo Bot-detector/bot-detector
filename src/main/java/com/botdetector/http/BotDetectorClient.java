@@ -506,7 +506,7 @@ public class BotDetectorClient
 		@SerializedName("confidence")
 		double predictionConfidence;
 		@SerializedName("subject_id")
-		int targetId;
+		long targetId;
 		@SerializedName("feedback_text")
 		String feedbackText;
 	}
