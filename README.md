@@ -27,6 +27,7 @@ Identifies bots by sending nearby players' information to a third-party machine 
 | Setting | Description |
 |:--------|:------------|
 | Send Names Only After Logout | Recommended for players with low bandwidth. |
+| Attempt Send on Close | Attempts to upload names when closing Runelite while being logged in. Take note that enabling this option may cause the client to take a long time to close if our servers are being unresponsive. |
 | Send Names Every *x* mins | Determines how often the information collected by the plugin is flushed to our servers. The maximum rate is once per 5 minutes. | 
 | Enable Chat Status Messages | Inserts chat messages in your chatbox to inform you about your uploads being sent. |
 | Right-click 'Predict' Players | Allows you to right-click predict players, instead of having to type their name in the Plugin's panel manually. |
