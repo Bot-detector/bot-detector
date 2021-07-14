@@ -39,6 +39,8 @@ public class PlayerStats
 	long possibleBans;
 	@SerializedName("incorrect_reports")
 	long incorrectFlags;
+	@SerializedName("feedback")
+	long feedbackSent;
 
 	/**
 	 * The accuracy represents {@link #confirmedBans} divided by
