@@ -12,7 +12,7 @@ repositories {
 	mavenCentral()
 }
 
-def runeLiteVersion = '1.7.15'
+def runeLiteVersion = '1.7.16'
 
 dependencies {
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
@@ -26,7 +26,7 @@ dependencies {
 }
 
 group = 'com.botdetector'
-version = '1.3.5'
+version = '1.3.6-DEV'
 sourceCompatibility = '1.8'
 
 tasks.withType(JavaCompile) {
