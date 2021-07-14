@@ -672,11 +672,13 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		String playerName = normalizePlayerName(player.getName());
+
 		if (player == client.getLocalPlayer())
 		{
-			if (loggedPlayerName == null || !loggedPlayerName.equals(player.getName()))
+			if (loggedPlayerName == null || !loggedPlayerName.equalsIgnoreCase(playerName))
 			{
-				loggedPlayerName = player.getName();
+				loggedPlayerName = playerName;
 				updateTimeToAutoSend();
 				refreshPlayerStats(true);
 			}
@@ -689,7 +691,6 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		String playerName = normalizePlayerName(player.getName());
 		CaseInsensitiveString wrappedName = wrap(playerName);
 		if (playerName == null)
 		{
@@ -779,7 +780,7 @@ public class BotDetectorPlugin extends Plugin
 		String author;
 		if (chatMessage.getType().equals(ChatMessageType.PRIVATECHATOUT))
 		{
-			author = normalizePlayerName(loggedPlayerName);
+			author = loggedPlayerName;
 		}
 		else
 		{
