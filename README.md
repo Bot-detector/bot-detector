@@ -51,6 +51,7 @@ Identifies bots by sending nearby players' information to a third-party machine 
 | Plugin Version  | Indicates the Bot Detector Plugin version you are currently running. |
 | Current Uploads | Tallies the number of uploads the plugin has performed for the current RuneLite session. |
 | Total Uploads   | Tallies the number of unique Names you've uploaded so far. |
+| Feedback Sent   | Tallies the number of prediction feedbacks you've sent to us so far. |
 | Possible Bans   | Tallies the number of unique Names you've uploaded that may have been banned. This is usually because a given Name stopped appearing on the official Hiscores. |
 | Confirmed Bans  | Tallies the number of unique Names you've uploaded confirmed to have been banned by Jagex Moderators. |
 | Incorrect Flags | **(Manual Tab Only)** Tallies the number of unique Names you've flagged as bots that ended up being confirmed as real players by Jagex Moderators. |

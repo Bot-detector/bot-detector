@@ -180,6 +180,7 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel playerStatsPluginVersionLabel;
 	private JLabel playerStatsUploadedNamesLabel;
 	private JLabel playerStatsTotalUploadsLabel;
+	private JLabel playerStatsFeedbackSentLabel;
 	private JLabel playerStatsPossibleBansLabel;
 	private JLabel playerStatsConfirmedBansLabel;
 	private JLabel playerStatsIncorrectFlagsLabel;
@@ -459,6 +460,22 @@ public class BotDetectorPanel extends PluginPanel
 		c.weightx = 1;
 		uploadingStatsPanel.add(playerStatsTotalUploadsLabel, c);
 		switchableFontComponents.add(playerStatsTotalUploadsLabel);
+
+		label = new JLabel("Feedback Sent: ");
+		label.setToolTipText("How many prediction feedbacks you've sent us.");
+		label.setForeground(TEXT_COLOR);
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 0;
+		uploadingStatsPanel.add(label, c);
+		switchableFontComponents.add(label);
+
+		playerStatsFeedbackSentLabel = new JLabel();
+		playerStatsFeedbackSentLabel.setForeground(VALUE_COLOR);
+		c.gridx = 1;
+		c.weightx = 1;
+		uploadingStatsPanel.add(playerStatsFeedbackSentLabel, c);
+		switchableFontComponents.add(playerStatsFeedbackSentLabel);
 
 		label = new JLabel("Possible Bans: ");
 		label.setToolTipText(
@@ -898,9 +915,8 @@ public class BotDetectorPanel extends PluginPanel
 			playerStatsPossibleBansLabel.setText(QuantityFormatter.formatNumber(ps.getPossibleBans()));
 			if (currentPlayerStatsType.canDisplayAccuracy())
 			{
-				double accuracy = ps.getAccuracy();
 				playerStatsIncorrectFlagsLabel.setText(QuantityFormatter.formatNumber(ps.getIncorrectFlags()));
-				playerStatsFlagAccuracyLabel.setText(wrapHTML(toColoredPercentSpan(accuracy), false));
+				playerStatsFlagAccuracyLabel.setText(wrapHTML(toColoredPercentSpan(ps.getAccuracy()), false));
 			}
 			else
 			{
@@ -916,6 +932,18 @@ public class BotDetectorPanel extends PluginPanel
 			playerStatsIncorrectFlagsLabel.setText(EMPTY_LABEL);
 			playerStatsFlagAccuracyLabel.setText(EMPTY_LABEL);
 		}
+
+		// Process Feedback sent field separately, it's only available in "Total".
+		PlayerStats totalStats = playerStatsMap != null ? playerStatsMap.get(PlayerStatsType.TOTAL) : null;
+		if (totalStats != null)
+		{
+			playerStatsFeedbackSentLabel.setText(QuantityFormatter.formatNumber(totalStats.getFeedbackSent()));
+		}
+		else
+		{
+			playerStatsFeedbackSentLabel.setText(EMPTY_LABEL);
+		}
+
 		updateCurrentUploadsLabel();
 	}
 
@@ -1076,9 +1104,9 @@ public class BotDetectorPanel extends PluginPanel
 				}
 				else
 				{
-					// If the player has already been feedbacked/flagged, ensure the panels reflect this
+					// If the player has already been feedbacked, ensure the panels reflect this
 					FeedbackValue feedbacked = plugin.getFeedbackedPlayers().get(name);
-          
+
 					if (feedbacked != null)
 					{
 						disableAndSetColorOnFeedbackPanel(feedbacked);
