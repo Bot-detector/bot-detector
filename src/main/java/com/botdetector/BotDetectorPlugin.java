@@ -868,29 +868,29 @@ public class BotDetectorPlugin extends Plugin
 
 					ChatMessageBuilder response = new ChatMessageBuilder()
 						.append(ChatColorType.HIGHLIGHT)
-						.append("Bot Detector stats - ");
+						.append("Bot Detector stats -");
 
 					if (totalStats != null)
 					{
 						if (detailLevel == StatsCommandDetailLevel.DETAILED)
 						{
 							response.append(ChatColorType.NORMAL)
-								.append("Total Uploads: ")
+								.append(" Total Uploads:")
 								.append(ChatColorType.HIGHLIGHT)
-								.append(String.format("%,d ", totalStats.getNamesUploaded()))
+								.append(String.format(" %,d", totalStats.getNamesUploaded()))
 								.append(ChatColorType.NORMAL)
-								.append("Feedback Sent: ")
+								.append(" Feedback Sent:")
 								.append(ChatColorType.HIGHLIGHT)
-								.append(String.format("%,d ", totalStats.getFeedbackSent()))
+								.append(String.format(" %,d", totalStats.getFeedbackSent()))
 								.append(ChatColorType.NORMAL)
-								.append("Possible Bans: ")
+								.append(" Possible Bans:")
 								.append(ChatColorType.HIGHLIGHT)
-								.append(String.format("%,d ", totalStats.getPossibleBans()));
+								.append(String.format(" %,d", totalStats.getPossibleBans()));
 						}
 						response.append(ChatColorType.NORMAL)
-							.append("Confirmed Bans: ")
+							.append(" Confirmed Bans:")
 							.append(ChatColorType.HIGHLIGHT)
-							.append(String.format("%,d ", totalStats.getConfirmedBans()));
+							.append(String.format(" %,d", totalStats.getConfirmedBans()));
 					}
 
 					if (manualStats != null && manualStats.getNamesUploaded() > 0)
@@ -898,26 +898,26 @@ public class BotDetectorPlugin extends Plugin
 						if (detailLevel == StatsCommandDetailLevel.DETAILED)
 						{
 							response.append(ChatColorType.NORMAL)
-								.append("Manual Flags: ")
+								.append(" Manual Flags:")
 								.append(ChatColorType.HIGHLIGHT)
-								.append(String.format("%,d ", manualStats.getNamesUploaded()))
+								.append(String.format(" %,d", manualStats.getNamesUploaded()))
 								.append(ChatColorType.NORMAL)
-								.append("Manual Possible Bans: ")
+								.append(" Manual Possible Bans:")
 								.append(ChatColorType.HIGHLIGHT)
-								.append(String.format("%,d ", manualStats.getPossibleBans()));
+								.append(String.format(" %,d", manualStats.getPossibleBans()));
 						}
 
 						response.append(ChatColorType.NORMAL)
-							.append("Manual Confirmed Bans: ")
+							.append(" Manual Confirmed Bans:")
 							.append(ChatColorType.HIGHLIGHT)
-							.append(String.format("%,d ", manualStats.getConfirmedBans()));
+							.append(String.format(" %,d", manualStats.getConfirmedBans()));
 
 						if (detailLevel == StatsCommandDetailLevel.DETAILED)
 						{
 							response.append(ChatColorType.NORMAL)
-								.append("Manual Flag Accuracy: ")
+								.append(" Manual Flag Accuracy:")
 								.append(ChatColorType.HIGHLIGHT)
-								.append(new DecimalFormat("0.00%").format(manualStats.getAccuracy()));
+								.append(new DecimalFormat(" 0.00%").format(manualStats.getAccuracy()));
 						}
 					}
 
