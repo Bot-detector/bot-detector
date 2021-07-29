@@ -33,6 +33,9 @@ import com.botdetector.model.AuthTokenType;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.FeedbackValue;
 import com.botdetector.model.PlayerSighting;
+import com.botdetector.model.PlayerStats;
+import com.botdetector.model.PlayerStatsType;
+import com.botdetector.model.StatsCommandDetailLevel;
 import com.botdetector.ui.BotDetectorPanel;
 import com.botdetector.events.BotDetectorPanelActivated;
 import com.google.common.collect.EvictingQueue;
@@ -50,6 +53,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -75,6 +79,7 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
+import net.runelite.api.MessageNode;
 import net.runelite.api.Player;
 import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
@@ -88,6 +93,7 @@ import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.events.WorldChanged;
 import net.runelite.api.kit.KitType;
 import net.runelite.api.widgets.WidgetInfo;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatCommandManager;
 import net.runelite.client.chat.ChatMessageBuilder;
@@ -154,6 +160,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final int VERIFY_DISCORD_CODE_SIZE = 4;
 	private static final Pattern VERIFY_DISCORD_CODE_PATTERN = Pattern.compile("\\d{1," + VERIFY_DISCORD_CODE_SIZE + "}");
 
+	private static final String STATS_CHAT_COMMAND = "!bdstats";
+
 	private static final String COMMAND_PREFIX = "bd";
 	private static final String MANUAL_FLUSH_COMMAND = COMMAND_PREFIX + "Flush";
 	private static final String MANUAL_SIGHT_COMMAND = COMMAND_PREFIX + "Snap";
@@ -190,6 +198,9 @@ public class BotDetectorPlugin extends Plugin
 
 	@Inject
 	private Client client;
+
+	@Inject
+	private ClientThread clientThread;
 
 	@Inject
 	private ConfigManager configManager;
@@ -357,6 +368,7 @@ public class BotDetectorPlugin extends Plugin
 		previousTwoGameStates.offer(client.getGameState());
 
 		chatCommandManager.registerCommand(VERIFY_DISCORD_COMMAND, this::verifyDiscord);
+		chatCommandManager.registerCommand(STATS_CHAT_COMMAND, this::statsChatCommand);
 	}
 
 	@Override
@@ -387,6 +399,7 @@ public class BotDetectorPlugin extends Plugin
 		previousTwoGameStates.clear();
 
 		chatCommandManager.unregisterCommand(VERIFY_DISCORD_COMMAND);
+		chatCommandManager.unregisterCommand(STATS_CHAT_COMMAND);
 	}
 
 	/**
@@ -808,6 +821,113 @@ public class BotDetectorPlugin extends Plugin
 				else if (config.showDiscordVerificationErrors())
 				{
 					sendChatStatusMessage("Could not verify Discord for '" + author + "'" + (ex != null ? ": " + ex.getMessage() : "."), true);
+				}
+			});
+	}
+
+	/**
+	 * Displays the Bot Detector statistics for the message's author
+	 * @param chatMessage The ChatMessage event object.
+	 * @param message The actual chat message.
+	 */
+	private void statsChatCommand(ChatMessage chatMessage, String message)
+	{
+		if (message.length() != STATS_CHAT_COMMAND.length())
+		{
+			return;
+		}
+
+		final StatsCommandDetailLevel detailLevel = config.statsChatCommandDetailLevel();
+		if (detailLevel == StatsCommandDetailLevel.OFF)
+		{
+			return;
+		}
+
+		final String author;
+		if (chatMessage.getType().equals(ChatMessageType.PRIVATECHATOUT))
+		{
+			author = loggedPlayerName;
+		}
+		else
+		{
+			author = Text.sanitize(chatMessage.getName());
+		}
+
+		detectorClient.requestPlayerStats(author)
+			.whenComplete((map, ex) ->
+			{
+				if (ex == null && map != null)
+				{
+					PlayerStats totalStats = map.get(PlayerStatsType.TOTAL);
+
+					ChatMessageBuilder response = new ChatMessageBuilder()
+						.append(ChatColorType.HIGHLIGHT)
+						.append("Bot Detector stats -");
+
+					if (totalStats == null || totalStats.getNamesUploaded() <= 0)
+					{
+						response.append(ChatColorType.NORMAL)
+							.append(" No plugin stats for this player");
+					}
+					else
+					{
+						if (detailLevel == StatsCommandDetailLevel.DETAILED)
+						{
+							response.append(ChatColorType.NORMAL)
+								.append(" Total Uploads:")
+								.append(ChatColorType.HIGHLIGHT)
+								.append(String.format(" %,d", totalStats.getNamesUploaded()))
+								.append(ChatColorType.NORMAL)
+								.append(" Feedback Sent:")
+								.append(ChatColorType.HIGHLIGHT)
+								.append(String.format(" %,d", totalStats.getFeedbackSent()))
+								.append(ChatColorType.NORMAL)
+								.append(" Possible Bans:")
+								.append(ChatColorType.HIGHLIGHT)
+								.append(String.format(" %,d", totalStats.getPossibleBans()));
+						}
+
+						response.append(ChatColorType.NORMAL)
+							.append(" Confirmed Bans:")
+							.append(ChatColorType.HIGHLIGHT)
+							.append(String.format(" %,d", totalStats.getConfirmedBans()));
+
+						PlayerStats manualStats = map.get(PlayerStatsType.MANUAL);
+						if (manualStats != null && manualStats.getNamesUploaded() > 0)
+						{
+							if (detailLevel == StatsCommandDetailLevel.DETAILED)
+							{
+								response.append(ChatColorType.NORMAL)
+									.append(" Manual Flags:")
+									.append(ChatColorType.HIGHLIGHT)
+									.append(String.format(" %,d", manualStats.getNamesUploaded()))
+									.append(ChatColorType.NORMAL)
+									.append(" Manual Possible Bans:")
+									.append(ChatColorType.HIGHLIGHT)
+									.append(String.format(" %,d", manualStats.getPossibleBans()));
+							}
+
+							response.append(ChatColorType.NORMAL)
+								.append(" Manual Confirmed Bans:")
+								.append(ChatColorType.HIGHLIGHT)
+								.append(String.format(" %,d", manualStats.getConfirmedBans()));
+
+							response.append(ChatColorType.NORMAL)
+								.append(" Manual Flag Accuracy:")
+								.append(ChatColorType.HIGHLIGHT)
+								.append(new DecimalFormat(" 0.00%").format(manualStats.getAccuracy()));
+						}
+					}
+
+					final String builtResponse = response.build();
+					final MessageNode messageNode = chatMessage.getMessageNode();
+
+					clientThread.invokeLater(() ->
+					{
+						messageNode.setRuneLiteFormatMessage(builtResponse);
+						chatMessageManager.update(messageNode);
+						client.refreshChat();
+					});
 				}
 			});
 	}

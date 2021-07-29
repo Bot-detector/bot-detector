@@ -30,6 +30,7 @@ Identifies bots by sending nearby players' information to a third-party machine 
 | Attempt Send on Close | Attempts to upload names when closing Runelite while being logged in. Take note that enabling this option may cause the client to take a long time to close if our servers are being unresponsive. |
 | Send Names Every *x* mins | Determines how often the information collected by the plugin is flushed to our servers. The maximum rate is once per 5 minutes. | 
 | Enable Chat Status Messages | Inserts chat messages in your chatbox to inform you about your uploads being sent. |
+| '!bdstats' Chat Command Detail Level | Enable processing the '!bdstats' command when it appears in the chatbox, which will fetch the message author's plugin stats and display them. Disable to reduce spam. |
 | Right-click 'Predict' Players | Allows you to right-click predict players, instead of having to type their name in the Plugin's panel manually. |
 | 'Predict' on Right-click 'Report' | If you right-click Report someone via Jagex's official in-game report system, the player will be automatically predicted in the Plugin's Panel. |
 | 'Predict' Copy Name to Clipboard | Copies the predicted player's name to your clipboard when right-click predicting. |
