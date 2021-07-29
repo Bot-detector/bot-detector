@@ -120,7 +120,6 @@ import com.google.inject.Provides;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import static com.botdetector.model.CaseInsensitiveString.wrap;
-import static com.botdetector.ui.PredictHighlightMode.*;
 
 @Slf4j
 @PluginDescriptor(
@@ -143,7 +142,6 @@ public class BotDetectorPlugin extends Plugin
 	private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
 
 	private static final String PREDICT_OPTION = "Predict";
-	private static final String HIGHLIGHTED_PREDICT_OPTION = ColorUtil.prependColorTag(PREDICT_OPTION, Color.RED);
 	private static final String REPORT_OPTION = "Report";
 	private static final String KICK_OPTION = "Kick";
 	private static final String DELETE_OPTION = "Delete";
@@ -358,7 +356,7 @@ public class BotDetectorPlugin extends Plugin
 
 		if (config.addPredictOption() && client != null)
 		{
-			menuManager.addPlayerMenuItem(getPredictOption());
+			menuManager.addPlayerMenuItem(PREDICT_OPTION);
 		}
 
 		updateTimeToAutoSend();
@@ -384,7 +382,6 @@ public class BotDetectorPlugin extends Plugin
 
 		if (client != null)
 		{
-			menuManager.removePlayerMenuItem(HIGHLIGHTED_PREDICT_OPTION);
 			menuManager.removePlayerMenuItem(PREDICT_OPTION);
 		}
 
@@ -602,16 +599,14 @@ public class BotDetectorPlugin extends Plugin
 
 		switch (event.getKey())
 		{
-			case BotDetectorConfig.HIGHLIGHT_PREDICT_KEY:
 			case BotDetectorConfig.ADD_PREDICT_OPTION_KEY:
 				if (client != null)
 				{
-					menuManager.removePlayerMenuItem(HIGHLIGHTED_PREDICT_OPTION);
 					menuManager.removePlayerMenuItem(PREDICT_OPTION);
 
 					if (config.addPredictOption())
 					{
-						menuManager.addPlayerMenuItem(getPredictOption());
+						menuManager.addPlayerMenuItem(PREDICT_OPTION);
 					}
 				}
 				break;
@@ -970,7 +965,8 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onMenuOpened(MenuOpened event)
 	{
-		if (config.highlightPredictOption() != NOT_REPORTED)
+		// If neither color changing options are set, this is unnecessary
+		if (config.predictOptionDefaultColor() == null && config.predictOptionFlaggedColor() == null)
 		{
 			return;
 		}
@@ -987,7 +983,7 @@ public class BotDetectorPlugin extends Plugin
 			}
 
 			if (type == MenuAction.RUNELITE_PLAYER.getId()
-				&& entry.getOption().equals(HIGHLIGHTED_PREDICT_OPTION))
+				&& entry.getOption().equals(PREDICT_OPTION))
 			{
 				Player player = client.getCachedPlayers()[entry.getIdentifier()];
 				if (player != null)
@@ -1142,32 +1138,17 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	/**
-	 * Gets the correct variant of {@link #PREDICT_OPTION} to show ({@code player} agnostic version).
-	 * @return A variant of {@link #PREDICT_OPTION} or {@link #HIGHLIGHTED_PREDICT_OPTION}.
-	 */
-	private String getPredictOption()
-	{
-		return getPredictOption(null);
-	}
-
-	/**
 	 * Gets the correct variant of {@link #PREDICT_OPTION} to show for the given {@code player}.
 	 * @param playerName The player to get the menu option string for.
-	 * @return A variant of {@link #PREDICT_OPTION} or {@link #HIGHLIGHTED_PREDICT_OPTION}.
+	 * @return A variant of {@link #PREDICT_OPTION} prepended or not with some color.
 	 */
 	private String getPredictOption(String playerName)
 	{
-		switch (config.highlightPredictOption())
-		{
-			case ALL:
-				return HIGHLIGHTED_PREDICT_OPTION;
-			case NOT_REPORTED:
-				CaseInsensitiveString name = normalizeAndWrapPlayerName(playerName);
-				return (feedbackedPlayers.containsKey(name) || flaggedPlayers.containsKey(name)) ?
-					PREDICT_OPTION : HIGHLIGHTED_PREDICT_OPTION;
-			default:
-				return PREDICT_OPTION;
-		}
+		CaseInsensitiveString name = normalizeAndWrapPlayerName(playerName);
+		Color prepend = (feedbackedPlayers.containsKey(name) || flaggedPlayers.containsKey(name)) ?
+			config.predictOptionFlaggedColor() : config.predictOptionDefaultColor();
+
+		return prepend != null ? ColorUtil.prependColorTag(PREDICT_OPTION, prepend) : PREDICT_OPTION;
 	}
 
 	/**
