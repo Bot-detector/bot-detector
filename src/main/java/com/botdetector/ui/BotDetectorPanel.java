@@ -230,7 +230,7 @@ public class BotDetectorPanel extends PluginPanel
 		this.nameAutocompleter = nameAutocompleter;
 		this.eventBus = eventBus;
 
-		setBorder(new EmptyBorder(18, 10, 10, 10));
+		setBorder(new EmptyBorder(10, 10, 10, 10));
 		setBackground(BACKGROUND_COLOR);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
