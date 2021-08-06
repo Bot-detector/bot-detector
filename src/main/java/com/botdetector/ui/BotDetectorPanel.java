@@ -44,6 +44,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -756,6 +757,9 @@ public class BotDetectorPanel extends PluginPanel
 		panel.add(feedbackGoodButton, c);
 
 		feedbackNeutralButton = new JButton("Unsure");
+		// This is hacky, but gives enough space for the text to display when the scrollbar comes in
+		Insets oldInsets = feedbackNeutralButton.getBorder().getBorderInsets(panel);
+		feedbackNeutralButton.setBorder(new EmptyBorder(oldInsets.top, 0, oldInsets.bottom, 0));
 		feedbackNeutralButton.setToolTipText("<html>Are you unsure? Please leave a message explaining why!" +
 			"<br>If there is no textbox above, please turn on 'Show Feedback Textbox' in the plugin's config.</html>");
 		feedbackNeutralButton.setForeground(HEADER_COLOR);
