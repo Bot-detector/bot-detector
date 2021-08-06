@@ -792,11 +792,11 @@ public class BotDetectorPlugin extends Plugin
 		String author;
 		if (chatMessage.getType().equals(ChatMessageType.PRIVATECHATOUT))
 		{
-			author = normalizePlayerName(loggedPlayerName);
+			author = loggedPlayerName;
 		}
 		else
 		{
-			author = normalizePlayerName(chatMessage.getName());
+			author = Text.sanitize(chatMessage.getName());
 		}
 
 		String code = message.substring(VERIFY_DISCORD_COMMAND.length() + 1).trim();
