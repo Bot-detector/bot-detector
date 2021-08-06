@@ -32,6 +32,7 @@ import java.awt.Color;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
 import net.runelite.client.config.Units;
 
@@ -52,13 +53,54 @@ public interface BotDetectorConfig extends Config
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
 	int AUTO_SEND_MAXIMUM_MINUTES = 360;
 
+	@ConfigSection(
+		position = 1,
+		name = "Upload Settings",
+		description = "Settings for how the plugin uploads player data."
+	)
+	String uploadSection = "uploadSection";
+
+	@ConfigSection(
+		position = 2,
+		name = "Panel Settings",
+		description = "Settings for the plugin's panel."
+	)
+	String panelSection = "panelSection";
+
+	@ConfigSection(
+		position = 3,
+		name = "'Predict' Settings",
+		description = "Settings for the 'Predict' right-click option."
+	)
+	String predictSection = "predictSection";
+
+	@ConfigSection(
+		position = 4,
+		name = "Other Settings",
+		description = "Other miscellaneous settings."
+	)
+	String miscSection = "miscSection";
+
 	@ConfigItem(
 		position = 1,
+		keyName = ANONYMOUS_UPLOADING_KEY,
+		name = "Anonymous Uploading",
+		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions.",
+		section = uploadSection
+	)
+	default boolean enableAnonymousUploading()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		position = 2,
 		keyName = ONLY_SEND_AT_LOGOUT_KEY,
 		name = "Send Names Only After Logout",
 		description = "Waits to upload names until you've logged out. Use this if you have a poor connection."
-			+ "<br><span style='color:red'>WARNING:</span> Names <b>will not</b> be sent if Runelite is closed completely"
-			+ "<br>before logging out, unless 'Attempt Send on Close' is turned on."
+			+ "<br><span style='color:red'>WARNING:</span> Names <b>will not</b> be sent if RuneLite is closed completely"
+			+ "<br>before logging out, unless 'Attempt Send on Close' is turned on.",
+		section = uploadSection
 	)
 	default boolean onlySendAtLogout()
 	{
@@ -66,12 +108,13 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 2,
+		position = 3,
 		keyName = "uploadOnShutdown",
 		name = "Attempt Send on Close",
-		description = "Attempts to upload names when closing Runelite while being logged in."
+		description = "Attempts to upload names when closing RuneLite while being logged in."
 			+ "<br><span style='color:red'>WARNING:</span> This may cause the client to take significantly longer to close"
-			+ "<br>in the event that the Bot Detector server is being slow or unresponsive."
+			+ "<br>in the event that the Bot Detector server is being slow or unresponsive.",
+		section = uploadSection
 	)
 	default boolean uploadOnShutdown()
 	{
@@ -79,10 +122,11 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 3,
+		position = 4,
 		keyName = AUTO_SEND_MINUTES_KEY,
 		name = "Send Names Every",
-		description = "Sets the amount of time between automatic name uploads."
+		description = "Sets the amount of time between automatic name uploads.",
+		section = uploadSection
 	)
 	@Range(min = AUTO_SEND_MINIMUM_MINUTES, max = AUTO_SEND_MAXIMUM_MINUTES)
 	@Units(Units.MINUTES)
@@ -92,82 +136,11 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 4,
-		keyName = "enableChatNotifications",
-		name = "Enable Chat Status Messages",
-		description = "Show various plugin status messages in the game chat."
-	)
-	default boolean enableChatStatusMessages()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		position = 5,
-		keyName = "statsChatCommandDetailLevel",
-		name = "'!bdstats' Chat Command Detail Level",
-		description = "Enable processing the '!bdstats' command when it appears in the chatbox,"
-			+ "<br>which will fetch the message author's plugin stats and display them."
-	)
-	default StatsCommandDetailLevel statsChatCommandDetailLevel()
-	{
-		return StatsCommandDetailLevel.CONFIRMED_ONLY;
-	}
-
-	@ConfigItem(
-		position = 6,
-		keyName = ADD_PREDICT_OPTION_KEY,
-		name = "Right-click 'Predict' Players",
-		description = "Adds an entry to player menus to quickly check them in the prediction panel."
-	)
-	default boolean addPredictOption()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		position = 7,
-		keyName = "predictOnReport",
-		name = "'Predict' on Right-click 'Report'",
-		description = "Makes the in-game right-click 'Report' option also open the prediction panel."
-	)
-	default boolean predictOnReport()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		position = 8,
-		keyName = "predictOptionCopyName",
-		name = "'Predict' Copy Name to Clipboard",
-		description = "Copies the player's name to the clipboard when right-click predicting a player."
-	)
-	default boolean predictOptionCopyName()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		position = 9,
-		keyName = "predictOptionDefaultColor",
-		name = "'Predict' Default Color",
-		description = "When right-clicking on a player, the predict option will be this color by default."
-	)
-	Color predictOptionDefaultColor();
-
-	@ConfigItem(
-		position = 10,
-		keyName = "predictOptionFlaggedColor",
-		name = "'Predict' Voted/Flagged Color",
-		description = "When right-clicking on a player that has been flagged or given feedback, the predict option will be this color instead."
-	)
-	Color predictOptionFlaggedColor();
-
-	@ConfigItem(
-			position = 11,
-			keyName = "autocomplete",
-			name = "Prediction Autocomplete",
-			description = "Autocomplete names when typing a name to predict in the prediction panel."
+		position = 1,
+		keyName = "autocomplete",
+		name = "Prediction Autocomplete",
+		description = "Autocomplete names when typing a name to predict in the prediction panel.",
+		section = panelSection
 	)
 	default boolean panelAutocomplete()
 	{
@@ -175,10 +148,11 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 12,
+		position = 2,
 		keyName = SHOW_FEEDBACK_TEXTBOX,
 		name = "Show Feedback Textbox",
-		description = "Show a textbox on the prediction feedback panel where you can explain your feedback to us."
+		description = "Show a textbox on the prediction feedback panel where you can explain your feedback to us.",
+		section = panelSection
 	)
 	default boolean showFeedbackTextbox()
 	{
@@ -186,10 +160,11 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 13,
+		position = 3,
 		keyName = "panelDefaultStatsType",
 		name = "Panel Default Stats Tab",
-		description = "Sets the initial player statistics tab in the prediction panel for when the plugin is launched."
+		description = "Sets the initial player statistics tab in the prediction panel for when the plugin is launched.",
+		section = panelSection
 	)
 	default PlayerStatsType panelDefaultStatsType()
 	{
@@ -197,10 +172,11 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 14,
+		position = 4,
 		keyName = PANEL_FONT_TYPE_KEY,
 		name = "Panel Font Size",
-		description = "Sets the size of the label fields in the prediction panel."
+		description = "Sets the size of the label fields in the prediction panel.",
+		section = panelSection
 	)
 	default PanelFontType panelFontType()
 	{
@@ -208,14 +184,82 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 15,
-		keyName = ANONYMOUS_UPLOADING_KEY,
-		name = "Anonymous Uploading",
-		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."
+		position = 1,
+		keyName = ADD_PREDICT_OPTION_KEY,
+		name = "Right-click 'Predict' Players",
+		description = "Adds an entry to player menus to quickly check them in the prediction panel.",
+		section = predictSection
 	)
-	default boolean enableAnonymousUploading()
+	default boolean addPredictOption()
 	{
-		return true;
+		return false;
+	}
+
+	@ConfigItem(
+		position = 2,
+		keyName = "predictOnReport",
+		name = "'Predict' on Right-click 'Report'",
+		description = "Makes the in-game right-click 'Report' option also open the prediction panel.",
+		section = predictSection
+	)
+	default boolean predictOnReport()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 3,
+		keyName = "predictOptionCopyName",
+		name = "'Predict' Copy Name to Clipboard",
+		description = "Copies the player's name to the clipboard when right-click predicting a player.",
+		section = predictSection
+	)
+	default boolean predictOptionCopyName()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 4,
+		keyName = "predictOptionDefaultColor",
+		name = "'Predict' Default Color",
+		description = "When right-clicking on a player, the predict option will be this color by default.",
+		section = predictSection
+	)
+	Color predictOptionDefaultColor();
+
+	@ConfigItem(
+		position = 5,
+		keyName = "predictOptionFlaggedColor",
+		name = "'Predict' Voted/Flagged Color",
+		description = "When right-clicking on a player that has been flagged or given feedback, the predict option will be this color instead.",
+		section = predictSection
+	)
+	Color predictOptionFlaggedColor();
+
+	@ConfigItem(
+		position = 1,
+		keyName = "enableChatNotifications",
+		name = "Enable Chat Status Messages",
+		description = "Show various plugin status messages in the game chat.",
+		section = miscSection
+	)
+	default boolean enableChatStatusMessages()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 2,
+		keyName = "statsChatCommandDetailLevel",
+		name = "'!bdstats' Chat Command Detail Level",
+		description = "Enable processing the '!bdstats' command when it appears in the chatbox,"
+			+ "<br>which will fetch the message author's plugin stats and display them.",
+		section = miscSection
+	)
+	default StatsCommandDetailLevel statsChatCommandDetailLevel()
+	{
+		return StatsCommandDetailLevel.CONFIRMED_ONLY;
 	}
 
 	@ConfigItem(

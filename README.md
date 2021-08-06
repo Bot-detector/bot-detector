@@ -24,23 +24,23 @@ Identifies bots by sending nearby players' information to a third-party machine 
 
 ## Using the Plugin
 ### The Plugin's Settings
-| Setting | Description |
-|:--------|:------------|
-| Send Names Only After Logout | Recommended for players with low bandwidth. |
-| Attempt Send on Close | Attempts to upload names when closing Runelite while being logged in. Take note that enabling this option may cause the client to take a long time to close if our servers are being unresponsive. |
-| Send Names Every *x* mins | Determines how often the information collected by the plugin is flushed to our servers. The maximum rate is once per 5 minutes. | 
-| Enable Chat Status Messages | Inserts chat messages in your chatbox to inform you about your uploads being sent. |
-| '!bdstats' Chat Command Detail Level | Enable processing the '!bdstats' command when it appears in the chatbox, which will fetch the message author's plugin stats and display them. Disable to reduce spam. |
-| Right-click 'Predict' Players | Allows you to right-click predict players, instead of having to type their name in the Plugin's panel manually. |
-| 'Predict' on Right-click 'Report' | If you right-click Report someone via Jagex's official in-game report system, the player will be automatically predicted in the Plugin's Panel. |
-| 'Predict' Copy Name to Clipboard | Copies the predicted player's name to your clipboard when right-click predicting. |
-| 'Predict' Default Color | If set, highlights unflagged/unfeedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu. |
-| 'Predict' Voted/Flagged Color | If set, highlights flagged/feedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu. |
-| Prediction Autocomplete | Allows for prediction auto-completion for dialogue box entry.
-| Show Feedback Textbox | Adds a textbox to the prediction feedback panel, so you can explain your choice in up to 250 characters. Make sure you type your feedback *before* you make your choice! |
-| Panel Default Stats Tab | Sets panel default stats tab when the Plugin turns on. |
-| Panel Font Size | Sets the font size of most of the Plugin's Panel elements. |
-| Anonymous Uploading | When enabled, your username will not be sent with your uploads. You also cannot manually flag players. |
+| Setting Type | Setting Name | Description |
+|:--------|:--------|:------------|
+| Upload Settings | Anonymous Uploading | When enabled, your username will not be sent with your uploads. You also cannot manually flag players. |
+| Upload Settings | Send Names Only After Logout | Recommended for players with low bandwidth. |
+| Upload Settings | Attempt Send on Close | Attempts to upload names when closing Runelite while being logged in. Take note that enabling this option may cause the client to take a long time to close if our servers are being unresponsive. |
+| Upload Settings | Send Names Every *x* mins | Determines how often the information collected by the plugin is flushed to our servers. The maximum rate is once per 5 minutes. | 
+| Panel Settings | Prediction Autocomplete | Allows for prediction auto-completion for dialogue box entry.
+| Panel Settings | Show Feedback Textbox | Adds a textbox to the prediction feedback panel, so you can explain your choice in up to 250 characters. Make sure you type your feedback *before* you make your choice! |
+| Panel Settings | Panel Default Stats Tab | Sets panel default stats tab when the Plugin turns on. |
+| Panel Settings | Panel Font Size | Sets the font size of most of the Plugin's Panel elements. |
+| 'Predict' Settings | Right-click 'Predict' Players | Allows you to right-click predict players, instead of having to type their name in the Plugin's panel manually. |
+| 'Predict' Settings | 'Predict' on Right-click 'Report' | If you right-click Report someone via Jagex's official in-game report system, the player will be automatically predicted in the Plugin's Panel. |
+| 'Predict' Settings | 'Predict' Copy Name to Clipboard | Copies the predicted player's name to your clipboard when right-click predicting. |
+| 'Predict' Settings | 'Predict' Default Color | If set, highlights unflagged/unfeedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu. |
+| 'Predict' Settings | 'Predict' Voted/Flagged Color | If set, highlights flagged/feedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu. |
+| Other Settings | Enable Chat Status Messages | Inserts chat messages in your chatbox to inform you about your uploads being sent. |
+| Other Settings | '!bdstats' Chat Command Detail Level | Enable processing the '!bdstats' command when it appears in the chatbox, which will fetch the message author's plugin stats and display them. Disable to reduce spam. |
 
 ### ⚠️ Anonymous Mode ⚠️
 **Anonymous Mode** is enabled by default, which means your username will not be sent with your uploads. However, we cannot tally your uploads, and you will not be able to manually flag players.
