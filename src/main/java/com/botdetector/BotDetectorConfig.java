@@ -70,7 +70,7 @@ public interface BotDetectorConfig extends Config
 	@ConfigSection(
 		position = 3,
 		name = "'Predict' Settings",
-		description = "Settings for 'Predict' right-click option."
+		description = "Settings for the 'Predict' right-click option."
 	)
 	String predictSection = "predictSection";
 
