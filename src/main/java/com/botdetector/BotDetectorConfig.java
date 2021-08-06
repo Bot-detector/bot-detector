@@ -28,7 +28,7 @@ package com.botdetector;
 import com.botdetector.model.PlayerStatsType;
 import com.botdetector.model.StatsCommandDetailLevel;
 import com.botdetector.ui.PanelFontType;
-import com.botdetector.ui.PredictHighlightMode;
+import java.awt.Color;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -42,7 +42,6 @@ public interface BotDetectorConfig extends Config
 	String ONLY_SEND_AT_LOGOUT_KEY = "sendAtLogout";
 	String AUTO_SEND_MINUTES_KEY = "autoSendMinutes";
 	String ADD_PREDICT_OPTION_KEY = "addDetectOption"; // I know it says detect, don't change it.
-	String HIGHLIGHT_PREDICT_KEY = "highlightPredictOption";
 	String ANONYMOUS_UPLOADING_KEY = "enableAnonymousReporting";
 	String PANEL_FONT_TYPE_KEY = "panelFontType";
 	String AUTH_FULL_TOKEN_KEY = "authToken";
@@ -150,17 +149,22 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 9,
-		keyName = HIGHLIGHT_PREDICT_KEY,
-		name = "Highlight 'Predict' Option",
-		description = "When right-clicking on a player, the predict option will be highlighted to be easier to identify."
+		keyName = "predictOptionDefaultColor",
+		name = "'Predict' Default Color",
+		description = "When right-clicking on a player, the predict option will be this color by default."
 	)
-	default PredictHighlightMode highlightPredictOption()
-	{
-		return PredictHighlightMode.NONE;
-	}
+	Color predictOptionDefaultColor();
 
 	@ConfigItem(
-			position = 10,
+		position = 10,
+		keyName = "predictOptionFlaggedColor",
+		name = "'Predict' Voted/Flagged Color",
+		description = "When right-clicking on a player that has been flagged or given feedback, the predict option will be this color instead."
+	)
+	Color predictOptionFlaggedColor();
+
+	@ConfigItem(
+			position = 11,
 			keyName = "autocomplete",
 			name = "Prediction Autocomplete",
 			description = "Autocomplete names when typing a name to predict in the prediction panel."
@@ -171,7 +175,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 11,
+		position = 12,
 		keyName = SHOW_FEEDBACK_TEXTBOX,
 		name = "Show Feedback Textbox",
 		description = "Show a textbox on the prediction feedback panel where you can explain your feedback to us."
@@ -182,7 +186,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 12,
+		position = 13,
 		keyName = "panelDefaultStatsType",
 		name = "Panel Default Stats Tab",
 		description = "Sets the initial player statistics tab in the prediction panel for when the plugin is launched."
@@ -193,7 +197,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 13,
+		position = 14,
 		keyName = PANEL_FONT_TYPE_KEY,
 		name = "Panel Font Size",
 		description = "Sets the size of the label fields in the prediction panel."
@@ -204,7 +208,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 14,
+		position = 15,
 		keyName = ANONYMOUS_UPLOADING_KEY,
 		name = "Anonymous Uploading",
 		description = "Your name will not be included with your name uploads.<br>Disable if you'd like to track your contributions."

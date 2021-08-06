@@ -34,7 +34,8 @@ Identifies bots by sending nearby players' information to a third-party machine 
 | Right-click 'Predict' Players | Allows you to right-click predict players, instead of having to type their name in the Plugin's panel manually. |
 | 'Predict' on Right-click 'Report' | If you right-click Report someone via Jagex's official in-game report system, the player will be automatically predicted in the Plugin's Panel. |
 | 'Predict' Copy Name to Clipboard | Copies the predicted player's name to your clipboard when right-click predicting. |
-| Highlight 'Predict' Option | Highlights the 'Predict' option in red so that you can easily spot it on the in-game menu. |
+| 'Predict' Default Color | If set, highlights unflagged/unfeedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu. |
+| 'Predict' Voted/Flagged Color | If set, highlights flagged/feedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu. |
 | Prediction Autocomplete | Allows for prediction auto-completion for dialogue box entry.
 | Show Feedback Textbox | Adds a textbox to the prediction feedback panel, so you can explain your choice in up to 250 characters. Make sure you type your feedback *before* you make your choice! |
 | Panel Default Stats Tab | Sets panel default stats tab when the Plugin turns on. |
