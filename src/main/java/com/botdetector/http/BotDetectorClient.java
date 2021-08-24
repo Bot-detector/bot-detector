@@ -26,7 +26,7 @@
 package com.botdetector.http;
 
 import com.botdetector.BotDetectorPlugin;
-import com.botdetector.model.FeedbackValue;
+import com.botdetector.model.FeedbackPredictionLabel;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.PlayerStatsType;
@@ -266,11 +266,11 @@ public class BotDetectorClient
 	 * Sends a feedback to the API for the given prediction.
 	 * @param pred The prediction object to give a feedback for.
 	 * @param uploaderName The user's player name (See {@link BotDetectorPlugin#getUploaderName()}).
-	 * @param feedback The user's feedback.
+	 * @param proposedLabel The user's proposed label and feedback.
 	 * @param feedbackText The user's feedback text to include with the feedback.
 	 * @return A future that will eventually return a boolean indicating success.
 	 */
-	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String uploaderName, FeedbackValue feedback, String feedbackText)
+	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String uploaderName, FeedbackPredictionLabel proposedLabel, String feedbackText)
 	{
 		Gson gson = gsonBuilder.create();
 
@@ -278,10 +278,12 @@ public class BotDetectorClient
 			.url(getUrl(ApiPath.FEEDBACK))
 			.post(RequestBody.create(JSON, gson.toJson(new PredictionFeedback(
 				uploaderName,
-				feedback.getApiValue(),
+				proposedLabel.getFeedbackValue().getApiValue(),
 				pred.getPredictionLabel(),
 				pred.getConfidence(),
 				pred.getPlayerId(),
+				proposedLabel.getLabel(),
+				proposedLabel.getLabelConfidence(),
 				feedbackText
 			)))).build();
 
@@ -509,6 +511,10 @@ public class BotDetectorClient
 		double predictionConfidence;
 		@SerializedName("subject_id")
 		long targetId;
+		@SerializedName("proposed_label")
+		String proposedLabel;
+		@SerializedName("proposed_label_confidence")
+		Double proposedLabelConfidence;
 		@SerializedName("feedback_text")
 		String feedbackText;
 	}

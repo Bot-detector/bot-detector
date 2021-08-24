@@ -32,10 +32,13 @@ import com.botdetector.events.BotDetectorPanelActivated;
 import com.botdetector.http.BotDetectorClient;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.FeedbackValue;
+import com.botdetector.model.FeedbackPredictionLabel;
+import static com.botdetector.model.FeedbackPredictionLabel.normalizeLabel;
 import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.PlayerStatsType;
 import com.botdetector.model.Prediction;
+import com.botdetector.ui.components.ComboBoxSelfTextTooltipListRenderer;
 import com.botdetector.ui.components.JLimitedTextArea;
 import com.google.common.primitives.Doubles;
 import java.awt.Color;
@@ -44,7 +47,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.Insets;
+import java.awt.event.ItemEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -62,6 +65,7 @@ import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -82,7 +86,6 @@ import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.QuantityFormatter;
 import org.apache.commons.text.StringEscapeUtils;
-import org.apache.commons.text.WordUtils;
 
 public class BotDetectorPanel extends PluginPanel
 {
@@ -152,6 +155,10 @@ public class BotDetectorPanel extends PluginPanel
 	private static final int MAX_FEEDBACK_TEXT_CHARS = 250;
 	private static final Dimension FEEDBACK_TEXTBOX_PREFERRED_SIZE = new Dimension(0, 75);
 
+	private static final FeedbackPredictionLabel UNSURE_PREDICTION_LABEL = new FeedbackPredictionLabel("Unsure", null, FeedbackValue.NEUTRAL);
+	private static final FeedbackPredictionLabel SOMETHING_ELSE_PREDICTION_LABEL = new FeedbackPredictionLabel("Something_else", null, FeedbackValue.NEGATIVE);
+	private static final FeedbackPredictionLabel CORRECT_FALLBACK_PREDICTION_LABEL = new FeedbackPredictionLabel("Correct", null, FeedbackValue.POSITIVE);
+
 	private static final PlayerStatsType[] PLAYER_STAT_TYPES = {
 		PlayerStatsType.TOTAL, PlayerStatsType.PASSIVE, PlayerStatsType.MANUAL
 	};
@@ -205,9 +212,8 @@ public class BotDetectorPanel extends PluginPanel
 
 	// For feedback/flag
 	private JLabel feedbackHeaderLabel;
-	private JButton feedbackGoodButton;
-	private JButton feedbackNeutralButton;
-	private JButton feedbackBadButton;
+	private JComboBox<FeedbackPredictionLabel> feedbackLabelComboBox;
+	private JButton feedbackSendButton;
 	private JScrollPane feedbackTextScrollPane;
 	private JLimitedTextArea feedbackTextbox;
 	private JLabel flaggingHeaderLabel;
@@ -712,10 +718,7 @@ public class BotDetectorPanel extends PluginPanel
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 
-		String tooltip = "<html>Tell us if the <b>primary prediction</b> seems %s to you! Doing so will help us improve our model." +
-			"<br><span style='color:red'>Please</span>, do not vote against a prediction simply because the percentage is not high enough.</html>";
-
-		feedbackHeaderLabel = new JLabel("Is 'Primary Prediction' correct?");
+		feedbackHeaderLabel = new JLabel("Send a prediction feedback?");
 		feedbackHeaderLabel.setHorizontalTextPosition(JLabel.LEFT);
 		feedbackHeaderLabel.setFont(NORMAL_FONT);
 		feedbackHeaderLabel.setForeground(HEADER_COLOR);
@@ -745,38 +748,40 @@ public class BotDetectorPanel extends PluginPanel
 		c.gridy++;
 		panel.add(feedbackTextScrollPane, c);
 
-		feedbackGoodButton = new JButton("Yes");
-		feedbackGoodButton.setToolTipText(String.format(tooltip, "correct"));
-		feedbackGoodButton.setForeground(HEADER_COLOR);
-		feedbackGoodButton.setFont(SMALL_FONT);
-		feedbackGoodButton.addActionListener(l -> sendFeedbackToClient(FeedbackValue.POSITIVE));
-		feedbackGoodButton.setFocusable(false);
+		JLabel label = new JLabel("Please select the correct label:");
+		label.setHorizontalTextPosition(JLabel.LEFT);
+		label.setForeground(HEADER_COLOR);
+		label.setFont(NORMAL_FONT);
 		c.gridy++;
+		panel.add(label, c);
+
+		feedbackLabelComboBox = new JComboBox<>();
+		feedbackLabelComboBox.addItemListener(e ->
+		{
+			if (e.getStateChange() == ItemEvent.SELECTED)
+			{
+				Object o = feedbackLabelComboBox.getSelectedItem();
+				feedbackLabelComboBox.setToolTipText(o != null ? o.toString() : null);
+			}
+		});
+		feedbackLabelComboBox.setRenderer(new ComboBoxSelfTextTooltipListRenderer<>());
+		c.gridy++;
+		c.gridx = 0;
+		c.weightx = 2.0 / 3;
+		c.gridwidth = 2;
+		panel.add(feedbackLabelComboBox, c);
+
+		feedbackSendButton = new JButton("Send");
+		feedbackSendButton.setToolTipText("<html>Tell us the correct label for <b>primary prediction</b>! Doing so will help us improve our model." +
+			"<br><span style='color:red'>Please</span>, do not vote against a prediction simply because the percentage is not high enough.</html>");
+		feedbackSendButton.setForeground(HEADER_COLOR);
+		feedbackSendButton.setFont(SMALL_FONT);
+		feedbackSendButton.addActionListener(l -> sendFeedbackToClient((FeedbackPredictionLabel)feedbackLabelComboBox.getSelectedItem()));
+		feedbackSendButton.setFocusable(false);
+		c.gridx = 2;
 		c.weightx = 1.0 / 3;
 		c.gridwidth = 1;
-		panel.add(feedbackGoodButton, c);
-
-		feedbackNeutralButton = new JButton("Unsure");
-		// This is hacky, but gives enough space for the text to display when the scrollbar comes in
-		Insets oldInsets = feedbackNeutralButton.getBorder().getBorderInsets(panel);
-		feedbackNeutralButton.setBorder(new EmptyBorder(oldInsets.top, 0, oldInsets.bottom, 0));
-		feedbackNeutralButton.setToolTipText("<html>Are you unsure? Please leave a message explaining why!" +
-			"<br>If there is no textbox above, please turn on 'Show Feedback Textbox' in the plugin's config.</html>");
-		feedbackNeutralButton.setForeground(HEADER_COLOR);
-		feedbackNeutralButton.setFont(SMALL_FONT);
-		feedbackNeutralButton.addActionListener(l -> sendFeedbackToClient(FeedbackValue.NEUTRAL));
-		feedbackNeutralButton.setFocusable(false);
-		c.gridx++;
-		panel.add(feedbackNeutralButton, c);
-
-		feedbackBadButton = new JButton("No");
-		feedbackBadButton.setToolTipText(String.format(tooltip, "incorrect"));
-		feedbackBadButton.setForeground(HEADER_COLOR);
-		feedbackBadButton.setFont(SMALL_FONT);
-		feedbackBadButton.addActionListener(l -> sendFeedbackToClient(FeedbackValue.NEGATIVE));
-		feedbackBadButton.setFocusable(false);
-		c.gridx++;
-		panel.add(feedbackBadButton, c);
+		panel.add(feedbackSendButton, c);
 
 		return panel;
 	}
@@ -1075,6 +1080,8 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		setPredictionLabelsColor(VALUE_COLOR);
 
+		feedbackLabelComboBox.removeAllItems();
+
 		if (pred != null)
 		{
 			nameAutocompleter.addToSearchHistory(pred.getPlayerName().toLowerCase());
@@ -1086,15 +1093,35 @@ public class BotDetectorPanel extends PluginPanel
 			predictionTypeLabel.setText(wrapHTML(normalizeLabel(pred.getPredictionLabel())));
 			predictionConfidenceLabel.setText(wrapHTML(toColoredPercentSpan(pred.getConfidence()), false));
 
+			feedbackLabelComboBox.addItem(UNSURE_PREDICTION_LABEL);
+			feedbackLabelComboBox.setSelectedItem(UNSURE_PREDICTION_LABEL);
+			feedbackLabelComboBox.addItem(SOMETHING_ELSE_PREDICTION_LABEL);
+
 			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
 			{
 				predictionBreakdownLabel.setText(EMPTY_LABEL);
 				predictionBreakdownPanel.setVisible(false);
+
+				feedbackLabelComboBox.addItem(CORRECT_FALLBACK_PREDICTION_LABEL);
 			}
 			else
 			{
 				predictionBreakdownLabel.setText(toPredictionBreakdownString(pred.getPredictionBreakdown()));
 				predictionBreakdownPanel.setVisible(true);
+
+				final String primaryLabel = pred.getPredictionLabel();
+
+				pred.getPredictionBreakdown().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(
+					entry ->
+					{
+						FeedbackPredictionLabel pLabel = new FeedbackPredictionLabel(entry.getKey(), entry.getValue(),
+							entry.getKey().equals(primaryLabel) ? FeedbackValue.POSITIVE : FeedbackValue.NEGATIVE);
+						feedbackLabelComboBox.addItem(pLabel);
+						if (pLabel.getFeedbackValue() == FeedbackValue.POSITIVE)
+						{
+							feedbackLabelComboBox.setSelectedItem(pLabel);
+						}
+					});
 			}
 
 			// Must be logged in
@@ -1109,11 +1136,11 @@ public class BotDetectorPanel extends PluginPanel
 				else
 				{
 					// If the player has already been feedbacked, ensure the panels reflect this
-					FeedbackValue feedbacked = plugin.getFeedbackedPlayers().get(name);
+					FeedbackPredictionLabel feedbacked = plugin.getFeedbackedPlayers().get(name);
 
 					if (feedbacked != null)
 					{
-						disableAndSetColorOnFeedbackPanel(feedbacked);
+						disableAndSetComboBoxOnFeedbackPanel(feedbacked, true);
 					}
 
 					// If there was some feedback text from a previous send, either successful or failed
@@ -1278,21 +1305,23 @@ public class BotDetectorPanel extends PluginPanel
 
 	/**
 	 * Processes the user input from the prediction feedback panel.
-	 * @param feedback The intended feedback from the user for {@link #lastPrediction} to be sent to the API.
+	 * @param proposedLabel The intended label from the user for {@link #lastPrediction} to be sent to the API.
 	 */
-	private void sendFeedbackToClient(FeedbackValue feedback)
+	private void sendFeedbackToClient(FeedbackPredictionLabel proposedLabel)
 	{
 		if (lastPrediction == null
-			|| lastPredictionUploaderName == null)
+			|| lastPredictionUploaderName == null
+			|| proposedLabel == null
+			|| proposedLabel.getLabel() == null)
 		{
 			return;
 		}
 
-		disableAndSetColorOnFeedbackPanel(feedback);
+		disableAndSetComboBoxOnFeedbackPanel(proposedLabel, false);
 
 		CaseInsensitiveString wrappedName = normalizeAndWrapPlayerName(lastPrediction.getPlayerName());
-		Map<CaseInsensitiveString, FeedbackValue> feedbackMap = plugin.getFeedbackedPlayers();
-		feedbackMap.put(wrappedName, feedback);
+		Map<CaseInsensitiveString, FeedbackPredictionLabel> feedbackMap = plugin.getFeedbackedPlayers();
+		feedbackMap.put(wrappedName, proposedLabel);
 
 		String feedbackText = feedbackTextbox.getText().trim();
 		if (feedbackText.isEmpty())
@@ -1306,7 +1335,7 @@ public class BotDetectorPanel extends PluginPanel
 		}
 
 		feedbackHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
-		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, feedback, feedbackText)
+		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, proposedLabel, feedbackText)
 			.whenComplete((b, ex) ->
 			{
 				boolean stillSame = lastPrediction != null &&
@@ -1410,13 +1439,10 @@ public class BotDetectorPanel extends PluginPanel
 	private void resetFeedbackPanel(boolean clearText)
 	{
 		feedbackHeaderLabel.setIcon(null);
-		feedbackGoodButton.setBackground(null);
-		feedbackGoodButton.setEnabled(true);
-		feedbackNeutralButton.setBackground(null);
-		feedbackNeutralButton.setEnabled(true);
-		feedbackBadButton.setBackground(null);
-		feedbackBadButton.setEnabled(true);
+		feedbackSendButton.setBackground(null);
+		feedbackSendButton.setEnabled(true);
 		feedbackTextbox.setEnabled(true);
+		feedbackLabelComboBox.setEnabled(true);
 		if (clearText)
 		{
 			feedbackTextbox.setText("");
@@ -1424,25 +1450,34 @@ public class BotDetectorPanel extends PluginPanel
 	}
 
 	/**
-	 * Disables the feedback panel and sets a color on either the 'Yes', 'Neutral' or 'No' button according to the parameter.
-	 * @param feedback The applied feedback.
+	 * Disables the feedback panel and sets the label combobox according to the parameter.
+	 * @param label The label to display in the combobox.
+	 * @param clearAndForceSetComboBoxLabel Set to true if the {@code label} is not expected to exist exactly in the combo box.
 	 */
-	private void disableAndSetColorOnFeedbackPanel(FeedbackValue feedback)
+	private void disableAndSetComboBoxOnFeedbackPanel(FeedbackPredictionLabel label, boolean clearAndForceSetComboBoxLabel)
 	{
-		feedbackGoodButton.setEnabled(false);
-		feedbackNeutralButton.setEnabled(false);
-		feedbackBadButton.setEnabled(false);
+		feedbackSendButton.setEnabled(false);
 		feedbackTextbox.setEnabled(false);
-		switch (feedback)
+		feedbackLabelComboBox.setEnabled(false);
+
+		if (clearAndForceSetComboBoxLabel)
+		{
+			feedbackLabelComboBox.removeAllItems();
+			feedbackLabelComboBox.addItem(label);
+		}
+
+		feedbackLabelComboBox.setSelectedItem(label);
+
+		switch (label.getFeedbackValue())
 		{
 			case POSITIVE:
-				feedbackGoodButton.setBackground(POSITIVE_BUTTON_COLOR);
+				feedbackSendButton.setBackground(POSITIVE_BUTTON_COLOR);
 				break;
 			case NEUTRAL:
-				feedbackNeutralButton.setBackground(NEUTRAL_BUTTON_COLOR);
+				feedbackSendButton.setBackground(NEUTRAL_BUTTON_COLOR);
 				break;
 			case NEGATIVE:
-				feedbackBadButton.setBackground(NEGATIVE_BUTTON_COLOR);
+				feedbackSendButton.setBackground(NEGATIVE_BUTTON_COLOR);
 				break;
 		}
 	}
@@ -1499,17 +1534,6 @@ public class BotDetectorPanel extends PluginPanel
 		}
 
 		switchableFontComponents.forEach(c -> c.setFont(f));
-	}
-
-	/**
-	 * Normalizes the given prediction label by separating word
-	 * with spaces and making each word capitalized.
-	 * @param label The label to normalize.
-	 * @return The normalized label.
-	 */
-	private static String normalizeLabel(String label)
-	{
-		return WordUtils.capitalize(label.replace('_', ' ').trim(), ' ');
 	}
 
 	/**
