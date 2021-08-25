@@ -62,12 +62,12 @@ Identifies bots by sending nearby players' information to a third-party machine 
 **Note for ⚠️ Anonymous Users ⚠️**: Except for *Plugin Version* and *Current Uploads*, all of these fields are disabled.
 
 #### The Prediction Panels
-![prediction_panels](https://user-images.githubusercontent.com/45152844/123030745-424dd000-d3b1-11eb-8e62-28830a589a32.png)
+![prediction_panels](https://user-images.githubusercontent.com/45152844/130818338-d9bb78b6-e111-418d-9b3b-bc4025511e3f.png)
 | Panel                | Description |
 |:---------------------|:------------|
 | Primary Prediction   | Displays the primary prediction label and confidence for the predicted player. |
 | Prediction Breakdown | Displays a breakdown of confidences for other labels our algorithm considered. These are not considered in our manual reviews. |
-| Prediction Feedback  | Allows the user to send in a feedback for the **Primary Prediction**. |
+| Prediction Feedback  | Allows the user to send in a feedback for the **Primary Prediction** and choose the most appropriate avaiable label. |
 | Manual Flagging      | Allows the user to upload the most recent sighting for the predicted player with an extra flag to tell us to pay more attention to that player. |
 
 **Note for ⚠️ Anonymous Users ⚠️**: The *Manual Flagging* panel is disabled.
