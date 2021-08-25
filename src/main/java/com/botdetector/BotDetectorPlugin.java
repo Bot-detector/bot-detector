@@ -133,10 +133,10 @@ public class BotDetectorPlugin extends Plugin
 	/** {@link PlayerSighting} should not be created if the player is logged into one of these {@link WorldType}s. **/
 	private static final ImmutableSet<WorldType> BLOCKED_WORLD_TYPES =
 		ImmutableSet.of(
-			WorldType.LEAGUE,
+			WorldType.SEASONAL,
 			WorldType.DEADMAN,
-			WorldType.DEADMAN_TOURNAMENT,
-			WorldType.TOURNAMENT
+			WorldType.TOURNAMENT_WORLD,
+			WorldType.NOSAVE_MODE
 		);
 
 	private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
