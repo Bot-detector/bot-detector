@@ -739,6 +739,7 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackTextbox.setWrapStyleWord(true);
 		feedbackTextbox.setLineWrap(true);
 		feedbackTextbox.setTabSize(2);
+		feedbackTextbox.setBorder(new EmptyBorder(2, 2, 2, 2));
 		feedbackTextScrollPane = new JScrollPane(feedbackTextbox);
 		feedbackTextScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		feedbackTextScrollPane.setPreferredSize(FEEDBACK_TEXTBOX_PREFERRED_SIZE);
