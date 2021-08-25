@@ -67,7 +67,7 @@ Identifies bots by sending nearby players' information to a third-party machine 
 |:---------------------|:------------|
 | Primary Prediction   | Displays the primary prediction label and confidence for the predicted player. |
 | Prediction Breakdown | Displays a breakdown of confidences for other labels our algorithm considered. These are not considered in our manual reviews. |
-| Prediction Feedback  | Allows the user to send in a feedback for the **Primary Prediction** and choose the most appropriate avaiable label. |
+| Prediction Feedback  | Allows the user to send in a feedback for the **Primary Prediction** and choose the most appropriate available label. |
 | Manual Flagging      | Allows the user to upload the most recent sighting for the predicted player with an extra flag to tell us to pay more attention to that player. |
 
 **Note for ⚠️ Anonymous Users ⚠️**: The *Manual Flagging* panel is disabled.
