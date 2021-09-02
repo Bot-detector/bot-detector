@@ -117,7 +117,11 @@ public class BotDetectorPanel extends PluginPanel
 				+ "<br>Your tallies will not increase from seeing players in this world.</html>"),
 		PLAYER_STATS_ERROR(Icons.ERROR_ICON, " Could Not Retrieve Statistics",
 			"<html>Your player statistics could not be retrieved at this time."
-				+ "<br>Either the server could not assign you an ID or the server is down at the moment.</html>")
+				+ "<br>Either the server could not assign you an ID or the server is down at the moment.</html>"),
+		NAME_ERROR(Icons.ERROR_ICON, " Invalid Player Name",
+			"<html>Your player name could not be loaded correctly."
+				+ "<br>Most likely you spawned on Tutorial Island or your name was forcibly reset by Jagex."
+				+ "<br>Try relogging after setting a name.</html>")
 		;
 
 		private final Icon image;
