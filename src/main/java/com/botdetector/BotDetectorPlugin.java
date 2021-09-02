@@ -647,6 +647,7 @@ public class BotDetectorPlugin extends Plugin
 					loggedPlayerName = null;
 
 					refreshPlayerStats(true);
+					SwingUtilities.invokeLater(() -> panel.setWarningVisible(BotDetectorPanel.WarningLabel.NAME_ERROR, false));
 					lastStatsRefresh = Instant.MIN;
 				}
 				break;
@@ -680,29 +681,38 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		String rawName = player.getName();
+
+		boolean invalidName = rawName == null || rawName.length() == 0 || rawName.charAt(0) == '#' || rawName.charAt(0) == '[';
+
 		if (player == client.getLocalPlayer())
 		{
-			if (loggedPlayerName == null || !loggedPlayerName.equals(player.getName()))
+			if (loggedPlayerName == null || !loggedPlayerName.equals(rawName))
 			{
-				loggedPlayerName = player.getName();
-				updateTimeToAutoSend();
-				refreshPlayerStats(true);
+				if (invalidName)
+				{
+					loggedPlayerName = null;
+					SwingUtilities.invokeLater(() -> panel.setWarningVisible(BotDetectorPanel.WarningLabel.NAME_ERROR, true));
+				}
+				else
+				{
+					loggedPlayerName = rawName;
+					updateTimeToAutoSend();
+					refreshPlayerStats(true);
+					SwingUtilities.invokeLater(() -> panel.setWarningVisible(BotDetectorPanel.WarningLabel.NAME_ERROR, false));
+				}
 			}
 			return;
 		}
 
 		// Block processing AFTER local player check
-		if (isCurrentWorldBlocked)
+		if (isCurrentWorldBlocked || invalidName)
 		{
 			return;
 		}
 
-		String playerName = normalizePlayerName(player.getName());
+		String playerName = normalizePlayerName(rawName);
 		CaseInsensitiveString wrappedName = wrap(playerName);
-		if (playerName == null)
-		{
-			return;
-		}
 
 		// Get player's equipment item ids (botanicvelious/Equipment-Inspector)
 		Map<KitType, Integer> equipment = new HashMap<>();
