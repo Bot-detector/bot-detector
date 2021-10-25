@@ -1162,7 +1162,7 @@ public class BotDetectorPanel extends PluginPanel
 			else
 			{
 				predictionBreakdownLabel.setText(toPredictionBreakdownString(pred.getPredictionBreakdown()));
-				predictionBreakdownPanel.setVisible(true);
+				setPredictionBreakdownPanel(config.autoShowBreakdownPanel());
 
 				final String primaryLabel = pred.getPredictionLabel();
 
