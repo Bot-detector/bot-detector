@@ -210,6 +210,8 @@ public class BotDetectorPanel extends PluginPanel
 	private JLabel predictionPlayerNameLabel;
 	private JLabel predictionTypeLabel;
 	private JLabel predictionConfidenceLabel;
+	private JButton showPredictionBreakdownButton;
+	private JButton hidePredictionBreakdownButton;
 
 	// Prediction Breakdown
 	private JLabel predictionBreakdownLabel;
@@ -705,6 +707,36 @@ public class BotDetectorPanel extends PluginPanel
 		primaryPredictionPanel.add(predictionConfidenceLabel, c);
 		switchableFontComponents.add(predictionConfidenceLabel);
 
+
+		showPredictionBreakdownButton = new JButton("Show Breakdown");
+		showPredictionBreakdownButton.setToolTipText("<html>View the complete breakdown of the prediction for the selected account." +
+			"<br><span style='color:red'>NOTE:</span> We only utilize the primary prediction for our bot detection purposes.</html>");
+		showPredictionBreakdownButton.setForeground(HEADER_COLOR);
+		showPredictionBreakdownButton.setFont(SMALL_FONT);
+		showPredictionBreakdownButton.addActionListener(l -> setPredictionBreakdownPanel(true));
+		showPredictionBreakdownButton.setFocusable(false);
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridwidth = 2;
+		c.gridy++;
+		primaryPredictionPanel.add(showPredictionBreakdownButton, c);
+		setShowPredictionBreakdownButton(false);
+
+
+		hidePredictionBreakdownButton = new JButton("Hide Breakdown");
+		hidePredictionBreakdownButton.setToolTipText("<html>Close the prediction breakdown panel.</html>");
+		hidePredictionBreakdownButton.setForeground(HEADER_COLOR);
+		hidePredictionBreakdownButton.setFont(SMALL_FONT);
+		hidePredictionBreakdownButton.addActionListener(l -> setPredictionBreakdownPanel(false));
+		hidePredictionBreakdownButton.setFocusable(false);
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridwidth = 2;
+		c.gridy++;
+		primaryPredictionPanel.add(hidePredictionBreakdownButton, c);
+		setHidePredictionBreakdownButton(false);
+
+
 		return primaryPredictionPanel;
 	}
 
@@ -1040,6 +1072,24 @@ public class BotDetectorPanel extends PluginPanel
 	}
 
 	/**
+	 * Sets the visibility of the button that shows the prediction breakdown panel.
+	 * @param visible The visibility to apply on the show prediction breakdown panel button.
+	 */
+	public void setShowPredictionBreakdownButton(boolean visible)
+	{
+		showPredictionBreakdownButton.setVisible(visible);
+	}
+
+	/**
+	 * Sets the visibility of the button that hide the prediction breakdown panel.
+	 * @param visible The visibility to apply on the hide prediction breakdown panel button.
+	 */
+	public void setHidePredictionBreakdownButton(boolean visible)
+	{
+		hidePredictionBreakdownButton.setVisible(visible);
+	}
+
+	/**
 	 * Forcibly hides the feedback panel.
 	 */
 	public void forceHideFeedbackPanel()
@@ -1306,6 +1356,26 @@ public class BotDetectorPanel extends PluginPanel
 
 				setPrediction(pred, plugin.getPersistentSightings().get(normalizeAndWrapPlayerName(target)));
 			}));
+	}
+
+	/**
+	 * Sets visibility of prediction breakdown panel and shows appropriate show/hide button in the primary panel.
+	 * @param visible The desired visibility state of the breakdown panel.
+	 */
+	private void setPredictionBreakdownPanel(boolean visible)
+	{
+		predictionBreakdownPanel.setVisible(visible);
+
+		if(visible)
+		{
+			setHidePredictionBreakdownButton(true);
+			setShowPredictionBreakdownButton(false);
+		}
+		else
+		{
+			setHidePredictionBreakdownButton(false);
+			setShowPredictionBreakdownButton(true);
+		}
 	}
 
 	/**

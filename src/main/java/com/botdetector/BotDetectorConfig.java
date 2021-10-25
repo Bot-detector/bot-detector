@@ -49,6 +49,7 @@ public interface BotDetectorConfig extends Config
 	String SHOW_FEEDBACK_TEXTBOX = "showFeedbackTextbox";
 	String SHOW_DISCORD_VERIFICATION_ERRORS = "showDiscordVerificationErrors";
 	String ANONYMOUS_UUID_KEY = "anonymousUUID";
+	String AUTO_SHOW_BREAKDOWN_PANEL_KEY = "autoShowBreakdownPanel";
 
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
 	int AUTO_SEND_MAXIMUM_MINUTES = 360;
@@ -182,6 +183,15 @@ public interface BotDetectorConfig extends Config
 	{
 		return PanelFontType.NORMAL;
 	}
+
+	@ConfigItem(
+		position = 5,
+		keyName = AUTO_SHOW_BREAKDOWN_PANEL_KEY,
+		name = "Auto Show Prediction Breakdown",
+		description = "Automatically shows the prediction breakdown panel when receiving a prediction.",
+		section = panelSection
+	)
+	default boolean autoShowBreakdownPanel() {return false;}
 
 	@ConfigItem(
 		position = 1,
