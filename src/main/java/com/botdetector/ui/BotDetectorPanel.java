@@ -1241,6 +1241,8 @@ public class BotDetectorPanel extends PluginPanel
 			predictionConfidenceLabel.setText(EMPTY_LABEL);
 			predictionBreakdownLabel.setText(EMPTY_LABEL);
 
+			setPredictionBreakdownPanel(false);
+			setShowPredictionBreakdownButton(false);
 			predictionBreakdownPanel.setVisible(false);
 			predictionFeedbackPanel.setVisible(false);
 			predictionFlaggingPanel.setVisible(false);
