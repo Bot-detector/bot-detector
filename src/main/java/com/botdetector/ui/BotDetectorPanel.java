@@ -1090,6 +1090,41 @@ public class BotDetectorPanel extends PluginPanel
 	}
 
 	/**
+	 * Sets visibility of prediction breakdown panel and shows appropriate show/hide button in the primary panel.
+	 * @param visible The desired visibility state of the breakdown panel.
+	 */
+	private void setPredictionBreakdownPanel(boolean visible)
+	{
+		predictionBreakdownPanel.setVisible(visible);
+
+		setPredictionBreakdownButtons();
+
+	}
+
+	/**
+	 * Sets visibility of the "Show Breakdown" and "Hide Breakdown" buttons in the Primary Prediction panel.
+	 */
+	public void setPredictionBreakdownButtons()
+	{
+		if(config.autoShowBreakdownPanel())
+		{
+			//If the user opted to auto show prediction breakdown then hide buttons.
+			setHidePredictionBreakdownButton(false);
+			setShowPredictionBreakdownButton(false);
+		}
+		else if(predictionBreakdownPanel.isVisible())
+		{
+			setHidePredictionBreakdownButton(true);
+			setShowPredictionBreakdownButton(false);
+		}
+		else
+		{
+			setHidePredictionBreakdownButton(false);
+			setShowPredictionBreakdownButton(true);
+		}
+	}
+
+	/**
 	 * Forcibly hides the feedback panel.
 	 */
 	public void forceHideFeedbackPanel()
@@ -1358,26 +1393,6 @@ public class BotDetectorPanel extends PluginPanel
 
 				setPrediction(pred, plugin.getPersistentSightings().get(normalizeAndWrapPlayerName(target)));
 			}));
-	}
-
-	/**
-	 * Sets visibility of prediction breakdown panel and shows appropriate show/hide button in the primary panel.
-	 * @param visible The desired visibility state of the breakdown panel.
-	 */
-	private void setPredictionBreakdownPanel(boolean visible)
-	{
-		predictionBreakdownPanel.setVisible(visible);
-
-		if(visible)
-		{
-			setHidePredictionBreakdownButton(true);
-			setShowPredictionBreakdownButton(false);
-		}
-		else
-		{
-			setHidePredictionBreakdownButton(false);
-			setShowPredictionBreakdownButton(true);
-		}
 	}
 
 	/**

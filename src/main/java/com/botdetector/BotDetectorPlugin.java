@@ -628,6 +628,9 @@ public class BotDetectorPlugin extends Plugin
 			case BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY:
 				updateTimeToAutoSend();
 				break;
+			case BotDetectorConfig.AUTO_SHOW_BREAKDOWN_PANEL_KEY:
+				SwingUtilities.invokeLater(() -> panel.setPredictionBreakdownButtons());
+				break;
 		}
 	}
 
