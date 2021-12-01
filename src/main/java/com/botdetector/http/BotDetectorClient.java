@@ -31,6 +31,7 @@ import com.botdetector.model.PlayerSighting;
 import com.botdetector.model.PlayerStats;
 import com.botdetector.model.PlayerStatsType;
 import com.botdetector.model.Prediction;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -468,7 +469,14 @@ public class BotDetectorClient
 					new TypeToken<Map<String, String>>()
 					{
 					}.getType());
-				return new IOException(map.getOrDefault("error", "Unknown " + code + " error from API"));
+
+				// "error" has priority if it exists, else use "detail" (FastAPI)
+				String error = map.get("error");
+				if (Strings.isNullOrEmpty(error))
+				{
+					error = map.getOrDefault("detail", "Unknown " + code + " error from API");
+				}
+				return new IOException(error);
 			}
 			catch (IOException | JsonSyntaxException ex)
 			{
