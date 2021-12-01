@@ -309,7 +309,7 @@ public class BotDetectorPlugin extends Plugin
 		try
 		{
 			final Properties props = new Properties();
-			props.load(BotDetectorPlugin.class.getResourceAsStream("/version.properties"));
+			props.load(BotDetectorPlugin.class.getResourceAsStream("/version.txt"));
 			detectorClient.setPluginVersion(props.getProperty("version"));
 		}
 		catch (Exception e)
