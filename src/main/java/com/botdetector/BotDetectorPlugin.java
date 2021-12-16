@@ -42,7 +42,6 @@ import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import com.google.common.primitives.Ints;
@@ -117,7 +116,6 @@ import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.Text;
 import com.google.inject.Provides;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import static com.botdetector.model.CaseInsensitiveString.wrap;
 
@@ -960,15 +958,14 @@ public class BotDetectorPlugin extends Plugin
 				return;
 			}
 
-			final MenuEntry predict = new MenuEntry();
-			predict.setOption(getPredictOption(event.getTarget()));
-			predict.setTarget(event.getTarget());
-			predict.setType(MenuAction.RUNELITE.getId());
-			predict.setParam0(event.getActionParam0());
-			predict.setParam1(event.getActionParam1());
-			predict.setIdentifier(event.getIdentifier());
-
-			insertMenuEntry(predict, client.getMenuEntries());
+			// TODO: Properly use the new menu entry callbacks
+			client.createMenuEntry(-1)
+				.setOption(getPredictOption(event.getTarget()))
+				.setTarget(event.getTarget())
+				.setType(MenuAction.RUNELITE)
+				.setParam0(event.getActionParam0())
+				.setParam1(event.getActionParam1())
+				.setIdentifier(event.getIdentifier());
 		}
 	}
 
@@ -986,7 +983,7 @@ public class BotDetectorPlugin extends Plugin
 		MenuEntry[] menuEntries = event.getMenuEntries();
 		for (MenuEntry entry : menuEntries)
 		{
-			int type = entry.getType();
+			int type = entry.getType().getId();
 			if (type >= MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET)
 			{
 				type -= MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET;
@@ -1002,7 +999,6 @@ public class BotDetectorPlugin extends Plugin
 				}
 			}
 		}
-		client.setMenuEntries(menuEntries);
 	}
 
 	@Subscribe
@@ -1159,19 +1155,6 @@ public class BotDetectorPlugin extends Plugin
 			config.predictOptionFlaggedColor() : config.predictOptionDefaultColor();
 
 		return prepend != null ? ColorUtil.prependColorTag(PREDICT_OPTION, prepend) : PREDICT_OPTION;
-	}
-
-	/**
-	 * Helper function to insert a {@link MenuEntry} in {@link Client#setMenuEntries(MenuEntry[])}.
-	 * @param newEntry The entry to add.
-	 * @param entries The current entries (usually from {@link Client#getMenuEntries()}.
-	 */
-	private void insertMenuEntry(MenuEntry newEntry, MenuEntry[] entries)
-	{
-		MenuEntry[] newMenu = ObjectArrays.concat(entries, newEntry);
-		int menuEntryCount = newMenu.length;
-		ArrayUtils.swap(newMenu, menuEntryCount - 1, menuEntryCount - 2);
-		client.setMenuEntries(newMenu);
 	}
 
 	/**
