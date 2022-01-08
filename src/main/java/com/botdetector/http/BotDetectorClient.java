@@ -55,13 +55,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.http.api.RuneLiteAPI;
+import net.runelite.client.RuneLite;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -82,6 +83,7 @@ public class BotDetectorClient
 	private static final String API_VERSION_FALLBACK_WORD = "latest";
 	private static final HttpUrl BASE_HTTP_URL = HttpUrl.parse(
 		System.getProperty("BotDetectorAPIPath", "https://www.osrsbotdetector.com/api"));
+	private static final Supplier<String> CURRENT_EPOCH_SUPPLIER = () -> String.valueOf(Instant.now().getEpochSecond());
 
 	@Getter
 	@AllArgsConstructor
@@ -97,10 +99,18 @@ public class BotDetectorClient
 		final String path;
 	}
 
-	public static OkHttpClient okHttpClient = RuneLiteAPI.CLIENT.newBuilder()
-		.pingInterval(0, TimeUnit.SECONDS)
+	public static OkHttpClient okHttpClient = new OkHttpClient.Builder()
 		.connectTimeout(30, TimeUnit.SECONDS)
 		.readTimeout(30, TimeUnit.SECONDS)
+		.addNetworkInterceptor(chain ->
+		{
+			Request headerRequest = chain.request()
+				.newBuilder()
+				.header("User-Agent", RuneLite.USER_AGENT)
+				.header("Request-Epoch", CURRENT_EPOCH_SUPPLIER.get())
+				.build();
+			return chain.proceed(headerRequest);
+		})
 		.build();
 
 	@Inject
