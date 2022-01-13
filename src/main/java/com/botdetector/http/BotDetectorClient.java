@@ -34,7 +34,6 @@ import com.botdetector.model.Prediction;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -62,7 +61,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.RuneLite;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -99,22 +97,10 @@ public class BotDetectorClient
 		final String path;
 	}
 
-	public static OkHttpClient okHttpClient = new OkHttpClient.Builder()
-		.connectTimeout(30, TimeUnit.SECONDS)
-		.readTimeout(30, TimeUnit.SECONDS)
-		.addNetworkInterceptor(chain ->
-		{
-			Request headerRequest = chain.request()
-				.newBuilder()
-				.header("User-Agent", RuneLite.USER_AGENT)
-				.header("Request-Epoch", CURRENT_EPOCH_SUPPLIER.get())
-				.build();
-			return chain.proceed(headerRequest);
-		})
-		.build();
+	public OkHttpClient okHttpClient;
 
 	@Inject
-	private GsonBuilder gsonBuilder;
+	private Gson gson;
 
 	@Getter
 	@Setter
@@ -133,6 +119,24 @@ public class BotDetectorClient
 		return BASE_HTTP_URL.newBuilder()
 			.addPathSegment(version)
 			.addPathSegments(path.getPath())
+			.build();
+	}
+
+	@Inject
+	public BotDetectorClient(OkHttpClient rlClient)
+	{
+		okHttpClient = rlClient.newBuilder()
+			.pingInterval(0, TimeUnit.SECONDS)
+			.connectTimeout(30, TimeUnit.SECONDS)
+			.readTimeout(30, TimeUnit.SECONDS)
+			.addNetworkInterceptor(chain ->
+			{
+				Request headerRequest = chain.request()
+					.newBuilder()
+					.header("Request-Epoch", CURRENT_EPOCH_SUPPLIER.get())
+					.build();
+				return chain.proceed(headerRequest);
+			})
 			.build();
 	}
 
@@ -160,7 +164,7 @@ public class BotDetectorClient
 		List<PlayerSightingWrapper> wrappedList = sightings.stream()
 			.map(p -> new PlayerSightingWrapper(uploaderName, p)).collect(Collectors.toList());
 
-		Gson gson = gsonBuilder
+		Gson bdGson = gson.newBuilder()
 			.registerTypeAdapter(PlayerSightingWrapper.class, new PlayerSightingWrapperSerializer())
 			.registerTypeAdapter(Boolean.class, new BooleanToZeroOneSerializer())
 			.registerTypeAdapter(Instant.class, new InstantSecondsConverter())
@@ -170,7 +174,7 @@ public class BotDetectorClient
 			.url(getUrl(ApiPath.DETECTION).newBuilder()
 				.addPathSegment(String.valueOf(manual ? 1 : 0))
 				.build())
-			.post(RequestBody.create(JSON, gson.toJson(wrappedList)))
+			.post(RequestBody.create(JSON, bdGson.toJson(wrappedList)))
 			.build();
 
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
@@ -219,8 +223,6 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Boolean> verifyDiscord(String token, String nameToVerify, String code)
 	{
-		Gson gson = gsonBuilder.create();
-
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.VERIFY_DISCORD).newBuilder()
 				.addPathSegment(token)
@@ -283,8 +285,6 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Boolean> sendFeedback(Prediction pred, String uploaderName, FeedbackPredictionLabel proposedLabel, String feedbackText)
 	{
-		Gson gson = gsonBuilder.create();
-
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.FEEDBACK))
 			.post(RequestBody.create(JSON, gson.toJson(new PredictionFeedback(
@@ -342,8 +342,6 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Prediction> requestPrediction(String playerName)
 	{
-		Gson gson = gsonBuilder.create();
-
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.PREDICTION).newBuilder()
 				.addPathSegment(playerName)
@@ -389,8 +387,6 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Map<PlayerStatsType, PlayerStats>> requestPlayerStats(String playerName)
 	{
-		Gson gson = gsonBuilder.create();
-
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.PLAYER_STATS).newBuilder()
 				.addPathSegment(playerName)
@@ -475,7 +471,7 @@ public class BotDetectorClient
 		{
 			try
 			{
-				Map<String, String> map = gsonBuilder.create().fromJson(response.body().string(),
+				Map<String, String> map = gson.fromJson(response.body().string(),
 					new TypeToken<Map<String, String>>()
 					{
 					}.getType());
