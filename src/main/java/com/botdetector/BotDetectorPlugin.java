@@ -928,7 +928,6 @@ public class BotDetectorPlugin extends Plugin
 					clientThread.invokeLater(() ->
 					{
 						messageNode.setRuneLiteFormatMessage(builtResponse);
-						chatMessageManager.update(messageNode);
 						client.refreshChat();
 					});
 				}
