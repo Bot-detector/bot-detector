@@ -26,32 +26,44 @@
 package com.botdetector.model;
 
 import com.google.common.collect.ImmutableSet;
-import java.util.Arrays;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import static com.botdetector.model.AuthTokenPermission.*;
 
 @Getter
-@RequiredArgsConstructor
 public enum AuthTokenType
 {
 	/**
 	 * No permissions
 	 */
-	NONE(ImmutableSet.of()),
+	NONE(),
 
 	/**
 	 * All permissions
 	 */
-	DEV(Arrays.stream(AuthTokenPermission.values()).collect(ImmutableSet.toImmutableSet())),
+	DEV(AuthTokenPermission.values()),
+
+	/**
+	 * Can perform discord verification and retrieve clan rank updates
+	 */
+	MOD(VERIFY_DISCORD, GET_CLAN_RANK_UPDATES),
 
 	/**
 	 * Can perform discord verification
 	 */
-	MOD(ImmutableSet.of(VERIFY_DISCORD))
+	DISCORD(VERIFY_DISCORD),
+
+	/**
+	 * Can retrieve clan rank updates
+	 */
+	CLAN(GET_CLAN_RANK_UPDATES)
 	;
 
 	private final ImmutableSet<AuthTokenPermission> permissions;
+
+	AuthTokenType(AuthTokenPermission... permissions)
+	{
+		this.permissions = ImmutableSet.copyOf(permissions);
+	}
 
 	/**
 	 * Parses the token type from the given {@code prefix}.
