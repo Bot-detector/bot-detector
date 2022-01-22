@@ -99,6 +99,7 @@ import net.runelite.client.chat.ChatMessageBuilder;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.config.RuneScapeProfileType;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.game.ItemManager;
@@ -128,13 +129,10 @@ import static com.botdetector.model.CaseInsensitiveString.wrap;
 )
 public class BotDetectorPlugin extends Plugin
 {
-	/** {@link PlayerSighting} should not be created if the player is logged into one of these {@link WorldType}s. **/
-	private static final ImmutableSet<WorldType> BLOCKED_WORLD_TYPES =
+	/** {@link PlayerSighting}s should only be created if the player is logged into a world set up for one of these {@link RuneScapeProfileType}s. **/
+	private static final ImmutableSet<RuneScapeProfileType> ALLOWED_PROFILE_TYPES =
 		ImmutableSet.of(
-			WorldType.SEASONAL,
-			WorldType.DEADMAN,
-			WorldType.TOURNAMENT_WORLD,
-			WorldType.NOSAVE_MODE
+			RuneScapeProfileType.STANDARD
 		);
 
 	private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
@@ -251,7 +249,7 @@ public class BotDetectorPlugin extends Plugin
 	private boolean isCurrentWorldMembers;
 	/** See {@link #processCurrentWorld()}. **/
 	private boolean isCurrentWorldPVP;
-	/** Blocked world types should not log player sightings (see {@link #processCurrentWorld()} and {@link #BLOCKED_WORLD_TYPES}). **/
+	/** A blocked world should not log {@link PlayerSighting}s (see {@link #processCurrentWorld()} and {@link #ALLOWED_PROFILE_TYPES}). **/
 	private boolean isCurrentWorldBlocked;
 	/** A queue containing the last two {@link GameState}s from {@link #onGameStateChanged(GameStateChanged)}. **/
 	private EvictingQueue<GameState> previousTwoGameStates = EvictingQueue.create(2);
@@ -1102,7 +1100,7 @@ public class BotDetectorPlugin extends Plugin
 		EnumSet<WorldType> types = client.getWorldType();
 		isCurrentWorldMembers = types.contains(WorldType.MEMBERS);
 		isCurrentWorldPVP = types.contains(WorldType.PVP);
-		isCurrentWorldBlocked = BLOCKED_WORLD_TYPES.stream().anyMatch(types::contains);
+		isCurrentWorldBlocked = !ALLOWED_PROFILE_TYPES.contains(RuneScapeProfileType.getCurrent(client));
 		SwingUtilities.invokeLater(() ->
 			panel.setWarningVisible(BotDetectorPanel.WarningLabel.BLOCKED_WORLD, isCurrentWorldBlocked));
 	}
