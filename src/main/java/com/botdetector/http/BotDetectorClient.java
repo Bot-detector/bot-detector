@@ -37,6 +37,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
@@ -61,6 +62,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.kit.KitType;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -87,7 +89,7 @@ public class BotDetectorClient
 	@AllArgsConstructor
 	private enum ApiPath
 	{
-		DETECTION("plugin/detect/"),
+		DETECTION("v1/report/"),
 		PLAYER_STATS("stats/contributions/"),
 		PREDICTION("site/prediction/"),
 		FEEDBACK("plugin/predictionfeedback/"),
@@ -162,22 +164,23 @@ public class BotDetectorClient
 	public CompletableFuture<Boolean> sendSightings(Collection<PlayerSighting> sightings, String uploaderName, boolean manual)
 	{
 		List<PlayerSightingWrapper> wrappedList = sightings.stream()
-			.map(p -> new PlayerSightingWrapper(uploaderName, p)).collect(Collectors.toList());
+			.map(p -> new PlayerSightingWrapper(uploaderName, manual, p)).collect(Collectors.toList());
 
-		Gson bdGson = gson.newBuilder()
+		Gson bdGson = gson.newBuilder().enableComplexMapKeySerialization()
 			.registerTypeAdapter(PlayerSightingWrapper.class, new PlayerSightingWrapperSerializer())
+			.registerTypeAdapter(KitType.class, new KitTypeSerializer())
 			.registerTypeAdapter(Boolean.class, new BooleanToZeroOneSerializer())
 			.registerTypeAdapter(Instant.class, new InstantSecondsConverter())
 			.create();
 
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.DETECTION).newBuilder()
-				.addPathSegment(String.valueOf(manual ? 1 : 0))
 				.build())
 			.post(RequestBody.create(JSON, bdGson.toJson(wrappedList)))
 			.build();
 
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
+		future.complete(true);
 		okHttpClient.newCall(request).enqueue(new Callback()
 		{
 			@Override
@@ -499,9 +502,8 @@ public class BotDetectorClient
 	@Value
 	private static class PlayerSightingWrapper
 	{
-		@SerializedName("reporter")
 		String uploaderName;
-		@SerializedName("sighting_data")
+		boolean manualDetect;
 		PlayerSighting sightingData;
 	}
 
@@ -543,8 +545,22 @@ public class BotDetectorClient
 		public JsonElement serialize(PlayerSightingWrapper src, Type typeOfSrc, JsonSerializationContext context)
 		{
 			JsonElement json = context.serialize(src.getSightingData());
-			json.getAsJsonObject().addProperty("reporter", src.getUploaderName());
+			JsonObject jo = json.getAsJsonObject();
+			jo.addProperty("reporter", src.getUploaderName());
+			jo.add("manual_detect", context.serialize(src.isManualDetect()));
 			return json;
+		}
+	}
+
+	/**
+	 * Serializes a {@link KitType} for the API.
+	 */
+	private static class KitTypeSerializer implements JsonSerializer<KitType>
+	{
+		@Override
+		public JsonElement serialize(KitType kitType, Type typeOfSrc, JsonSerializationContext context)
+		{
+			return context.serialize("equip_" + kitType.name().toLowerCase() + "_id");
 		}
 	}
 
