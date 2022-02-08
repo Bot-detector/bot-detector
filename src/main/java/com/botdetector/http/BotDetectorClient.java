@@ -707,15 +707,11 @@ public class BotDetectorClient
 
 			dict = dict.deepCopy();
 
-			String name = dict.get("name").getAsString();
-			dict.remove("name");
-			String pred = dict.get("Prediction").getAsString();
-			dict.remove("Prediction");
+			String name = dict.remove("name").getAsString();
+			String pred = dict.remove("Prediction").getAsString();
 			dict.remove("created"); // Unused for now
-			long id = dict.get("id").getAsLong();
-			dict.remove("id");
-			double conf = dict.get("Predicted_confidence").getAsDouble() / 100;
-			dict.remove("Predicted_confidence");
+			long id = dict.remove("id").getAsLong();
+			double conf = dict.remove("Predicted_confidence").getAsDouble() / 100;
 
 			return Prediction.builder()
 				.playerId(id)
