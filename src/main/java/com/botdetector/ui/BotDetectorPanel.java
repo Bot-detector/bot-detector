@@ -52,7 +52,6 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -1648,7 +1647,7 @@ public class BotDetectorPanel extends PluginPanel
 
 		String rowString = "<tr><td>%s:</td><td style='padding-left:5;text-align:right;color:%s'>%s</td></tr>";
 		predictionMap.entrySet().stream().filter(e -> e.getValue() > 0)
-			.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+			.sorted(Map.Entry.<String, Double>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()))
 			.forEach(e -> sb.append(String.format(rowString,
 				normalizeLabel(e.getKey()),
 				ColorUtil.toHexColor(getPercentColor(e.getValue())),
