@@ -26,21 +26,21 @@
 package com.botdetector.model;
 
 import com.google.gson.annotations.SerializedName;
-import lombok.Value;
+import lombok.Data;
 
-@Value
+@Data
 public class PlayerStats
 {
 	@SerializedName("reports")
-	long namesUploaded;
+	private long namesUploaded;
 	@SerializedName("bans")
-	long confirmedBans;
+	private long confirmedBans;
 	@SerializedName("possible_bans")
-	long possibleBans;
+	private long possibleBans;
 	@SerializedName("incorrect_reports")
-	long incorrectFlags;
+	private long incorrectFlags;
 	@SerializedName("feedback")
-	long feedbackSent;
+	private long feedbackSent;
 
 	/**
 	 * The accuracy represents {@link #confirmedBans} divided by

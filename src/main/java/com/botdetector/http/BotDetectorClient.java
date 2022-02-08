@@ -33,6 +33,7 @@ import com.botdetector.model.PlayerStatsType;
 import com.botdetector.model.Prediction;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -89,8 +90,8 @@ public class BotDetectorClient
 	@AllArgsConstructor
 	private enum ApiPath
 	{
-		DETECTION("v1/report/"),
-		PLAYER_STATS("stats/contributions/"),
+		DETECTION("v1/report"),
+		PLAYER_STATS("v1/report/count"),
 		PREDICTION("site/prediction/"),
 		FEEDBACK("plugin/predictionfeedback/"),
 		VERIFY_DISCORD("site/discord_user/")
@@ -165,7 +166,7 @@ public class BotDetectorClient
 		Gson bdGson = gson.newBuilder().enableComplexMapKeySerialization()
 			.registerTypeAdapter(PlayerSightingWrapper.class, new PlayerSightingWrapperSerializer())
 			.registerTypeAdapter(KitType.class, new KitTypeSerializer())
-			.registerTypeAdapter(Boolean.class, new BooleanToZeroOneSerializer())
+			.registerTypeAdapter(Boolean.class, new BooleanToZeroOneConverter())
 			.registerTypeAdapter(Instant.class, new InstantSecondsConverter())
 			.create();
 
@@ -386,9 +387,13 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Map<PlayerStatsType, PlayerStats>> requestPlayerStats(String playerName)
 	{
+		Gson bdGson = gson.newBuilder()
+			.registerTypeAdapter(boolean.class, new BooleanToZeroOneConverter())
+			.create();
+
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.PLAYER_STATS).newBuilder()
-				.addPathSegment(playerName)
+				.addQueryParameter("user_name", playerName)
 				.build())
 			.build();
 
@@ -407,10 +412,10 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(processResponse(gson, response,
-						new TypeToken<Map<PlayerStatsType, PlayerStats>>()
+					future.complete(processPlayerStats(processResponse(bdGson, response,
+						new TypeToken<Collection<PlayerStatsAPIItem>>()
 						{
-						}.getType()));
+						}.getType())));
 				}
 				catch (IOException e)
 				{
@@ -492,6 +497,66 @@ public class BotDetectorClient
 		return new IOException("Error " + code + " from API");
 	}
 
+	private Map<PlayerStatsType, PlayerStats> processPlayerStats(Collection<PlayerStatsAPIItem> items)
+	{
+		if (items == null)
+		{
+			return null;
+		}
+
+		PlayerStats total = new PlayerStats();
+		PlayerStats passive = new PlayerStats();
+		PlayerStats manual = new PlayerStats();
+
+		for (PlayerStatsAPIItem item : items)
+		{
+			if (item.isManual())
+			{
+				if (item.isBanned())
+				{
+					manual.setConfirmedBans(manual.getConfirmedBans() + item.count);
+				}
+				else
+				{
+					if (item.isPBanned())
+					{
+						manual.setPossibleBans(manual.getPossibleBans() + item.count);
+					}
+
+					if (item.isPlayer())
+					{
+						manual.setIncorrectFlags(total.getIncorrectFlags() + item.count);
+					}
+				}
+
+				manual.setNamesUploaded(manual.getNamesUploaded() + item.count);
+			}
+			else
+			{
+				if (item.isBanned())
+				{
+					passive.setConfirmedBans(passive.getConfirmedBans() + item.count);
+				}
+				else if (item.isPBanned())
+				{
+					passive.setPossibleBans(passive.getPossibleBans() + item.count);
+				}
+
+				passive.setNamesUploaded(passive.getNamesUploaded() + item.count);
+			}
+		}
+
+		total.setConfirmedBans(passive.getConfirmedBans() + manual.getConfirmedBans());
+		total.setPossibleBans(passive.getPossibleBans() + manual.getPossibleBans());
+		total.setNamesUploaded(passive.getNamesUploaded() + manual.getNamesUploaded());
+
+		return ImmutableMap.of(
+			PlayerStatsType.TOTAL, total,
+			PlayerStatsType.PASSIVE, passive,
+			PlayerStatsType.MANUAL, manual
+		);
+	}
+
 	/**
 	 * For use with {@link PlayerSightingWrapperSerializer}.
 	 */
@@ -531,6 +596,20 @@ public class BotDetectorClient
 		String feedbackText;
 	}
 
+	@Value
+	private static class PlayerStatsAPIItem
+	{
+		@SerializedName("manual_detect")
+		boolean manual;
+		@SerializedName("possible_ban")
+		boolean pBanned;
+		@SerializedName("confirmed_ban")
+		boolean banned;
+		@SerializedName("player")
+		boolean player;
+		long count;
+	}
+
 	/**
 	 * Wrapper around the {@link PlayerSighting}'s json serializer.
 	 * Adds the reporter name as an element on the same level as the {@link PlayerSighting}'s fields.
@@ -561,14 +640,21 @@ public class BotDetectorClient
 	}
 
 	/**
-	 * Serializes a {@link Boolean} as the integers {@code 0} or {@code 1}.
+	 * Serializes/Deserializes a {@link Boolean} as the integers {@code 0} or {@code 1}.
 	 */
-	private static class BooleanToZeroOneSerializer implements JsonSerializer<Boolean>
+	private static class BooleanToZeroOneConverter implements JsonSerializer<Boolean>, JsonDeserializer<Boolean>
 	{
 		@Override
 		public JsonElement serialize(Boolean src, Type typeOfSrc, JsonSerializationContext context)
 		{
 			return context.serialize(src ? 1 : 0);
+		}
+
+		@Override
+		public Boolean deserialize(JsonElement json, Type type, JsonDeserializationContext context)
+			throws JsonParseException
+		{
+			return json.getAsInt() != 0;
 		}
 	}
 
