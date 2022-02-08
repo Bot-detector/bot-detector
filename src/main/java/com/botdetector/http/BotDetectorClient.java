@@ -115,11 +115,7 @@ public class BotDetectorClient
 	 */
 	private HttpUrl getUrl(ApiPath path)
 	{
-		String version = (pluginVersion != null && !pluginVersion.isEmpty()) ?
-			pluginVersion : API_VERSION_FALLBACK_WORD;
-
 		return BASE_HTTP_URL.newBuilder()
-			.addPathSegment(version)
 			.addPathSegments(path.getPath())
 			.build();
 	}
