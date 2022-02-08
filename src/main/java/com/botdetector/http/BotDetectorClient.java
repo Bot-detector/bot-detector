@@ -94,7 +94,7 @@ public class BotDetectorClient
 		DETECTION("v1/report"),
 		PLAYER_STATS("v1/report/count"),
 		PREDICTION("v1/prediction"),
-		FEEDBACK("plugin/predictionfeedback/"),
+		FEEDBACK("v1/feedback/"),
 		VERIFY_DISCORD("site/discord_user/")
 		;
 
