@@ -752,7 +752,7 @@ public class BotDetectorClient
 			String pred = dict.remove("Prediction").getAsString();
 			dict.remove("created"); // Unused for now
 			long id = dict.remove("id").getAsLong();
-			double conf = dict.remove("Predicted_confidence").getAsDouble() / 100;
+			double conf = dict.remove("Predicted_confidence").getAsDouble();
 
 			return Prediction.builder()
 				.playerId(id)
@@ -763,7 +763,7 @@ public class BotDetectorClient
 					dict.entrySet().stream().collect(
 						ImmutableMap.toImmutableMap(
 							Map.Entry::getKey,
-							e -> e.getValue().getAsDouble() / 100))
+							e -> e.getValue().getAsDouble()))
 				).build();
 		}
 	}
