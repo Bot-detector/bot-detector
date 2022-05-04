@@ -92,7 +92,9 @@ public class BotDetectorClient
 	private enum ApiPath
 	{
 		DETECTION("v1/report"),
-		PLAYER_STATS("v1/report/count"),
+		PLAYER_STATS_PASSIVE("v1/report/count"),
+		PLAYER_STATS_MANUAL("v1/report/manual/count"),
+		PLAYER_STATS_FEEDBACK("v1/feedback/count"),
 		PREDICTION("v1/prediction"),
 		FEEDBACK("v1/feedback/"),
 		VERIFY_DISCORD("site/discord_user/")
@@ -396,45 +398,77 @@ public class BotDetectorClient
 			.registerTypeAdapter(boolean.class, new BooleanToZeroOneConverter())
 			.create();
 
-		Request request = new Request.Builder()
-			.url(getUrl(ApiPath.PLAYER_STATS).newBuilder()
-				.addQueryParameter("user_name", playerName)
+		Request requestP = new Request.Builder()
+			.url(getUrl(ApiPath.PLAYER_STATS_PASSIVE).newBuilder()
+				.addQueryParameter("name", playerName)
 				.build())
 			.build();
 
-		CompletableFuture<Map<PlayerStatsType, PlayerStats>> future = new CompletableFuture<>();
-		okHttpClient.newCall(request).enqueue(new Callback()
+		Request requestM = new Request.Builder()
+			.url(getUrl(ApiPath.PLAYER_STATS_MANUAL).newBuilder()
+				.addQueryParameter("name", playerName)
+				.build())
+			.build();
+
+		Request requestF = new Request.Builder()
+			.url(getUrl(ApiPath.PLAYER_STATS_FEEDBACK).newBuilder()
+				.addQueryParameter("name", playerName)
+				.build())
+			.build();
+
+		CompletableFuture<Collection<PlayerStatsAPIItem>> passiveFuture = new CompletableFuture<>();
+		CompletableFuture<Collection<PlayerStatsAPIItem>> manualFuture = new CompletableFuture<>();
+		CompletableFuture<Collection<PlayerStatsAPIItem>> feedbackFuture = new CompletableFuture<>();
+
+		okHttpClient.newCall(requestP).enqueue(new PlayerStatsCallback(passiveFuture, bdGson));
+		okHttpClient.newCall(requestM).enqueue(new PlayerStatsCallback(manualFuture, bdGson));
+		okHttpClient.newCall(requestF).enqueue(new PlayerStatsCallback(feedbackFuture, bdGson));
+
+		return CompletableFuture.allOf(passiveFuture, manualFuture, feedbackFuture)
+			.thenApply(v -> processPlayerStats(passiveFuture.join(), manualFuture.join(), feedbackFuture.join()));
+	}
+
+	/**
+	 * Utility class intended for {@link BotDetectorClient#requestPlayerStats(String)}.
+	 */
+	private class PlayerStatsCallback implements Callback
+	{
+		private final CompletableFuture<Collection<PlayerStatsAPIItem>> future;
+		private final Gson gson;
+
+		public PlayerStatsCallback(CompletableFuture<Collection<PlayerStatsAPIItem>> future, Gson gson)
 		{
-			@Override
-			public void onFailure(Call call, IOException e)
+			this.future = future;
+			this.gson = gson;
+		}
+
+		@Override
+		public void onFailure(Call call, IOException e)
+		{
+			log.warn("Error obtaining player stats data", e);
+			future.completeExceptionally(e);
+		}
+
+		@Override
+		public void onResponse(Call call, Response response) throws IOException
+		{
+			try
+			{
+				future.complete(processResponse(gson, response,
+					new TypeToken<Collection<PlayerStatsAPIItem>>()
+					{
+					}.getType()));
+			}
+			catch (IOException e)
 			{
 				log.warn("Error obtaining player stats data", e);
 				future.completeExceptionally(e);
 			}
-
-			@Override
-			public void onResponse(Call call, Response response)
+			finally
 			{
-				try
-				{
-					future.complete(processPlayerStats(processResponse(bdGson, response,
-						new TypeToken<Collection<PlayerStatsAPIItem>>()
-						{
-						}.getType())));
-				}
-				catch (IOException e)
-				{
-					log.warn("Error obtaining player stats data", e);
-					future.completeExceptionally(e);
-				}
-				finally
-				{
-					response.close();
-				}
+				response.close();
 			}
-		});
-
-		return future;
+		}
 	}
 
 	/**
@@ -462,7 +496,7 @@ public class BotDetectorClient
 		{
 			return gson.fromJson(response.body().string(), type);
 		}
-		catch (IOException | JsonSyntaxException ex)
+		catch (IOException | IllegalStateException | JsonSyntaxException ex)
 		{
 			throw new IOException("Error parsing API response body", ex);
 		}
@@ -502,64 +536,73 @@ public class BotDetectorClient
 		return new IOException("Error " + code + " from API");
 	}
 
-	private Map<PlayerStatsType, PlayerStats> processPlayerStats(Collection<PlayerStatsAPIItem> items)
+	/**
+	 * Collects the given {@link PlayerStatsAPIItem} into a combined map that the plugin expects.
+	 * @param passive The passive usage stats from the API.
+	 * @param manual The manual flagging stats from the API.
+	 * @param feedback The feedback stats from the API.
+	 * @return The combined processed map expected by the plugin.
+	 */
+	private Map<PlayerStatsType, PlayerStats> processPlayerStats(Collection<PlayerStatsAPIItem> passive, Collection<PlayerStatsAPIItem> manual, Collection<PlayerStatsAPIItem> feedback)
 	{
-		if (items == null)
+		if (passive == null || manual == null || feedback == null)
 		{
 			return null;
 		}
 
-		PlayerStats total = new PlayerStats();
-		PlayerStats passive = new PlayerStats();
-		PlayerStats manual = new PlayerStats();
+		PlayerStats totalStats = new PlayerStats();
+		PlayerStats passiveStats = new PlayerStats();
+		PlayerStats manualStats = new PlayerStats();
+		PlayerStats feedbackStats = new PlayerStats();
 
-		for (PlayerStatsAPIItem item : items)
+		countStatsInto(passiveStats, passive, false);
+		countStatsInto(manualStats, manual, true);
+		countStatsInto(feedbackStats, feedback, false);
+
+		totalStats.setConfirmedBans(passiveStats.getConfirmedBans() + manualStats.getConfirmedBans());
+		totalStats.setPossibleBans(passiveStats.getPossibleBans() + manualStats.getPossibleBans());
+		totalStats.setNamesUploaded(passiveStats.getNamesUploaded() + manualStats.getNamesUploaded());
+		totalStats.setFeedbackSent(feedbackStats.getNamesUploaded()); // Might change the total/passive/manual thing in the future.
+
+		return ImmutableMap.of(
+			PlayerStatsType.TOTAL, totalStats,
+			PlayerStatsType.PASSIVE, passiveStats,
+			PlayerStatsType.MANUAL, manualStats
+		);
+	}
+
+	/**
+	 * Utility function for {@link BotDetectorClient#processPlayerStats(Collection, Collection, Collection)}.
+	 * Compile each element from the API into the given {@link PlayerStats} object.
+	 * @param counter The object that will accumulate values from the API.
+	 * @param fromAPI The returned collections of player stats from the API to accumulate.
+	 * @param countIncorrect Intended for manual flagging stats. If true, count confirmed players into {@link PlayerStats#getIncorrectFlags()}.
+	 */
+	private void countStatsInto(PlayerStats counter, Collection<PlayerStatsAPIItem> fromAPI, boolean countIncorrect)
+	{
+		for (PlayerStatsAPIItem item : fromAPI)
 		{
-			if (item.isManual())
 			{
 				if (item.isBanned())
 				{
-					manual.setConfirmedBans(manual.getConfirmedBans() + item.count);
+					counter.setConfirmedBans(counter.getConfirmedBans() + item.getCount());
 				}
 				else
 				{
 					if (item.isPBanned())
 					{
-						manual.setPossibleBans(manual.getPossibleBans() + item.count);
+						counter.setPossibleBans(counter.getPossibleBans() + item.getCount());
 					}
 
-					if (item.isPlayer())
+					if (countIncorrect && item.isPlayer())
 					{
-						manual.setIncorrectFlags(total.getIncorrectFlags() + item.count);
+						counter.setIncorrectFlags(counter.getIncorrectFlags() + item.getCount());
 					}
 				}
 
-				manual.setNamesUploaded(manual.getNamesUploaded() + item.count);
-			}
-			else
-			{
-				if (item.isBanned())
-				{
-					passive.setConfirmedBans(passive.getConfirmedBans() + item.count);
-				}
-				else if (item.isPBanned())
-				{
-					passive.setPossibleBans(passive.getPossibleBans() + item.count);
-				}
-
-				passive.setNamesUploaded(passive.getNamesUploaded() + item.count);
+				counter.setNamesUploaded(counter.getNamesUploaded() + item.getCount());
 			}
 		}
-
-		total.setConfirmedBans(passive.getConfirmedBans() + manual.getConfirmedBans());
-		total.setPossibleBans(passive.getPossibleBans() + manual.getPossibleBans());
-		total.setNamesUploaded(passive.getNamesUploaded() + manual.getNamesUploaded());
-
-		return ImmutableMap.of(
-			PlayerStatsType.TOTAL, total,
-			PlayerStatsType.PASSIVE, passive,
-			PlayerStatsType.MANUAL, manual
-		);
 	}
 
 	/**
@@ -604,13 +647,11 @@ public class BotDetectorClient
 	@Value
 	private static class PlayerStatsAPIItem
 	{
-		@SerializedName("manual_detect")
-		boolean manual;
 		@SerializedName("possible_ban")
 		boolean pBanned;
 		@SerializedName("confirmed_ban")
 		boolean banned;
-		@SerializedName("player")
+		@SerializedName("confirmed_player")
 		boolean player;
 		long count;
 	}
