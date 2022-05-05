@@ -424,8 +424,25 @@ public class BotDetectorClient
 		okHttpClient.newCall(requestM).enqueue(new PlayerStatsCallback(manualFuture, bdGson));
 		okHttpClient.newCall(requestF).enqueue(new PlayerStatsCallback(feedbackFuture, bdGson));
 
-		return CompletableFuture.allOf(passiveFuture, manualFuture, feedbackFuture)
-			.thenApply(v -> processPlayerStats(passiveFuture.join(), manualFuture.join(), feedbackFuture.join()));
+		CompletableFuture<Map<PlayerStatsType, PlayerStats>> finalFuture = new CompletableFuture<>();
+
+		// Doing this so we log only the first future failing, not all 3 within the callback.
+		CompletableFuture.allOf(passiveFuture, manualFuture, feedbackFuture).whenComplete((v, e) ->
+		{
+			if (e != null)
+			{
+				// allOf will send a CompletionException when one of the futures fail, just get the cause.
+				log.warn("Error obtaining player stats data", e.getCause());
+				finalFuture.completeExceptionally(e.getCause());
+			}
+			else
+			{
+				finalFuture.complete(processPlayerStats(
+					passiveFuture.join(), manualFuture.join(), feedbackFuture.join()));
+			}
+		});
+
+		return finalFuture;
 	}
 
 	/**
@@ -445,7 +462,6 @@ public class BotDetectorClient
 		@Override
 		public void onFailure(Call call, IOException e)
 		{
-			log.warn("Error obtaining player stats data", e);
 			future.completeExceptionally(e);
 		}
 
@@ -461,7 +477,6 @@ public class BotDetectorClient
 			}
 			catch (IOException e)
 			{
-				log.warn("Error obtaining player stats data", e);
 				future.completeExceptionally(e);
 			}
 			finally
