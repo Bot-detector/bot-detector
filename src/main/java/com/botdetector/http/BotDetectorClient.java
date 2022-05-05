@@ -565,19 +565,16 @@ public class BotDetectorClient
 			return null;
 		}
 
-		PlayerStats totalStats = new PlayerStats();
-		PlayerStats passiveStats = new PlayerStats();
-		PlayerStats manualStats = new PlayerStats();
-		PlayerStats feedbackStats = new PlayerStats();
+		PlayerStats passiveStats = countStats(passive, false);
+		PlayerStats manualStats = countStats(manual, true);
+		PlayerStats feedbackStats = countStats(feedback, false);
 
-		countStatsInto(passiveStats, passive, false);
-		countStatsInto(manualStats, manual, true);
-		countStatsInto(feedbackStats, feedback, false);
-
-		totalStats.setConfirmedBans(passiveStats.getConfirmedBans() + manualStats.getConfirmedBans());
-		totalStats.setPossibleBans(passiveStats.getPossibleBans() + manualStats.getPossibleBans());
-		totalStats.setNamesUploaded(passiveStats.getNamesUploaded() + manualStats.getNamesUploaded());
-		totalStats.setFeedbackSent(feedbackStats.getNamesUploaded()); // Might change the total/passive/manual thing in the future.
+		PlayerStats totalStats = PlayerStats.builder()
+			.namesUploaded(passiveStats.getNamesUploaded() + manualStats.getNamesUploaded())
+			.confirmedBans(passiveStats.getConfirmedBans() + manualStats.getConfirmedBans())
+			.possibleBans(passiveStats.getPossibleBans() + manualStats.getPossibleBans())
+			.feedbackSent(feedbackStats.getNamesUploaded()) // Might change the total/passive/manual thing in the future.
+			.build();
 
 		return ImmutableMap.of(
 			PlayerStatsType.TOTAL, totalStats,
@@ -588,36 +585,42 @@ public class BotDetectorClient
 
 	/**
 	 * Utility function for {@link BotDetectorClient#processPlayerStats(Collection, Collection, Collection)}.
-	 * Compile each element from the API into the given {@link PlayerStats} object.
-	 * @param counter The object that will accumulate values from the API.
+	 * Compile each element from the API into a {@link PlayerStats} object.
 	 * @param fromAPI The returned collections of player stats from the API to accumulate.
 	 * @param countIncorrect Intended for manual flagging stats. If true, count confirmed players into {@link PlayerStats#getIncorrectFlags()}.
+	 * @return The stats object with accumulated counts from the API.
 	 */
-	private void countStatsInto(PlayerStats counter, Collection<PlayerStatsAPIItem> fromAPI, boolean countIncorrect)
+	private PlayerStats countStats(Collection<PlayerStatsAPIItem> fromAPI, boolean countIncorrect)
 	{
+		long total = 0, confirmedBans = 0, possibleBans = 0, incorrectFlags = 0;
 		for (PlayerStatsAPIItem item : fromAPI)
 		{
+			if (item.isBanned())
 			{
-				if (item.isBanned())
-				{
-					counter.setConfirmedBans(counter.getConfirmedBans() + item.getCount());
-				}
-				else
-				{
-					if (item.isPBanned())
-					{
-						counter.setPossibleBans(counter.getPossibleBans() + item.getCount());
-					}
-
-					if (countIncorrect && item.isPlayer())
-					{
-						counter.setIncorrectFlags(counter.getIncorrectFlags() + item.getCount());
-					}
-				}
-
-				counter.setNamesUploaded(counter.getNamesUploaded() + item.getCount());
+				confirmedBans += item.getCount();
 			}
+			else
+			{
+				if (item.isPossibleBanned())
+				{
+					possibleBans += item.getCount();
+				}
+
+				if (countIncorrect && item.isPlayer())
+				{
+					incorrectFlags += item.getCount();
+				}
+			}
+
+			total += item.getCount();
 		}
+
+		return PlayerStats.builder()
+			.namesUploaded(total)
+			.confirmedBans(confirmedBans)
+			.possibleBans(possibleBans)
+			.incorrectFlags(incorrectFlags)
+			.build();
 	}
 
 	/**
@@ -663,7 +666,7 @@ public class BotDetectorClient
 	private static class PlayerStatsAPIItem
 	{
 		@SerializedName("possible_ban")
-		boolean pBanned;
+		boolean possibleBanned;
 		@SerializedName("confirmed_ban")
 		boolean banned;
 		@SerializedName("confirmed_player")
