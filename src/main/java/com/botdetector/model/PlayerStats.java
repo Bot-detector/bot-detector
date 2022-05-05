@@ -25,7 +25,6 @@
  */
 package com.botdetector.model;
 
-import com.google.gson.annotations.SerializedName;
 import lombok.Builder;
 import lombok.Value;
 
@@ -33,15 +32,10 @@ import lombok.Value;
 @Builder
 public class PlayerStats
 {
-	@SerializedName("reports")
 	long namesUploaded;
-	@SerializedName("bans")
 	long confirmedBans;
-	@SerializedName("possible_bans")
 	long possibleBans;
-	@SerializedName("incorrect_reports")
 	long incorrectFlags;
-	@SerializedName("feedback")
 	long feedbackSent;
 
 	/**
@@ -51,10 +45,6 @@ public class PlayerStats
 	public double getAccuracy()
 	{
 		long divisor = incorrectFlags + confirmedBans;
-		if (divisor > 0)
-		{
-			return confirmedBans / (double)divisor;
-		}
-		return 0;
+		return divisor > 0 ? confirmedBans / (double)divisor : 0;
 	}
 }
