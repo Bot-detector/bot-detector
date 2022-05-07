@@ -180,7 +180,6 @@ public class BotDetectorClient
 			.build();
 
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
-		future.complete(true);
 		okHttpClient.newCall(request).enqueue(new Callback()
 		{
 			@Override
