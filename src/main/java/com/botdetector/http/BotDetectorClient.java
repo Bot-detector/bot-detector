@@ -35,7 +35,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -344,10 +343,6 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Prediction> requestPrediction(String playerName)
 	{
-		Gson bdGson = gson.newBuilder()
-			.registerTypeAdapter(Prediction.class, new PredictionAPIDeserializer())
-			.create();
-
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.PREDICTION).newBuilder()
 				.addQueryParameter("name", playerName)
@@ -369,7 +364,7 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(processResponse(bdGson, response, Prediction.class));
+					future.complete(processResponse(gson, response, Prediction.class));
 				}
 				catch (IOException e)
 				{
@@ -737,51 +732,6 @@ public class BotDetectorClient
 			throws JsonParseException
 		{
 			return Instant.ofEpochSecond(json.getAsLong());
-		}
-	}
-
-	/**
-	 * Deserializes predictions from the api into a {@link Prediction} object.
-	 */
-	private static class PredictionAPIDeserializer implements JsonDeserializer<Prediction>
-	{
-		@Override
-		public Prediction deserialize(JsonElement json, Type type, JsonDeserializationContext context)
-			throws JsonParseException
-		{
-			JsonArray array = json.getAsJsonArray();
-
-			if (array == null || array.size() == 0)
-			{
-				return null;
-			}
-
-			JsonObject dict = array.get(0).getAsJsonObject();
-
-			if (dict == null)
-			{
-				return null;
-			}
-
-			dict = dict.deepCopy();
-
-			String name = dict.remove("name").getAsString();
-			String pred = dict.remove("Prediction").getAsString();
-			dict.remove("created"); // Unused for now
-			long id = dict.remove("id").getAsLong();
-			double conf = dict.remove("Predicted_confidence").getAsDouble();
-
-			return Prediction.builder()
-				.playerId(id)
-				.playerName(name)
-				.predictionLabel(pred)
-				.confidence(conf)
-				.predictionBreakdown(
-					dict.entrySet().stream().collect(
-						ImmutableMap.toImmutableMap(
-							Map.Entry::getKey,
-							e -> e.getValue().getAsDouble()))
-				).build();
 		}
 	}
 }

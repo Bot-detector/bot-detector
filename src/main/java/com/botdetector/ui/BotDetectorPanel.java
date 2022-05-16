@@ -1291,7 +1291,7 @@ public class BotDetectorPanel extends PluginPanel
 					}
 					else
 					{
-						details = "No prediction returned from the API";
+						details = "Player not found";
 					}
 					setPredictionError(target, "Server Error", details);
 
