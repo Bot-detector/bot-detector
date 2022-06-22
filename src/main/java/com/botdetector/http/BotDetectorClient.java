@@ -111,16 +111,35 @@ public class BotDetectorClient
 	@Setter
 	private String pluginVersion;
 
+	private final Supplier<String> pluginVersionSupplier = () ->
+		(pluginVersion != null && !pluginVersion.isEmpty()) ? pluginVersion : API_VERSION_FALLBACK_WORD;
+
 	/**
 	 * Constructs a base URL for the given {@code path}.
+	 * @param path The path to get the base URL for.
+	 * @param addVersion Whether to add a version prefix.
+	 * @return The base URL for the given {@code path}.
+	 */
+	private HttpUrl getUrl(ApiPath path, boolean addVersion)
+	{
+		HttpUrl.Builder builder = BASE_HTTP_URL.newBuilder();
+
+		if (addVersion)
+		{
+			builder.addPathSegment(pluginVersionSupplier.get());
+		}
+
+		return builder.addPathSegments(path.getPath()).build();
+	}
+
+	/**
+	 * Constructs a base URL for the given {@code path} with no version prefix.
 	 * @param path The path to get the base URL for
 	 * @return The base URL for the given {@code path}.
 	 */
 	private HttpUrl getUrl(ApiPath path)
 	{
-		return BASE_HTTP_URL.newBuilder()
-			.addPathSegments(path.getPath())
-			.build();
+		return getUrl(path, false);
 	}
 
 	@Inject
@@ -135,6 +154,7 @@ public class BotDetectorClient
 				Request headerRequest = chain.request()
 					.newBuilder()
 					.header("Request-Epoch", CURRENT_EPOCH_SUPPLIER.get())
+					.header("Plugin-Version", pluginVersionSupplier.get())
 					.build();
 				return chain.proceed(headerRequest);
 			})
@@ -225,7 +245,7 @@ public class BotDetectorClient
 	public CompletableFuture<Boolean> verifyDiscord(String token, String nameToVerify, String code)
 	{
 		Request request = new Request.Builder()
-			.url(getUrl(ApiPath.VERIFY_DISCORD).newBuilder()
+			.url(getUrl(ApiPath.VERIFY_DISCORD, true).newBuilder()
 				.addPathSegment(token)
 				.build())
 			.post(RequestBody.create(JSON, gson.toJson(new DiscordVerification(nameToVerify, code))))
