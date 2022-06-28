@@ -1278,32 +1278,32 @@ public class BotDetectorPanel extends PluginPanel
 					return;
 				}
 
-				if (pred == null || ex != null)
-				{
-					searchBar.setIcon(IconTextField.Icon.ERROR);
-					searchBar.setEditable(true);
-					searchBarLoading = false;
-
-					String details;
-					if (ex != null)
-					{
-						details = ex.getMessage();
-					}
-					else
-					{
-						details = "Player not found";
-					}
-					setPredictionError(target, "Server Error", details);
-
-					return;
-				}
-
-				// Successful player prediction
-				searchBar.setIcon(IconTextField.Icon.SEARCH);
 				searchBar.setEditable(true);
 				searchBarLoading = false;
 
-				setPrediction(pred, plugin.getPersistentSightings().get(normalizeAndWrapPlayerName(target)));
+				if (ex != null)
+				{
+					searchBar.setIcon(IconTextField.Icon.ERROR);
+					setPredictionError(target, "Server Error", ex.getMessage());
+					return;
+				}
+
+				searchBar.setIcon(IconTextField.Icon.SEARCH);
+
+				// Build a dummy prediction if player not found in API
+				Prediction p = pred;
+				if (p == null)
+				{
+					p = Prediction.builder()
+						.playerName(target)
+						.playerId(-1) // Prevents feedback panel from appearing
+						.confidence(0.0)
+						.predictionBreakdown(null)
+						.predictionLabel("Player not found")
+						.build();
+				}
+
+				setPrediction(p, plugin.getPersistentSightings().get(normalizeAndWrapPlayerName(target)));
 			}));
 	}
 
