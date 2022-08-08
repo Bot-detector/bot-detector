@@ -28,8 +28,10 @@ package com.botdetector.model;
 import com.google.gson.annotations.SerializedName;
 import java.util.Map;
 import lombok.Value;
+import lombok.Builder;
 
 @Value
+@Builder
 public class Prediction
 {
 	@SerializedName("player_id")

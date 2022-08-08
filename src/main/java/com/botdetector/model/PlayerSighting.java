@@ -42,19 +42,19 @@ public class PlayerSighting
 	@SerializedName("region_id")
 	int regionID;
 
-	@SerializedName("x")
+	@SerializedName("x_coord")
 	int worldX;
 
-	@SerializedName("y")
+	@SerializedName("y_coord")
 	int worldY;
 
-	@SerializedName("z")
+	@SerializedName("z_coord")
 	int plane;
 
 	@SerializedName("equipment")
 	Map<KitType, Integer> equipment;
 
-	@SerializedName("equipment_ge")
+	@SerializedName("equipment_ge_value")
 	long equipmentGEValue;
 
 	@SerializedName("world_number")

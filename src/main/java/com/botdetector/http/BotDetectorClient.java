@@ -33,10 +33,12 @@ import com.botdetector.model.PlayerStatsType;
 import com.botdetector.model.Prediction;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
@@ -61,6 +63,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.kit.KitType;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -87,10 +90,12 @@ public class BotDetectorClient
 	@AllArgsConstructor
 	private enum ApiPath
 	{
-		DETECTION("plugin/detect/"),
-		PLAYER_STATS("stats/contributions/"),
-		PREDICTION("site/prediction/"),
-		FEEDBACK("plugin/predictionfeedback/"),
+		DETECTION("v1/report"),
+		PLAYER_STATS_PASSIVE("v1/report/count"),
+		PLAYER_STATS_MANUAL("v1/report/manual/count"),
+		PLAYER_STATS_FEEDBACK("v1/feedback/count"),
+		PREDICTION("v1/prediction"),
+		FEEDBACK("v1/feedback/"),
 		VERIFY_DISCORD("site/discord_user/")
 		;
 
@@ -106,20 +111,35 @@ public class BotDetectorClient
 	@Setter
 	private String pluginVersion;
 
+	private final Supplier<String> pluginVersionSupplier = () ->
+		(pluginVersion != null && !pluginVersion.isEmpty()) ? pluginVersion : API_VERSION_FALLBACK_WORD;
+
 	/**
 	 * Constructs a base URL for the given {@code path}.
+	 * @param path The path to get the base URL for.
+	 * @param addVersion Whether to add a version prefix.
+	 * @return The base URL for the given {@code path}.
+	 */
+	private HttpUrl getUrl(ApiPath path, boolean addVersion)
+	{
+		HttpUrl.Builder builder = BASE_HTTP_URL.newBuilder();
+
+		if (addVersion)
+		{
+			builder.addPathSegment(pluginVersionSupplier.get());
+		}
+
+		return builder.addPathSegments(path.getPath()).build();
+	}
+
+	/**
+	 * Constructs a base URL for the given {@code path} with no version prefix.
 	 * @param path The path to get the base URL for
 	 * @return The base URL for the given {@code path}.
 	 */
 	private HttpUrl getUrl(ApiPath path)
 	{
-		String version = (pluginVersion != null && !pluginVersion.isEmpty()) ?
-			pluginVersion : API_VERSION_FALLBACK_WORD;
-
-		return BASE_HTTP_URL.newBuilder()
-			.addPathSegment(version)
-			.addPathSegments(path.getPath())
-			.build();
+		return getUrl(path, false);
 	}
 
 	@Inject
@@ -134,6 +154,7 @@ public class BotDetectorClient
 				Request headerRequest = chain.request()
 					.newBuilder()
 					.header("Request-Epoch", CURRENT_EPOCH_SUPPLIER.get())
+					.header("Plugin-Version", pluginVersionSupplier.get())
 					.build();
 				return chain.proceed(headerRequest);
 			})
@@ -162,17 +183,17 @@ public class BotDetectorClient
 	public CompletableFuture<Boolean> sendSightings(Collection<PlayerSighting> sightings, String uploaderName, boolean manual)
 	{
 		List<PlayerSightingWrapper> wrappedList = sightings.stream()
-			.map(p -> new PlayerSightingWrapper(uploaderName, p)).collect(Collectors.toList());
+			.map(p -> new PlayerSightingWrapper(uploaderName, manual, p)).collect(Collectors.toList());
 
-		Gson bdGson = gson.newBuilder()
+		Gson bdGson = gson.newBuilder().enableComplexMapKeySerialization()
 			.registerTypeAdapter(PlayerSightingWrapper.class, new PlayerSightingWrapperSerializer())
-			.registerTypeAdapter(Boolean.class, new BooleanToZeroOneSerializer())
+			.registerTypeAdapter(KitType.class, new KitTypeSerializer())
+			.registerTypeAdapter(Boolean.class, new BooleanToZeroOneConverter())
 			.registerTypeAdapter(Instant.class, new InstantSecondsConverter())
 			.create();
 
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.DETECTION).newBuilder()
-				.addPathSegment(String.valueOf(manual ? 1 : 0))
 				.build())
 			.post(RequestBody.create(JSON, bdGson.toJson(wrappedList)))
 			.build();
@@ -224,7 +245,7 @@ public class BotDetectorClient
 	public CompletableFuture<Boolean> verifyDiscord(String token, String nameToVerify, String code)
 	{
 		Request request = new Request.Builder()
-			.url(getUrl(ApiPath.VERIFY_DISCORD).newBuilder()
+			.url(getUrl(ApiPath.VERIFY_DISCORD, true).newBuilder()
 				.addPathSegment(token)
 				.build())
 			.post(RequestBody.create(JSON, gson.toJson(new DiscordVerification(nameToVerify, code))))
@@ -344,7 +365,7 @@ public class BotDetectorClient
 	{
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.PREDICTION).newBuilder()
-				.addPathSegment(playerName)
+				.addQueryParameter("name", playerName)
 				.build())
 			.build();
 
@@ -387,45 +408,96 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Map<PlayerStatsType, PlayerStats>> requestPlayerStats(String playerName)
 	{
-		Request request = new Request.Builder()
-			.url(getUrl(ApiPath.PLAYER_STATS).newBuilder()
-				.addPathSegment(playerName)
+		Gson bdGson = gson.newBuilder()
+			.registerTypeAdapter(boolean.class, new BooleanToZeroOneConverter())
+			.create();
+
+		Request requestP = new Request.Builder()
+			.url(getUrl(ApiPath.PLAYER_STATS_PASSIVE).newBuilder()
+				.addQueryParameter("name", playerName)
 				.build())
 			.build();
 
-		CompletableFuture<Map<PlayerStatsType, PlayerStats>> future = new CompletableFuture<>();
-		okHttpClient.newCall(request).enqueue(new Callback()
-		{
-			@Override
-			public void onFailure(Call call, IOException e)
-			{
-				log.warn("Error obtaining player stats data", e);
-				future.completeExceptionally(e);
-			}
+		Request requestM = new Request.Builder()
+			.url(getUrl(ApiPath.PLAYER_STATS_MANUAL).newBuilder()
+				.addQueryParameter("name", playerName)
+				.build())
+			.build();
 
-			@Override
-			public void onResponse(Call call, Response response)
+		Request requestF = new Request.Builder()
+			.url(getUrl(ApiPath.PLAYER_STATS_FEEDBACK).newBuilder()
+				.addQueryParameter("name", playerName)
+				.build())
+			.build();
+
+		CompletableFuture<Collection<PlayerStatsAPIItem>> passiveFuture = new CompletableFuture<>();
+		CompletableFuture<Collection<PlayerStatsAPIItem>> manualFuture = new CompletableFuture<>();
+		CompletableFuture<Collection<PlayerStatsAPIItem>> feedbackFuture = new CompletableFuture<>();
+
+		okHttpClient.newCall(requestP).enqueue(new PlayerStatsCallback(passiveFuture, bdGson));
+		okHttpClient.newCall(requestM).enqueue(new PlayerStatsCallback(manualFuture, bdGson));
+		okHttpClient.newCall(requestF).enqueue(new PlayerStatsCallback(feedbackFuture, bdGson));
+
+		CompletableFuture<Map<PlayerStatsType, PlayerStats>> finalFuture = new CompletableFuture<>();
+
+		// Doing this so we log only the first future failing, not all 3 within the callback.
+		CompletableFuture.allOf(passiveFuture, manualFuture, feedbackFuture).whenComplete((v, e) ->
+		{
+			if (e != null)
 			{
-				try
-				{
-					future.complete(processResponse(gson, response,
-						new TypeToken<Map<PlayerStatsType, PlayerStats>>()
-						{
-						}.getType()));
-				}
-				catch (IOException e)
-				{
-					log.warn("Error obtaining player stats data", e);
-					future.completeExceptionally(e);
-				}
-				finally
-				{
-					response.close();
-				}
+				// allOf will send a CompletionException when one of the futures fail, just get the cause.
+				log.warn("Error obtaining player stats data", e.getCause());
+				finalFuture.completeExceptionally(e.getCause());
+			}
+			else
+			{
+				finalFuture.complete(processPlayerStats(
+					passiveFuture.join(), manualFuture.join(), feedbackFuture.join()));
 			}
 		});
 
-		return future;
+		return finalFuture;
+	}
+
+	/**
+	 * Utility class intended for {@link BotDetectorClient#requestPlayerStats(String)}.
+	 */
+	private class PlayerStatsCallback implements Callback
+	{
+		private final CompletableFuture<Collection<PlayerStatsAPIItem>> future;
+		private final Gson gson;
+
+		public PlayerStatsCallback(CompletableFuture<Collection<PlayerStatsAPIItem>> future, Gson gson)
+		{
+			this.future = future;
+			this.gson = gson;
+		}
+
+		@Override
+		public void onFailure(Call call, IOException e)
+		{
+			future.completeExceptionally(e);
+		}
+
+		@Override
+		public void onResponse(Call call, Response response) throws IOException
+		{
+			try
+			{
+				future.complete(processResponse(gson, response,
+					new TypeToken<Collection<PlayerStatsAPIItem>>()
+					{
+					}.getType()));
+			}
+			catch (IOException e)
+			{
+				future.completeExceptionally(e);
+			}
+			finally
+			{
+				response.close();
+			}
+		}
 	}
 
 	/**
@@ -453,7 +525,7 @@ public class BotDetectorClient
 		{
 			return gson.fromJson(response.body().string(), type);
 		}
-		catch (IOException | JsonSyntaxException ex)
+		catch (IOException | IllegalStateException | JsonSyntaxException ex)
 		{
 			throw new IOException("Error parsing API response body", ex);
 		}
@@ -494,14 +566,85 @@ public class BotDetectorClient
 	}
 
 	/**
+	 * Collects the given {@link PlayerStatsAPIItem} into a combined map that the plugin expects.
+	 * @param passive The passive usage stats from the API.
+	 * @param manual The manual flagging stats from the API.
+	 * @param feedback The feedback stats from the API.
+	 * @return The combined processed map expected by the plugin.
+	 */
+	private Map<PlayerStatsType, PlayerStats> processPlayerStats(Collection<PlayerStatsAPIItem> passive, Collection<PlayerStatsAPIItem> manual, Collection<PlayerStatsAPIItem> feedback)
+	{
+		if (passive == null || manual == null || feedback == null)
+		{
+			return null;
+		}
+
+		PlayerStats passiveStats = countStats(passive, false);
+		PlayerStats manualStats = countStats(manual, true);
+		PlayerStats feedbackStats = countStats(feedback, false);
+
+		PlayerStats totalStats = PlayerStats.builder()
+			.namesUploaded(passiveStats.getNamesUploaded() + manualStats.getNamesUploaded())
+			.confirmedBans(passiveStats.getConfirmedBans() + manualStats.getConfirmedBans())
+			.possibleBans(passiveStats.getPossibleBans() + manualStats.getPossibleBans())
+			.feedbackSent(feedbackStats.getNamesUploaded()) // Might change the total/passive/manual thing in the future.
+			.build();
+
+		return ImmutableMap.of(
+			PlayerStatsType.TOTAL, totalStats,
+			PlayerStatsType.PASSIVE, passiveStats,
+			PlayerStatsType.MANUAL, manualStats
+		);
+	}
+
+	/**
+	 * Utility function for {@link BotDetectorClient#processPlayerStats(Collection, Collection, Collection)}.
+	 * Compile each element from the API into a {@link PlayerStats} object.
+	 * @param fromAPI The returned collections of player stats from the API to accumulate.
+	 * @param countIncorrect Intended for manual flagging stats. If true, count confirmed players into {@link PlayerStats#getIncorrectFlags()}.
+	 * @return The stats object with accumulated counts from the API.
+	 */
+	private PlayerStats countStats(Collection<PlayerStatsAPIItem> fromAPI, boolean countIncorrect)
+	{
+		long total = 0, confirmedBans = 0, possibleBans = 0, incorrectFlags = 0;
+		for (PlayerStatsAPIItem item : fromAPI)
+		{
+			if (item.isBanned())
+			{
+				confirmedBans += item.getCount();
+			}
+			else
+			{
+				if (item.isPossibleBanned())
+				{
+					possibleBans += item.getCount();
+				}
+
+				if (countIncorrect && item.isPlayer())
+				{
+					incorrectFlags += item.getCount();
+				}
+			}
+
+			total += item.getCount();
+		}
+
+		return PlayerStats.builder()
+			.namesUploaded(total)
+			.confirmedBans(confirmedBans)
+			.possibleBans(possibleBans)
+			.incorrectFlags(incorrectFlags)
+			.build();
+	}
+
+	/**
 	 * For use with {@link PlayerSightingWrapperSerializer}.
 	 */
 	@Value
 	private static class PlayerSightingWrapper
 	{
-		@SerializedName("reporter")
 		String uploaderName;
-		@SerializedName("sighting_data")
+		boolean manualDetect;
 		PlayerSighting sightingData;
 	}
 
@@ -533,6 +676,18 @@ public class BotDetectorClient
 		String feedbackText;
 	}
 
+	@Value
+	private static class PlayerStatsAPIItem
+	{
+		@SerializedName("possible_ban")
+		boolean possibleBanned;
+		@SerializedName("confirmed_ban")
+		boolean banned;
+		@SerializedName("confirmed_player")
+		boolean player;
+		long count;
+	}
+
 	/**
 	 * Wrapper around the {@link PlayerSighting}'s json serializer.
 	 * Adds the reporter name as an element on the same level as the {@link PlayerSighting}'s fields.
@@ -543,20 +698,41 @@ public class BotDetectorClient
 		public JsonElement serialize(PlayerSightingWrapper src, Type typeOfSrc, JsonSerializationContext context)
 		{
 			JsonElement json = context.serialize(src.getSightingData());
-			json.getAsJsonObject().addProperty("reporter", src.getUploaderName());
+			JsonObject jo = json.getAsJsonObject();
+			jo.addProperty("reporter", src.getUploaderName());
+			jo.add("manual_detect", context.serialize(src.isManualDetect()));
 			return json;
 		}
 	}
 
 	/**
-	 * Serializes a {@link Boolean} as the integers {@code 0} or {@code 1}.
+	 * Serializes a {@link KitType} for the API.
 	 */
-	private static class BooleanToZeroOneSerializer implements JsonSerializer<Boolean>
+	private static class KitTypeSerializer implements JsonSerializer<KitType>
+	{
+		@Override
+		public JsonElement serialize(KitType kitType, Type typeOfSrc, JsonSerializationContext context)
+		{
+			return context.serialize("equip_" + kitType.name().toLowerCase() + "_id");
+		}
+	}
+
+	/**
+	 * Serializes/Deserializes a {@link Boolean} as the integers {@code 0} or {@code 1}.
+	 */
+	private static class BooleanToZeroOneConverter implements JsonSerializer<Boolean>, JsonDeserializer<Boolean>
 	{
 		@Override
 		public JsonElement serialize(Boolean src, Type typeOfSrc, JsonSerializationContext context)
 		{
 			return context.serialize(src ? 1 : 0);
+		}
+
+		@Override
+		public Boolean deserialize(JsonElement json, Type type, JsonDeserializationContext context)
+			throws JsonParseException
+		{
+			return json.getAsInt() != 0;
 		}
 	}
 
