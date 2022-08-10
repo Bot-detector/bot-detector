@@ -1269,7 +1269,7 @@ public class BotDetectorPanel extends PluginPanel
 
 		setPrediction(null);
 
-		detectorClient.requestPrediction(target).whenCompleteAsync((pred, ex) ->
+		detectorClient.requestPrediction(target, config.showBreakdownOnSpecialCases()).whenCompleteAsync((pred, ex) ->
 			SwingUtilities.invokeLater(() ->
 			{
 				if (!sanitize(searchBar.getText()).equals(target))

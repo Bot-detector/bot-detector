@@ -36,6 +36,7 @@ Identifies bots by sending nearby players' information to a third-party machine 
 | Upload Settings | Attempt Send on Close | Attempts to upload names when closing Runelite while being logged in. Take note that enabling this option may cause the client to take a long time to close if our servers are being unresponsive. |
 | Upload Settings | Send Names Every *x* mins | Determines how often the information collected by the plugin is flushed to our servers. The maximum rate is once per 5 minutes. | 
 | Panel Settings | Prediction Autocomplete | Allows for prediction auto-completion for dialogue box entry.
+| Panel Settings | Show Breakdown in Special Cases | Displays the Prediction Breakdown when predicting certain types of accounts, such as ones with 'Stats Too Low'. |
 | Panel Settings | Show Feedback Textbox | Adds a textbox to the prediction feedback panel, so you can explain your choice in up to 250 characters. Make sure you type your feedback *before* you make your choice! |
 | Panel Settings | Panel Default Stats Tab | Sets panel default stats tab when the Plugin turns on. |
 | Panel Settings | Panel Font Size | Sets the font size of most of the Plugin's Panel elements. |

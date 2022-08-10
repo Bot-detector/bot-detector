@@ -358,14 +358,27 @@ public class BotDetectorClient
 
 	/**
 	 * Requests a bot prediction for the given {@code playerName}.
+	 * Breakdown will not be provided in special cases (see {@link BotDetectorClient#requestPrediction(String, boolean)}).
 	 * @param playerName The player name to predict.
 	 * @return A future that will eventually return the player's bot prediction.
 	 */
 	public CompletableFuture<Prediction> requestPrediction(String playerName)
 	{
+		return requestPrediction(playerName, false);
+	}
+
+	/**
+	 * Requests a bot prediction for the given {@code playerName}.
+	 * @param playerName The player name to predict.
+	 * @param receiveBreakdownOnSpecialCases Whether to receive a prediction breakdown in special cases, such as "Player Stats Too Low".
+	 * @return A future that will eventually return the player's bot prediction.
+	 */
+	public CompletableFuture<Prediction> requestPrediction(String playerName, boolean receiveBreakdownOnSpecialCases)
+	{
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.PREDICTION).newBuilder()
 				.addQueryParameter("name", playerName)
+				.addQueryParameter("breakdown", Boolean.toString(receiveBreakdownOnSpecialCases))
 				.build())
 			.build();
 
