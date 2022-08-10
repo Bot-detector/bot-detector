@@ -26,7 +26,7 @@ dependencies {
 }
 
 group = 'com.botdetector'
-version = '1.3.8'
+version = '1.3.8.1-DEV'
 sourceCompatibility = '1.8'
 
 tasks.withType(JavaCompile) {
