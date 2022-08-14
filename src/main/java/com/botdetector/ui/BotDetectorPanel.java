@@ -1272,6 +1272,8 @@ public class BotDetectorPanel extends PluginPanel
 
 		setPrediction(null);
 
+		// Note: The showBreakdown parameter is redundant due to the null confidence checks added, but we're including it for now.
+		// If to be removed, ensure the API breakdown parameter is always true.
 		detectorClient.requestPrediction(target, config.showBreakdownOnNullConfidence()).whenCompleteAsync((pred, ex) ->
 			SwingUtilities.invokeLater(() ->
 			{
