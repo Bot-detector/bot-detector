@@ -1088,6 +1088,8 @@ public class BotDetectorPanel extends PluginPanel
 
 		if (pred != null)
 		{
+			final boolean isNullConfidence = pred.getConfidence() == null;
+
 			nameAutocompleter.addToSearchHistory(pred.getPlayerName().toLowerCase());
 			lastPrediction = pred;
 			lastPredictionPlayerSighting = sighting;
@@ -1095,13 +1097,14 @@ public class BotDetectorPanel extends PluginPanel
 			predictionPlayerIdLabel.setText(String.valueOf(pred.getPlayerId()));
 			predictionPlayerNameLabel.setText(wrapHTML(pred.getPlayerName()));
 			predictionTypeLabel.setText(wrapHTML(normalizeLabel(pred.getPredictionLabel())));
-			predictionConfidenceLabel.setText(wrapHTML(toColoredPercentSpan(pred.getConfidence()), false));
+			predictionConfidenceLabel.setText(isNullConfidence ? EMPTY_LABEL : wrapHTML(toColoredPercentSpan(pred.getConfidence()), false));
 
 			feedbackLabelComboBox.addItem(UNSURE_PREDICTION_LABEL);
 			feedbackLabelComboBox.setSelectedItem(UNSURE_PREDICTION_LABEL);
 			feedbackLabelComboBox.addItem(SOMETHING_ELSE_PREDICTION_LABEL);
 
-			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
+			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0
+				|| (isNullConfidence && !config.showBreakdownOnNullConfidence()))
 			{
 				predictionBreakdownLabel.setText(EMPTY_LABEL);
 				predictionBreakdownPanel.setVisible(false);
@@ -1269,7 +1272,7 @@ public class BotDetectorPanel extends PluginPanel
 
 		setPrediction(null);
 
-		detectorClient.requestPrediction(target, config.showBreakdownOnSpecialCases()).whenCompleteAsync((pred, ex) ->
+		detectorClient.requestPrediction(target, config.showBreakdownOnNullConfidence()).whenCompleteAsync((pred, ex) ->
 			SwingUtilities.invokeLater(() ->
 			{
 				if (!sanitize(searchBar.getText()).equals(target))
@@ -1297,7 +1300,7 @@ public class BotDetectorPanel extends PluginPanel
 					p = Prediction.builder()
 						.playerName(target)
 						.playerId(-1) // Prevents feedback panel from appearing
-						.confidence(0.0)
+						.confidence(null)
 						.predictionBreakdown(null)
 						.predictionLabel("Player not found")
 						.build();

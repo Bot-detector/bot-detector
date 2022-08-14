@@ -149,12 +149,12 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 2,
-		keyName = "showSpecialBreakdown",
+		keyName = "showBreakdownOnNullConfidence",
 		name = "Show Breakdown in Special Cases",
 		description = "Show the Prediction Breakdown when predicting certain types of accounts, such as 'Stats Too Low'.",
 		section = panelSection
 	)
-	default boolean showBreakdownOnSpecialCases()
+	default boolean showBreakdownOnNullConfidence()
 	{
 		return false;
 	}

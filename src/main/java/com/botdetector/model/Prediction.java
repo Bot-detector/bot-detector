@@ -41,7 +41,7 @@ public class Prediction
 	@SerializedName("prediction_label")
 	String predictionLabel;
 	@SerializedName("prediction_confidence")
-	double confidence;
+	Double confidence;
 	@SerializedName("predictions_breakdown")
 	Map<String, Double> predictionBreakdown;
 }

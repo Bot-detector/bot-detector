@@ -54,6 +54,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -312,7 +313,7 @@ public class BotDetectorClient
 				uploaderName,
 				proposedLabel.getFeedbackValue().getApiValue(),
 				pred.getPredictionLabel(),
-				pred.getConfidence(),
+				Optional.ofNullable(pred.getConfidence()).orElse(0.0),
 				pred.getPlayerId(),
 				proposedLabel.getLabel(),
 				proposedLabel.getLabelConfidence(),
@@ -677,6 +678,7 @@ public class BotDetectorClient
 		int vote;
 		@SerializedName("prediction")
 		String predictionLabel;
+		// Important: API requires this to be non-null!
 		@SerializedName("confidence")
 		double predictionConfidence;
 		@SerializedName("subject_id")
