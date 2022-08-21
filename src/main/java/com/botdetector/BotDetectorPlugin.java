@@ -714,7 +714,7 @@ public class BotDetectorPlugin extends Plugin
 		String playerName = normalizePlayerName(rawName);
 		CaseInsensitiveString wrappedName = wrap(playerName);
 
-		// Maybe this will help with whatever is going on with instance regions sneaking through?
+		// Maybe using clientThread will help with whatever is going on with instance regions sneaking through?
 		// Theory is on some machines, maybe isInInstance() returns false, but player gets changed before getWorldLocation() runs?
 		// IDK man I can't ever seem to be able to repro this...
 		clientThread.invokeLater(() ->
