@@ -539,7 +539,12 @@ public class BotDetectorClient
 	private IOException getIOException(Response response)
 	{
 		int code = response.code();
-		if (code >= 400 && code < 500)
+		if (code == 422)
+		{
+			// TODO: Parse actual error info received from FastAPI (details -> loc, msg, ctx, etc.)
+			return new ValidationException("Error 422 from API, invalid data format");
+		}
+		else if (code >= 400 && code < 500)
 		{
 			try
 			{

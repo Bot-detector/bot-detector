@@ -27,6 +27,7 @@ package com.botdetector;
 
 import com.botdetector.http.BotDetectorClient;
 import com.botdetector.http.UnauthorizedTokenException;
+import com.botdetector.http.ValidationException;
 import com.botdetector.model.AuthToken;
 import com.botdetector.model.AuthTokenPermission;
 import com.botdetector.model.AuthTokenType;
@@ -134,6 +135,9 @@ public class BotDetectorPlugin extends Plugin
 		ImmutableSet.of(
 			RuneScapeProfileType.STANDARD
 		);
+
+	/** {@link PlayerSighting}s should only be created if the returned region id is <= this amount. **/
+	private static final int MAX_ALLOWED_REGION_ID = 16000;
 
 	private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
 
@@ -483,8 +487,8 @@ public class BotDetectorPlugin extends Plugin
 				else
 				{
 					sendChatStatusMessage("Error sending player sightings!", forceChatNotification);
-					// Put the sightings back
-					if (restoreOnFailure)
+					// Put the sightings back, but not if it's because of a validation error
+					if (restoreOnFailure && !(ex instanceof ValidationException))
 					{
 						synchronized (sightingTable)
 						{
@@ -710,42 +714,56 @@ public class BotDetectorPlugin extends Plugin
 		String playerName = normalizePlayerName(rawName);
 		CaseInsensitiveString wrappedName = wrap(playerName);
 
-		// Get player's equipment item ids (botanicvelious/Equipment-Inspector)
-		Map<KitType, Integer> equipment = new HashMap<>();
-		long geValue = 0;
-		for (KitType kitType : KitType.values())
-		{
-			int itemId = player.getPlayerComposition().getEquipmentId(kitType);
-			if (itemId >= 0)
+		// Maybe this will help with whatever is going on with instance regions sneaking through?
+		// Theory is on some machines, maybe isInInstance() returns false, but player gets changed before getWorldLocation() runs?
+		// IDK man I can't ever seem to be able to repro this...
+		clientThread.invokeLater(() ->
 			{
-				equipment.put(kitType, itemId);
-				// Use GE price, not Wiki price
-				geValue += itemManager.getItemPriceWithSource(itemId, false);
+				WorldPoint wp = !client.isInInstancedRegion() ? player.getWorldLocation()
+					: WorldPoint.fromLocalInstance(client, player.getLocalLocation());
+
+				if (wp.getRegionID() > MAX_ALLOWED_REGION_ID)
+				{
+					log.warn(String.format("Player sighting with invalid region ID. (name:'%s' x:%d y:%d z:%d r:%d)",
+						playerName, wp.getX(), wp.getY(), wp.getPlane(), wp.getRegionID()));
+					return;
+				}
+
+				// Get player's equipment item ids (botanicvelious/Equipment-Inspector)
+				Map<KitType, Integer> equipment = new HashMap<>();
+				long geValue = 0;
+				for (KitType kitType : KitType.values())
+				{
+					int itemId = player.getPlayerComposition().getEquipmentId(kitType);
+					if (itemId >= 0)
+					{
+						equipment.put(kitType, itemId);
+						// Use GE price, not Wiki price
+						geValue += itemManager.getItemPriceWithSource(itemId, false);
+					}
+				}
+
+				PlayerSighting p = PlayerSighting.builder()
+					.playerName(playerName)
+					.regionID(wp.getRegionID())
+					.worldX(wp.getX())
+					.worldY(wp.getY())
+					.plane(wp.getPlane())
+					.equipment(equipment)
+					.equipmentGEValue(geValue)
+					.timestamp(Instant.now())
+					.worldNumber(currentWorldNumber)
+					.inMembersWorld(isCurrentWorldMembers)
+					.inPVPWorld(isCurrentWorldPVP)
+					.build();
+
+				synchronized (sightingTable)
+				{
+					sightingTable.put(wrappedName, p.getRegionID(), p);
+				}
+				persistentSightings.put(wrappedName, p);
 			}
-		}
-
-		WorldPoint wp = !client.isInInstancedRegion() ? player.getWorldLocation()
-			: WorldPoint.fromLocalInstance(client, player.getLocalLocation());
-
-		PlayerSighting p = PlayerSighting.builder()
-			.playerName(playerName)
-			.regionID(wp.getRegionID())
-			.worldX(wp.getX())
-			.worldY(wp.getY())
-			.plane(wp.getPlane())
-			.equipment(equipment)
-			.equipmentGEValue(geValue)
-			.timestamp(Instant.now())
-			.worldNumber(currentWorldNumber)
-			.inMembersWorld(isCurrentWorldMembers)
-			.inPVPWorld(isCurrentWorldPVP)
-			.build();
-
-		synchronized (sightingTable)
-		{
-			sightingTable.put(wrappedName, p.getRegionID(), p);
-		}
-		persistentSightings.put(wrappedName, p);
+		);
 	}
 
 	@Subscribe
