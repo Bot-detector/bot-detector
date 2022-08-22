@@ -54,6 +54,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -312,7 +313,7 @@ public class BotDetectorClient
 				uploaderName,
 				proposedLabel.getFeedbackValue().getApiValue(),
 				pred.getPredictionLabel(),
-				pred.getConfidence(),
+				Optional.ofNullable(pred.getConfidence()).orElse(0.0),
 				pred.getPlayerId(),
 				proposedLabel.getLabel(),
 				proposedLabel.getLabelConfidence(),
@@ -358,14 +359,27 @@ public class BotDetectorClient
 
 	/**
 	 * Requests a bot prediction for the given {@code playerName}.
+	 * Breakdown will not be provided in special cases (see {@link BotDetectorClient#requestPrediction(String, boolean)}).
 	 * @param playerName The player name to predict.
 	 * @return A future that will eventually return the player's bot prediction.
 	 */
 	public CompletableFuture<Prediction> requestPrediction(String playerName)
 	{
+		return requestPrediction(playerName, false);
+	}
+
+	/**
+	 * Requests a bot prediction for the given {@code playerName}.
+	 * @param playerName The player name to predict.
+	 * @param receiveBreakdownOnSpecialCases Whether to receive a prediction breakdown in special cases, such as "Player Stats Too Low".
+	 * @return A future that will eventually return the player's bot prediction.
+	 */
+	public CompletableFuture<Prediction> requestPrediction(String playerName, boolean receiveBreakdownOnSpecialCases)
+	{
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.PREDICTION).newBuilder()
 				.addQueryParameter("name", playerName)
+				.addQueryParameter("breakdown", Boolean.toString(receiveBreakdownOnSpecialCases))
 				.build())
 			.build();
 
@@ -664,6 +678,7 @@ public class BotDetectorClient
 		int vote;
 		@SerializedName("prediction")
 		String predictionLabel;
+		// Important: API requires this to be non-null!
 		@SerializedName("confidence")
 		double predictionConfidence;
 		@SerializedName("subject_id")

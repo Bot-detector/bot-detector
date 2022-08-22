@@ -149,6 +149,18 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 2,
+		keyName = "showBreakdownOnNullConfidence",
+		name = "Show Breakdown in Special Cases",
+		description = "Show the Prediction Breakdown when predicting certain types of accounts, such as 'Stats Too Low'.",
+		section = panelSection
+	)
+	default boolean showBreakdownOnNullConfidence()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 3,
 		keyName = SHOW_FEEDBACK_TEXTBOX,
 		name = "Show Feedback Textbox",
 		description = "Show a textbox on the prediction feedback panel where you can explain your feedback to us.",
@@ -160,7 +172,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 3,
+		position = 4,
 		keyName = "panelDefaultStatsType",
 		name = "Panel Default Stats Tab",
 		description = "Sets the initial player statistics tab in the prediction panel for when the plugin is launched.",
@@ -172,7 +184,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 4,
+		position = 5,
 		keyName = PANEL_FONT_TYPE_KEY,
 		name = "Panel Font Size",
 		description = "Sets the size of the label fields in the prediction panel.",
