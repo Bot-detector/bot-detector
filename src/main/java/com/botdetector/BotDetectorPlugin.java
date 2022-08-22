@@ -719,13 +719,16 @@ public class BotDetectorPlugin extends Plugin
 		// IDK man I can't ever seem to be able to repro this...
 		clientThread.invoke(() ->
 			{
-				WorldPoint wp = !client.isInInstancedRegion() ? player.getWorldLocation()
+				boolean instanced = client.isInInstancedRegion();
+
+				WorldPoint wp = !instanced ? player.getWorldLocation()
 					: WorldPoint.fromLocalInstance(client, player.getLocalLocation());
 
 				if (wp.getRegionID() > MAX_ALLOWED_REGION_ID)
 				{
-					log.warn(String.format("Player sighting with invalid region ID. (name:'%s' x:%d y:%d z:%d r:%d)",
-						playerName, wp.getX(), wp.getY(), wp.getPlane(), wp.getRegionID()));
+					log.warn(String.format("Player sighting with invalid region ID. (name:'%s' x:%d y:%d z:%d r:%d s:%d)",
+						playerName, wp.getX(), wp.getY(), wp.getPlane(), wp.getRegionID(),
+						(instanced ? 1 : 0) + (client.isInInstancedRegion() ? 2 : 0))); // Sanity check
 					return;
 				}
 
