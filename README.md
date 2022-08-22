@@ -29,24 +29,24 @@ Identifies bots by sending nearby players' information to a third-party machine 
 
 ## Using the Plugin
 ### The Plugin's Settings
-| Setting Type | Setting Name | Description |
-|:--------|:--------|:------------|
-| Upload Settings | Anonymous Uploading | When enabled, your username will not be sent with your uploads. You also cannot manually flag players. |
-| Upload Settings | Send Names Only After Logout | Recommended for players with low bandwidth. |
-| Upload Settings | Attempt Send on Close | Attempts to upload names when closing Runelite while being logged in. Take note that enabling this option may cause the client to take a long time to close if our servers are being unresponsive. |
-| Upload Settings | Send Names Every *x* mins | Determines how often the information collected by the plugin is flushed to our servers. The maximum rate is once per 5 minutes. | 
-| Panel Settings | Prediction Autocomplete | Allows for prediction auto-completion for dialogue box entry.
-| Panel Settings | Show Breakdown in Special Cases | Displays the Prediction Breakdown when predicting certain types of accounts, such as ones with 'Stats Too Low'. |
-| Panel Settings | Show Feedback Textbox | Adds a textbox to the prediction feedback panel, so you can explain your choice in up to 250 characters. Make sure you type your feedback *before* you make your choice! |
-| Panel Settings | Panel Default Stats Tab | Sets panel default stats tab when the Plugin turns on. |
-| Panel Settings | Panel Font Size | Sets the font size of most of the Plugin's Panel elements. |
-| 'Predict' Settings | Right-click 'Predict' Players | Allows you to right-click predict players, instead of having to type their name in the Plugin's panel manually. |
-| 'Predict' Settings | 'Predict' on Right-click 'Report' | If you right-click Report someone via Jagex's official in-game report system, the player will be automatically predicted in the Plugin's Panel. |
-| 'Predict' Settings | 'Predict' Copy Name to Clipboard | Copies the predicted player's name to your clipboard when right-click predicting. |
-| 'Predict' Settings | 'Predict' Default Color | If set, highlights unflagged/unfeedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu. |
-| 'Predict' Settings | 'Predict' Voted/Flagged Color | If set, highlights flagged/feedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu. |
-| Other Settings | Enable Chat Status Messages | Inserts chat messages in your chatbox to inform you about your uploads being sent. |
-| Other Settings | '!bdstats' Chat Command Detail Level | Enable processing the '!bdstats' command when it appears in the chatbox, which will fetch the message author's plugin stats and display them. Disable to reduce spam. |
+| Setting Type       | Setting Name                         | Description                                                                                                                                                                                        |
+|:-------------------|:-------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Upload Settings    | Anonymous Uploading                  | When enabled, your username will not be sent with your uploads. You also cannot manually flag players.                                                                                             |
+| Upload Settings    | Send Names Only After Logout         | Recommended for players with low bandwidth.                                                                                                                                                        |
+| Upload Settings    | Attempt Send on Close                | Attempts to upload names when closing Runelite while being logged in. Take note that enabling this option may cause the client to take a long time to close if our servers are being unresponsive. |
+| Upload Settings    | Send Names Every *x* mins            | Determines how often the information collected by the plugin is flushed to our servers. The maximum rate is once per 5 minutes.                                                                    | 
+| Panel Settings     | Prediction Autocomplete              | Allows for prediction auto-completion for dialogue box entry.                                                                                                                                      |
+| Panel Settings     | Show Breakdown in Special Cases      | Displays the Prediction Breakdown when predicting certain types of accounts, such as ones with 'Stats Too Low'.                                                                                    |
+| Panel Settings     | Show Feedback Textbox                | Adds a textbox to the prediction feedback panel, so you can explain your choice in up to 250 characters. Make sure you type your feedback *before* you make your choice!                           |
+| Panel Settings     | Panel Default Stats Tab              | Sets panel default stats tab when the Plugin turns on.                                                                                                                                             |
+| Panel Settings     | Panel Font Size                      | Sets the font size of most of the Plugin's Panel elements.                                                                                                                                         |
+| 'Predict' Settings | Right-click 'Predict' Players        | Allows you to right-click predict players, instead of having to type their name in the Plugin's panel manually.                                                                                    |
+| 'Predict' Settings | 'Predict' on Right-click 'Report'    | If you right-click Report someone via Jagex's official in-game report system, the player will be automatically predicted in the Plugin's Panel.                                                    |
+| 'Predict' Settings | 'Predict' Copy Name to Clipboard     | Copies the predicted player's name to your clipboard when right-click predicting.                                                                                                                  |
+| 'Predict' Settings | 'Predict' Default Color              | If set, highlights unflagged/unfeedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu.                                                         |
+| 'Predict' Settings | 'Predict' Voted/Flagged Color        | If set, highlights flagged/feedbacked players' 'Predict' option in the given color so that you can easily spot it on the in-game menu.                                                             |
+| Other Settings     | Enable Chat Status Messages          | Inserts chat messages in your chatbox to inform you about your uploads being sent.                                                                                                                 |
+| Other Settings     | '!bdstats' Chat Command Detail Level | Enable processing the '!bdstats' command when it appears in the chatbox, which will fetch the message author's plugin stats and display them. Disable to reduce spam.                              |
 
 ### ⚠️ Anonymous Mode ⚠️
 **Anonymous Mode** is enabled by default, which means your username will not be sent with your uploads. However, we cannot tally your uploads, and you will not be able to manually flag players.
@@ -54,26 +54,28 @@ Identifies bots by sending nearby players' information to a third-party machine 
 ### Understanding The Plugin Panel
 #### The Player Statistics Panel
 ![stats_panel](https://user-images.githubusercontent.com/45152844/123029711-88a22f80-d3af-11eb-92a9-99f7fde75506.png)
-| Label           | Description |
-|:----------------|:------------|
-| Plugin Version  | Indicates the Bot Detector Plugin version you are currently running. |
-| Current Uploads | Tallies the number of uploads the plugin has performed for the current RuneLite session. |
-| Total Uploads   | Tallies the number of unique Names you've uploaded so far. |
-| Feedback Sent   | Tallies the number of prediction feedbacks you've sent to us so far. |
+
+| Label           | Description                                                                                                                                                    |
+|:----------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Plugin Version  | Indicates the Bot Detector Plugin version you are currently running.                                                                                           |
+| Current Uploads | Tallies the number of uploads the plugin has performed for the current RuneLite session.                                                                       |
+| Total Uploads   | Tallies the number of unique Names you've uploaded so far.                                                                                                     |
+| Feedback Sent   | Tallies the number of prediction feedbacks you've sent to us so far.                                                                                           |
 | Possible Bans   | Tallies the number of unique Names you've uploaded that may have been banned. This is usually because a given Name stopped appearing on the official Hiscores. |
-| Confirmed Bans  | Tallies the number of unique Names you've uploaded confirmed to have been banned by Jagex Moderators. |
-| Incorrect Flags | **(Manual Tab Only)** Tallies the number of unique Names you've flagged as bots that ended up being confirmed as real players by Jagex Moderators. |
-| Flag Accuracy   | **(Manual Tab Only)** Indicates your personal accuracy when manually flagging, determined by the previous two fields. |
+| Confirmed Bans  | Tallies the number of unique Names you've uploaded confirmed to have been banned by Jagex Moderators.                                                          |
+| Incorrect Flags | **(Manual Tab Only)** Tallies the number of unique Names you've flagged as bots that ended up being confirmed as real players by Jagex Moderators.             |
+| Flag Accuracy   | **(Manual Tab Only)** Indicates your personal accuracy when manually flagging, determined by the previous two fields.                                          |
 
 **Note for ⚠️ Anonymous Users ⚠️**: Except for *Plugin Version* and *Current Uploads*, all of these fields are disabled.
 
 #### The Prediction Panels
 ![prediction_panels](https://user-images.githubusercontent.com/45152844/130818338-d9bb78b6-e111-418d-9b3b-bc4025511e3f.png)
-| Panel                | Description |
-|:---------------------|:------------|
-| Primary Prediction   | Displays the primary prediction label and confidence for the predicted player. |
-| Prediction Breakdown | Displays a breakdown of confidences for other labels our algorithm considered. These are not considered in our manual reviews. |
-| Prediction Feedback  | Allows the user to send in a feedback for the **Primary Prediction** and choose the most appropriate available label. |
+
+| Panel                | Description                                                                                                                                     |
+|:---------------------|:------------------------------------------------------------------------------------------------------------------------------------------------|
+| Primary Prediction   | Displays the primary prediction label and confidence for the predicted player.                                                                  |
+| Prediction Breakdown | Displays a breakdown of confidences for other labels our algorithm considered. These are not considered in our manual reviews.                  |
+| Prediction Feedback  | Allows the user to send in a feedback for the **Primary Prediction** and choose the most appropriate available label.                           |
 | Manual Flagging      | Allows the user to upload the most recent sighting for the predicted player with an extra flag to tell us to pay more attention to that player. |
 
 **Note for ⚠️ Anonymous Users ⚠️**: The *Manual Flagging* panel is disabled.
@@ -144,7 +146,7 @@ There are several ways you can contribute to the Bot Detector Project:
 No, the plugin will grab the data for every player that renders on your screen passively. Manually flagging a player uploads the same data as the passive collection does, but tells us to pay more attention to that data when training our models.
 
 ## Does this replace manual in-game reporting?
-No, reporting players in-game sends a ton of data which we cannot collect directly to Jagex and we urge you to continue using that feature whenever you are confident someone is botting! Also, please keep in mind that even if our plugin predicts a player as a bot, it does not mean it is true! Investigate the players yourself before making your decision to report. Please be kind to these players and do not falsely accuse or harrass them based upon a prediction that could be faulty.
+No, reporting players in-game sends a ton of data which we cannot collect directly to Jagex, we urge you to continue using that feature whenever you are confident someone is botting! Also, please keep in mind that even if our plugin predicts a player as a bot, it does not mean it is true! Investigate the players yourself before making your decision to report. Please be kind to these players and do not falsely accuse or harrass them based upon a prediction that could be faulty.
 
 ## I checked myself with the Plugin and my Primary Prediction says I'm a bot! Will I get banned?
 No, at least, not by that alone. We take into account not only the Machine Learning's response but also review the names manually prior to sending to Jagex. All we send over are the names of suspected bot accounts and are treated no differently than any other user would whenever submitting leads to tipoff@jagex.com in Jagex's decision process. If you know you didn't bot, you have nothing to worry about.
