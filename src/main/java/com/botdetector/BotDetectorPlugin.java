@@ -717,7 +717,7 @@ public class BotDetectorPlugin extends Plugin
 		// Maybe using clientThread will help with whatever is going on with instance regions sneaking through?
 		// Theory is on some machines, maybe isInInstance() returns false, but player gets changed before getWorldLocation() runs?
 		// IDK man I can't ever seem to be able to repro this...
-		clientThread.invokeLater(() ->
+		clientThread.invoke(() ->
 			{
 				WorldPoint wp = !client.isInInstancedRegion() ? player.getWorldLocation()
 					: WorldPoint.fromLocalInstance(client, player.getLocalLocation());
