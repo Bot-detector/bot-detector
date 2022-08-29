@@ -36,7 +36,7 @@ tasks.withType(JavaCompile) {
 // https://github.com/dillydill123/inventory-setups/blob/2643da8f1952e30be554d0d601397daced9c3120/build.gradle#L39
 task createProperties(dependsOn: processResources) {
     doLast {
-        new File("$buildDir/resources/main/version.txt").text = "version=$project.version"
+        new File("$buildDir/resources/main/botdetector_version.txt").text = "version=$project.version"
     }
 }
 
