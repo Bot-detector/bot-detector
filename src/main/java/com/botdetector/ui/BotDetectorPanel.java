@@ -146,7 +146,7 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Color NEGATIVE_BUTTON_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
 
 	private static final String EMPTY_LABEL = "---";
-	private static final String LOADING_SPINNER_PATH = "/loading_spinner_darker.gif";
+	private static final String LOADING_SPINNER_PATH = "loading_spinner_darker.gif";
 
 	private static final int HEADER_PAD = 3;
 	private static final int WARNING_PAD = 5;
@@ -1015,7 +1015,7 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		statsLoading = loading;
 		playerStatsHeaderLabel.setIcon(loading ?
-			new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH)))
+			new ImageIcon(Objects.requireNonNull(getClass().getResource(LOADING_SPINNER_PATH)))
 			: null);
 	}
 
@@ -1343,7 +1343,7 @@ public class BotDetectorPanel extends PluginPanel
 			plugin.getFeedbackedPlayersText().put(wrappedName, feedbackText);
 		}
 
-		feedbackHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
+		feedbackHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(getClass().getResource(LOADING_SPINNER_PATH))));
 		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, proposedLabel, feedbackText)
 			.whenComplete((b, ex) ->
 			{
@@ -1399,7 +1399,7 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		flaggingHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(BotDetectorPlugin.class.getResource(LOADING_SPINNER_PATH))));
+		flaggingHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(getClass().getResource(LOADING_SPINNER_PATH))));
 		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionUploaderName, true)
 			.whenComplete((b, ex) ->
 			{
