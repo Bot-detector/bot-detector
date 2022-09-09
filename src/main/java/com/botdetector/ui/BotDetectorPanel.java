@@ -1103,8 +1103,7 @@ public class BotDetectorPanel extends PluginPanel
 			feedbackLabelComboBox.setSelectedItem(UNSURE_PREDICTION_LABEL);
 			feedbackLabelComboBox.addItem(SOMETHING_ELSE_PREDICTION_LABEL);
 
-			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0
-				|| (isNullConfidence && !config.showBreakdownOnNullConfidence()))
+			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
 			{
 				predictionBreakdownLabel.setText(EMPTY_LABEL);
 				predictionBreakdownPanel.setVisible(false);
@@ -1113,8 +1112,16 @@ public class BotDetectorPanel extends PluginPanel
 			}
 			else
 			{
-				predictionBreakdownLabel.setText(toPredictionBreakdownString(pred.getPredictionBreakdown()));
-				predictionBreakdownPanel.setVisible(true);
+				if (isNullConfidence && !config.showBreakdownOnNullConfidence())
+				{
+					predictionBreakdownLabel.setText(EMPTY_LABEL);
+					predictionBreakdownPanel.setVisible(false);
+				}
+				else
+				{
+					predictionBreakdownLabel.setText(toPredictionBreakdownString(pred.getPredictionBreakdown()));
+					predictionBreakdownPanel.setVisible(true);
+				}
 
 				final String primaryLabel = pred.getPredictionLabel();
 
@@ -1272,9 +1279,7 @@ public class BotDetectorPanel extends PluginPanel
 
 		setPrediction(null);
 
-		// Note: The showBreakdown parameter is redundant due to the null confidence checks added, but we're including it for now.
-		// If to be removed, ensure the API breakdown parameter is always true.
-		detectorClient.requestPrediction(target, config.showBreakdownOnNullConfidence()).whenCompleteAsync((pred, ex) ->
+		detectorClient.requestPrediction(target).whenCompleteAsync((pred, ex) ->
 			SwingUtilities.invokeLater(() ->
 			{
 				if (!sanitize(searchBar.getText()).equals(target))
