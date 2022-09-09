@@ -1013,7 +1013,7 @@ public class BotDetectorPanel extends PluginPanel
 	public void setPlayerStatsLoading(boolean loading)
 	{
 		statsLoading = loading;
-		playerStatsHeaderLabel.setIcon(loading ? Icons.LOADING_SPINNER_SUPPLIER.get() : null);
+		playerStatsHeaderLabel.setIcon(loading ? Icons.LOADING_SPINNER : null);
 	}
 
 	/**
@@ -1340,7 +1340,7 @@ public class BotDetectorPanel extends PluginPanel
 			plugin.getFeedbackedPlayersText().put(wrappedName, feedbackText);
 		}
 
-		feedbackHeaderLabel.setIcon(Icons.LOADING_SPINNER_SUPPLIER.get());
+		feedbackHeaderLabel.setIcon(Icons.LOADING_SPINNER);
 		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, proposedLabel, feedbackText)
 			.whenComplete((b, ex) ->
 			{
@@ -1396,7 +1396,7 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		flaggingHeaderLabel.setIcon(Icons.LOADING_SPINNER_SUPPLIER.get());
+		flaggingHeaderLabel.setIcon(Icons.LOADING_SPINNER);
 		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionUploaderName, true)
 			.whenComplete((b, ex) ->
 			{

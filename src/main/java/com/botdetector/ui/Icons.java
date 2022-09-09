@@ -26,7 +26,6 @@
 package com.botdetector.ui;
 
 import java.util.Objects;
-import java.util.function.Supplier;
 import javax.swing.ImageIcon;
 import net.runelite.client.util.ImageUtil;
 
@@ -42,7 +41,6 @@ public class Icons
 	public static final ImageIcon WARNING_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "warning.png"));
 	public static final ImageIcon ERROR_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "error.png"));
 
-	// Has to be a supplier as a new instance needs to be created every time for the animation to work properly
-	public static final Supplier<ImageIcon> LOADING_SPINNER_SUPPLIER = () ->
-		new ImageIcon(Objects.requireNonNull(PLUGIN_CLASS.getResource("loading_spinner_darker.gif")));
+	// Must not be ImageUtil.loadImageResource as it produces a static image
+	public static final ImageIcon LOADING_SPINNER = new ImageIcon(Objects.requireNonNull(PLUGIN_CLASS.getResource("loading_spinner_darker.gif")));
 }
