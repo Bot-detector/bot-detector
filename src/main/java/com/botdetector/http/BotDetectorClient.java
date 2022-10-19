@@ -359,13 +359,13 @@ public class BotDetectorClient
 
 	/**
 	 * Requests a bot prediction for the given {@code playerName}.
-	 * Breakdown will not be provided in special cases (see {@link BotDetectorClient#requestPrediction(String, boolean)}).
+	 * Breakdown will be provided by default in special cases (see {@link BotDetectorClient#requestPrediction(String, boolean)}).
 	 * @param playerName The player name to predict.
 	 * @return A future that will eventually return the player's bot prediction.
 	 */
 	public CompletableFuture<Prediction> requestPrediction(String playerName)
 	{
-		return requestPrediction(playerName, false);
+		return requestPrediction(playerName, true);
 	}
 
 	/**
