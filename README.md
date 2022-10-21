@@ -14,7 +14,7 @@ Identifies bots by sending nearby players' information to a third-party machine 
 |:-------------|:--------------------------------------|
 | Discord      | https://discord.com/invite/JCAGpcjbfP |
 | Our Website  | https://www.osrsbotdetector.com       |
-| Patreon      | https://www.patreon.com/bot_detector  |
+| Patreon      | https://www.patreon.com/Ferrariic     |
 | GitHub       | https://github.com/Bot-detector       |
 
 # Getting Started
