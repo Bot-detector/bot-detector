@@ -250,6 +250,19 @@ public interface BotDetectorConfig extends Config
 	Color predictOptionFlaggedColor();
 
 	@ConfigItem(
+		position = 6,
+		keyName = "applyPredictColorsOnReportOption",
+		name = "Apply Colors to 'Report'",
+		description = "Applies the above 'Predict' color options to the in-game 'Report' option as well.",
+		section = predictSection,
+		warning = "Enabling this setting may cause issues with other plugins that rely on the 'Report' option being unchanged."
+	)
+	default boolean applyPredictColorsOnReportOption()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		position = 1,
 		keyName = "enableChatNotifications",
 		name = "Enable Chat Status Messages",
