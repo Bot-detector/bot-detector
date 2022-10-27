@@ -1349,6 +1349,7 @@ public class BotDetectorPanel extends PluginPanel
 		}
 
 		feedbackHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(getClass().getResource(LOADING_SPINNER_PATH))));
+		feedbackHeaderLabel.setToolTipText(null);
 		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, proposedLabel, feedbackText)
 			.whenComplete((b, ex) ->
 			{
@@ -1362,6 +1363,7 @@ public class BotDetectorPanel extends PluginPanel
 					if (stillSame)
 					{
 						feedbackHeaderLabel.setIcon(null);
+						feedbackHeaderLabel.setToolTipText(null);
 					}
 				}
 				else
@@ -1373,6 +1375,7 @@ public class BotDetectorPanel extends PluginPanel
 					{
 						resetFeedbackPanel(false);
 						feedbackHeaderLabel.setIcon(Icons.ERROR_ICON);
+						feedbackHeaderLabel.setToolTipText(ex != null ? ex.getMessage() : "Unknown error");
 					}
 				}
 
@@ -1405,6 +1408,7 @@ public class BotDetectorPanel extends PluginPanel
 		}
 
 		flaggingHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(getClass().getResource(LOADING_SPINNER_PATH))));
+		flaggingHeaderLabel.setToolTipText(null);
 		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionUploaderName, true)
 			.whenComplete((b, ex) ->
 			{
@@ -1419,6 +1423,7 @@ public class BotDetectorPanel extends PluginPanel
 					if (stillSame)
 					{
 						flaggingHeaderLabel.setIcon(null);
+						flaggingHeaderLabel.setToolTipText(null);
 					}
 				}
 				else
@@ -1430,6 +1435,7 @@ public class BotDetectorPanel extends PluginPanel
 					{
 						resetFlaggingPanel();
 						flaggingHeaderLabel.setIcon(Icons.ERROR_ICON);
+						flaggingHeaderLabel.setToolTipText(ex != null ? ex.getMessage() : "Unknown error");
 					}
 				}
 
@@ -1453,6 +1459,7 @@ public class BotDetectorPanel extends PluginPanel
 	private void resetFeedbackPanel(boolean clearText)
 	{
 		feedbackHeaderLabel.setIcon(null);
+		feedbackHeaderLabel.setToolTipText(null);
 		feedbackSendButton.setBackground(null);
 		feedbackSendButton.setEnabled(true);
 		feedbackTextbox.setEnabled(true);
@@ -1502,6 +1509,7 @@ public class BotDetectorPanel extends PluginPanel
 	private void resetFlaggingPanel()
 	{
 		flaggingHeaderLabel.setIcon(null);
+		flaggingHeaderLabel.setToolTipText(null);
 		flaggingYesButton.setBackground(null);
 		flaggingYesButton.setEnabled(true);
 		flaggingNoButton.setBackground(null);
