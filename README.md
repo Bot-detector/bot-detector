@@ -166,7 +166,7 @@ Generating a heatmap is currently only available to our Patrons. You could ask o
 ## This FAQ did not answer my questions.
 Come talk to us on our Discord server, look for the **Plugin Issues** and **Plugin Discussion** channels.
 
-# Thanks for your continued support! ❤️ The Bot Detector Team ❤️
+# Thanks for your continued support!<br>❤️ The Bot Detector Team ❤️
 ![wyvern_extreme_pogging][w_e_p]![wyvern_extreme_pogging][w_e_p]![wyvern_extreme_pogging][w_e_p]![wyvern_extreme_pogging][w_e_p]![wyvern_extreme_pogging][w_e_p]
 
 [w_e_p]: https://user-images.githubusercontent.com/45152844/116952387-8ac1fa80-ac58-11eb-8a31-5fe0fc6f5f88.gif
