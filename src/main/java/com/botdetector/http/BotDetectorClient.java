@@ -553,29 +553,35 @@ public class BotDetectorClient
 	private IOException getIOException(Response response)
 	{
 		int code = response.code();
-		if (code == 422)
-		{
-			// TODO: Parse actual error info received from FastAPI (details -> loc, msg, ctx, etc.)
-			return new ValidationException("Error 422 from API, invalid data format");
-		}
-		else if (code >= 400 && code < 500)
+		if (code >= 400 && code < 500)
 		{
 			try
 			{
-				Map<String, String> map = gson.fromJson(response.body().string(),
-					new TypeToken<Map<String, String>>()
-					{
-					}.getType());
-
-				// "error" has priority if it exists, else use "detail" (FastAPI)
-				String error = map.get("error");
-				if (Strings.isNullOrEmpty(error))
+				String body = response.body().string();
+				try
 				{
-					error = map.getOrDefault("detail", "Unknown " + code + " error from API");
+					Map<String, String> map = gson.fromJson(body,
+						new TypeToken<Map<String, String>>()
+						{
+						}.getType());
+
+					// "error" has priority if it exists, else use "detail" (FastAPI)
+					String error = map.get("error");
+					if (Strings.isNullOrEmpty(error))
+					{
+						error = map.getOrDefault("detail", "Unknown " + code + " error from API");
+					}
+					return new IOException(error);
 				}
-				return new IOException(error);
+				catch (JsonSyntaxException ex)
+				{
+					// If can't parse, just log the response body
+					// TODO: Parse actual error info received from FastAPI (details -> loc, msg, ctx, etc.) especially for 422 errors
+					log.warn("Received HTTP error code " + code + " from API with the following response body:\n" + body);
+					return new IOException("Error " + code + ", see log for more info");
+				}
 			}
-			catch (IOException | JsonSyntaxException ex)
+			catch (IOException ex)
 			{
 				return new IOException("Error " + code + " with no error info", ex);
 			}
