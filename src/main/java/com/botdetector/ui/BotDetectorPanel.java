@@ -55,7 +55,6 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -146,7 +145,6 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Color NEGATIVE_BUTTON_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
 
 	private static final String EMPTY_LABEL = "---";
-	private static final String LOADING_SPINNER_PATH = "loading_spinner_darker.gif";
 
 	private static final int HEADER_PAD = 3;
 	private static final int WARNING_PAD = 5;
@@ -1014,9 +1012,7 @@ public class BotDetectorPanel extends PluginPanel
 	public void setPlayerStatsLoading(boolean loading)
 	{
 		statsLoading = loading;
-		playerStatsHeaderLabel.setIcon(loading ?
-			new ImageIcon(Objects.requireNonNull(getClass().getResource(LOADING_SPINNER_PATH)))
-			: null);
+		playerStatsHeaderLabel.setIcon(loading ? Icons.LOADING_SPINNER : null);
 	}
 
 	/**
@@ -1348,8 +1344,8 @@ public class BotDetectorPanel extends PluginPanel
 			plugin.getFeedbackedPlayersText().put(wrappedName, feedbackText);
 		}
 
-		feedbackHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(getClass().getResource(LOADING_SPINNER_PATH))));
-		feedbackHeaderLabel.setToolTipText(null);
+		feedbackHeaderLabel.setIcon(Icons.LOADING_SPINNER);
+    feedbackHeaderLabel.setToolTipText(null);
 		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, proposedLabel, feedbackText)
 			.whenComplete((b, ex) ->
 			{
@@ -1407,8 +1403,8 @@ public class BotDetectorPanel extends PluginPanel
 			return;
 		}
 
-		flaggingHeaderLabel.setIcon(new ImageIcon(Objects.requireNonNull(getClass().getResource(LOADING_SPINNER_PATH))));
-		flaggingHeaderLabel.setToolTipText(null);
+		flaggingHeaderLabel.setIcon(Icons.LOADING_SPINNER);
+    flaggingHeaderLabel.setToolTipText(null);
 		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionUploaderName, true)
 			.whenComplete((b, ex) ->
 			{

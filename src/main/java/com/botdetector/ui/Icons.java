@@ -25,6 +25,7 @@
  */
 package com.botdetector.ui;
 
+import java.util.Objects;
 import javax.swing.ImageIcon;
 import net.runelite.client.util.ImageUtil;
 
@@ -39,4 +40,7 @@ public class Icons
 	public static final ImageIcon TWITTER_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "twitter.png"));
 	public static final ImageIcon WARNING_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "warning.png"));
 	public static final ImageIcon ERROR_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "error.png"));
+
+	// Must not be ImageUtil.loadImageResource as it produces a static image
+	public static final ImageIcon LOADING_SPINNER = new ImageIcon(Objects.requireNonNull(PLUGIN_CLASS.getResource("loading_spinner_darker.gif")));
 }
