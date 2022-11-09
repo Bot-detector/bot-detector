@@ -996,6 +996,7 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		boolean changeReportOption = config.applyPredictColorsOnReportOption();
 		// Do this once when the menu opens
 		// Avoids having to loop the menu entries on every 'added' event
 		MenuEntry[] menuEntries = event.getMenuEntries();
@@ -1016,16 +1017,28 @@ public class BotDetectorPlugin extends Plugin
 					entry.setOption(getPredictOption(player.getName()));
 				}
 			}
+
+			// Check for Report option
+			if (changeReportOption && entry.getOption().equals(REPORT_OPTION)
+				&& (PLAYER_MENU_ACTIONS.contains(entry.getType()) || entry.getType() == MenuAction.CC_OP_LOW_PRIORITY))
+			{
+				Player player = client.getCachedPlayers()[entry.getIdentifier()];
+				if (player != null)
+				{
+					entry.setOption(getReportOption(player.getName()));
+				}
+			}
 		}
 	}
 
 	@Subscribe
 	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
+		String optionText = Text.removeTags(event.getMenuOption());
 		if (((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-				&& event.getMenuOption().endsWith(PREDICT_OPTION))
+				&& optionText.equals(PREDICT_OPTION))
 			|| (config.predictOnReport() && (PLAYER_MENU_ACTIONS.contains(event.getMenuAction()) || event.getMenuAction() == MenuAction.CC_OP_LOW_PRIORITY)
-				&& event.getMenuOption().equals(REPORT_OPTION)))
+				&& optionText.equals(REPORT_OPTION)))
 		{
 			String name;
 			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER
@@ -1168,11 +1181,31 @@ public class BotDetectorPlugin extends Plugin
 	 */
 	private String getPredictOption(String playerName)
 	{
+		return getMenuOption(playerName, PREDICT_OPTION);
+	}
+
+	/**
+	 * Gets the correct variant of {@link #REPORT_OPTION} to show for the given {@code player}.
+	 * @param playerName The player to get the menu option string for.
+	 * @return A variant of {@link #REPORT_OPTION} prepended or not with some color.
+	 */
+	private String getReportOption(String playerName)
+	{
+		return getMenuOption(playerName, REPORT_OPTION);
+	}
+
+	/**
+	 * Gets the correct variant of the given option string to show for the given {@code player}.
+	 * @param playerName The player to get the menu option string for.
+	 * @return A variant of the option string prepended or not with some color.
+	 */
+	private String getMenuOption(String playerName, String option)
+	{
 		CaseInsensitiveString name = normalizeAndWrapPlayerName(playerName);
 		Color prepend = (feedbackedPlayers.containsKey(name) || flaggedPlayers.containsKey(name)) ?
 			config.predictOptionFlaggedColor() : config.predictOptionDefaultColor();
 
-		return prepend != null ? ColorUtil.prependColorTag(PREDICT_OPTION, prepend) : PREDICT_OPTION;
+		return prepend != null ? ColorUtil.prependColorTag(option, prepend) : option;
 	}
 
 	/**
