@@ -1345,7 +1345,7 @@ public class BotDetectorPanel extends PluginPanel
 		}
 
 		feedbackHeaderLabel.setIcon(Icons.LOADING_SPINNER);
-    feedbackHeaderLabel.setToolTipText(null);
+		feedbackHeaderLabel.setToolTipText(null);
 		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, proposedLabel, feedbackText)
 			.whenComplete((b, ex) ->
 			{
@@ -1404,7 +1404,7 @@ public class BotDetectorPanel extends PluginPanel
 		}
 
 		flaggingHeaderLabel.setIcon(Icons.LOADING_SPINNER);
-    flaggingHeaderLabel.setToolTipText(null);
+		flaggingHeaderLabel.setToolTipText(null);
 		detectorClient.sendSighting(lastPredictionPlayerSighting, lastPredictionUploaderName, true)
 			.whenComplete((b, ex) ->
 			{
