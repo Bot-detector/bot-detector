@@ -195,7 +195,6 @@ public class BotDetectorClient
 
 		Request request = new Request.Builder()
 			.url(getUrl(ApiPath.DETECTION).newBuilder()
-				.addQueryParameter("manual_detect", Integer.toString(manual ? 1 : 0))
 				.build())
 			.post(RequestBody.create(JSON, bdGson.toJson(wrappedList)))
 			.build();
