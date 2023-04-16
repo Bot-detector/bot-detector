@@ -84,7 +84,7 @@ public class BotDetectorClient
 	private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 	private static final String API_VERSION_FALLBACK_WORD = "latest";
 	private static final HttpUrl BASE_HTTP_URL = HttpUrl.parse(
-		System.getProperty("BotDetectorAPIPath", "http://api.prd.osrsbotdetector.com"));
+		System.getProperty("BotDetectorAPIPath", "https://api.prd.osrsbotdetector.com"));
 	private static final Supplier<String> CURRENT_EPOCH_SUPPLIER = () -> String.valueOf(Instant.now().getEpochSecond());
 
 	@Getter
