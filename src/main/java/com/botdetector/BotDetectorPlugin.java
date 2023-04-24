@@ -125,8 +125,7 @@ import static com.botdetector.model.CaseInsensitiveString.wrap;
 @PluginDescriptor(
 	name = "Bot Detector",
 	description = "This plugin sends encountered Player Names to a server in order to detect Botting Behavior.",
-	tags = {"Bot", "Detector", "Player"},
-	enabledByDefault = false
+	tags = {"Bot", "Detector", "Player"}
 )
 public class BotDetectorPlugin extends Plugin
 {
