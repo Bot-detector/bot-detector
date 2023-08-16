@@ -263,6 +263,18 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
+		position = 7,
+		keyName = "hidePredictOnFlag",
+		name = "Hide 'Predict' after Voted/Flagged",
+		description = "Hides the 'Predict' option on the in-game menu for players after being flagged or being given feedback.",
+		section = predictSection
+	)
+	default boolean hidePredictOnFlag()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		position = 1,
 		keyName = "enableChatNotifications",
 		name = "Enable Chat Status Messages",

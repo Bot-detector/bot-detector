@@ -58,11 +58,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -975,6 +978,12 @@ public class BotDetectorPlugin extends Plugin
 				return;
 			}
 
+			// Don't add the option if hide on flag is set and player is flagged
+			if (config.hidePredictOnFlag() && isPlayerFeedbackedOrFlagged(event.getTarget()))
+			{
+				return;
+			}
+
 			// TODO: Properly use the new menu entry callbacks
 			client.createMenuEntry(-1)
 				.setOption(getPredictOption(event.getTarget()))
@@ -989,8 +998,10 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onMenuOpened(MenuOpened event)
 	{
-		// If neither color changing options are set, this is unnecessary
-		if (config.predictOptionDefaultColor() == null && config.predictOptionFlaggedColor() == null)
+		// If neither color changing options are set and hide on flag is not set, this is unnecessary
+		if (config.predictOptionDefaultColor() == null &&
+			config.predictOptionFlaggedColor() == null &&
+			!config.hidePredictOnFlag())
 		{
 			return;
 		}
@@ -998,7 +1009,10 @@ public class BotDetectorPlugin extends Plugin
 		boolean changeReportOption = config.applyPredictColorsOnReportOption();
 		// Do this once when the menu opens
 		// Avoids having to loop the menu entries on every 'added' event
-		MenuEntry[] menuEntries = event.getMenuEntries();
+		MenuEntry[] menuEntries = client.getMenuEntries();
+		// Using a flag and delete later approach on hide on flag to avoid having to rebuild the array on the fly
+		// every time the event occurs. If there's no deletion, no need to create a new array.
+		Set<MenuEntry> toDelete = new HashSet<>();
 		for (MenuEntry entry : menuEntries)
 		{
 			int type = entry.getType().getId();
@@ -1013,7 +1027,16 @@ public class BotDetectorPlugin extends Plugin
 				Player player = client.getCachedPlayers()[entry.getIdentifier()];
 				if (player != null)
 				{
-					entry.setOption(getPredictOption(player.getName()));
+					if (config.hidePredictOnFlag() && isPlayerFeedbackedOrFlagged(player.getName()))
+					{
+						// Flag for deletion
+						toDelete.add(entry);
+					}
+					else
+					{
+						// Set the color
+						entry.setOption(getPredictOption(player.getName()));
+					}
 				}
 			}
 
@@ -1027,6 +1050,13 @@ public class BotDetectorPlugin extends Plugin
 					entry.setOption(getReportOption(player.getName()));
 				}
 			}
+		}
+
+		// If entries flagged for deletion, rebuild menu entries
+		if (!toDelete.isEmpty())
+		{
+			client.setMenuEntries(
+				Arrays.stream(menuEntries).filter(e -> !toDelete.contains(e)).toArray(MenuEntry[]::new));
 		}
 	}
 
@@ -1200,11 +1230,21 @@ public class BotDetectorPlugin extends Plugin
 	 */
 	private String getMenuOption(String playerName, String option)
 	{
-		CaseInsensitiveString name = normalizeAndWrapPlayerName(playerName);
-		Color prepend = (feedbackedPlayers.containsKey(name) || flaggedPlayers.containsKey(name)) ?
+		Color prepend = isPlayerFeedbackedOrFlagged(playerName) ?
 			config.predictOptionFlaggedColor() : config.predictOptionDefaultColor();
 
 		return prepend != null ? ColorUtil.prependColorTag(option, prepend) : option;
+	}
+
+	/**
+	 * Checks whether the given {@code player} has been feedbacked or flagged.
+	 * @param playerName The player to check.
+	 * @return True if appears in memory as flagged or feedbacked, false otherwise.
+	 */
+	private boolean isPlayerFeedbackedOrFlagged(String playerName)
+	{
+		CaseInsensitiveString name = normalizeAndWrapPlayerName(playerName);
+		return feedbackedPlayers.containsKey(name) || flaggedPlayers.containsKey(name);
 	}
 
 	/**
