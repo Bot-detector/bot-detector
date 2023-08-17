@@ -58,6 +58,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -87,7 +88,6 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuEntryAdded;
-import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.events.WorldChanged;
@@ -952,8 +952,23 @@ public class BotDetectorPlugin extends Plugin
 			});
 	}
 
-	@Subscribe
-	private void onMenuEntryAdded(MenuEntryAdded event)
+	private void onPredictClick(String playerName)
+	{
+		if (playerName == null)
+		{
+			return;
+		}
+
+		String toPredict = Text.removeTags(playerName);
+		if (config.predictOptionCopyName())
+		{
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(toPredict), null);
+		}
+
+		predictPlayer(toPredict);
+	}
+
+	private void handleInterfacePredictEntry(MenuEntryAdded event)
 	{
 		if (!config.addPredictOption())
 		{
@@ -975,98 +990,133 @@ public class BotDetectorPlugin extends Plugin
 				return;
 			}
 
-			// TODO: Properly use the new menu entry callbacks
+			// Don't add the option if hide on flag is set and player is flagged
+			if (config.hidePredictOnFlag() && isPlayerFeedbackedOrFlagged(event.getTarget()))
+			{
+				return;
+			}
+
+			final String name = event.getTarget();
 			client.createMenuEntry(-1)
-				.setOption(getPredictOption(event.getTarget()))
-				.setTarget(event.getTarget())
+				.setOption(getPredictOption(name))
+				.setTarget(name)
 				.setType(MenuAction.RUNELITE)
 				.setParam0(event.getActionParam0())
 				.setParam1(event.getActionParam1())
-				.setIdentifier(event.getIdentifier());
+				.setIdentifier(event.getIdentifier())
+				.onClick(c -> onPredictClick(name));
 		}
 	}
 
-	@Subscribe
-	private void onMenuOpened(MenuOpened event)
+	private void handlePlayerPredictEntry(MenuEntryAdded event)
 	{
-		// If neither color changing options are set, this is unnecessary
-		if (config.predictOptionDefaultColor() == null && config.predictOptionFlaggedColor() == null)
+		// Player menu section
+		int type = event.getType();
+		if (type >= MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET)
+		{
+			type -= MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET;
+		}
+
+		if (type != MenuAction.RUNELITE_PLAYER.getId()
+			|| !event.getOption().equals(PREDICT_OPTION))
 		{
 			return;
 		}
 
-		boolean changeReportOption = config.applyPredictColorsOnReportOption();
-		// Do this once when the menu opens
-		// Avoids having to loop the menu entries on every 'added' event
-		MenuEntry[] menuEntries = event.getMenuEntries();
-		for (MenuEntry entry : menuEntries)
+		Player player = client.getCachedPlayers()[event.getIdentifier()];
+		if (player == null)
 		{
-			int type = entry.getType().getId();
-			if (type >= MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET)
-			{
-				type -= MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET;
-			}
+			return;
+		}
+		final String name = player.getName();
 
-			if (type == MenuAction.RUNELITE_PLAYER.getId()
-				&& entry.getOption().equals(PREDICT_OPTION))
+		if (config.hidePredictOnFlag() && isPlayerFeedbackedOrFlagged(name))
+		{
+			MenuEntry[] entries = client.getMenuEntries();
+			// Sanity check
+			if (event.getMenuEntry() == entries[entries.length - 1])
 			{
-				Player player = client.getCachedPlayers()[entry.getIdentifier()];
-				if (player != null)
-				{
-					entry.setOption(getPredictOption(player.getName()));
-				}
+				// Delete the entry
+				client.setMenuEntries(Arrays.copyOf(entries, entries.length - 1));
 			}
-
-			// Check for Report option
-			if (changeReportOption && entry.getOption().equals(REPORT_OPTION)
-				&& (PLAYER_MENU_ACTIONS.contains(entry.getType()) || entry.getType() == MenuAction.CC_OP_LOW_PRIORITY))
-			{
-				Player player = client.getCachedPlayers()[entry.getIdentifier()];
-				if (player != null)
-				{
-					entry.setOption(getReportOption(player.getName()));
-				}
-			}
+		}
+		else
+		{
+			// Set the color and callback
+			event.getMenuEntry().setOption(getPredictOption(name));
+			event.getMenuEntry().onClick(c -> onPredictClick(name));
 		}
 	}
 
+	private void handleJagexReportEntry(MenuEntryAdded event)
+	{
+		if (!config.applyPredictColorsOnReportOption()
+			|| !event.getOption().equals(REPORT_OPTION))
+		{
+			return;
+		}
+
+		final String name;
+		// Player menu version
+		if (PLAYER_MENU_ACTIONS.contains(MenuAction.of(event.getType())))
+		{
+			Player player = client.getCachedPlayers()[event.getIdentifier()];
+			if (player == null)
+			{
+				return;
+			}
+			name = player.getName();
+		}
+		// Interface version (e.g. Chatbox)
+		else if (event.getType() == MenuAction.CC_OP_LOW_PRIORITY.getId())
+		{
+			name = event.getTarget();
+		}
+		else
+		{
+			return;
+		}
+
+		event.getMenuEntry().setOption(getReportOption(name));
+	}
+
+	@Subscribe
+	private void onMenuEntryAdded(MenuEntryAdded event)
+	{
+		handleInterfacePredictEntry(event);
+		handlePlayerPredictEntry(event);
+		handleJagexReportEntry(event);
+	}
+
+	// Have to use MenuOptionClicked on Report to avoid potentially having the callback overwritten by someone else
 	@Subscribe
 	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
-		String optionText = Text.removeTags(event.getMenuOption());
-		if (((event.getMenuAction() == MenuAction.RUNELITE || event.getMenuAction() == MenuAction.RUNELITE_PLAYER)
-				&& optionText.equals(PREDICT_OPTION))
-			|| (config.predictOnReport() && (PLAYER_MENU_ACTIONS.contains(event.getMenuAction()) || event.getMenuAction() == MenuAction.CC_OP_LOW_PRIORITY)
-				&& optionText.equals(REPORT_OPTION)))
+		if (!config.predictOnReport() || !Text.removeTags(event.getMenuOption()).equals(REPORT_OPTION))
 		{
-			String name;
-			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER
-				|| PLAYER_MENU_ACTIONS.contains(event.getMenuAction()))
-			{
-				Player player = client.getCachedPlayers()[event.getId()];
-
-				if (player == null)
-				{
-					return;
-				}
-
-				name = player.getName();
-			}
-			else
-			{
-				name = event.getMenuTarget();
-			}
-
-			if (name != null)
-			{
-				String toPredict = Text.removeTags(name);
-				if (config.predictOptionCopyName())
-				{
-					Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(toPredict), null);
-				}
-				predictPlayer(toPredict);
-			}
+			return;
 		}
+
+		final String name;
+		if (PLAYER_MENU_ACTIONS.contains(event.getMenuAction()))
+		{
+			Player player = client.getCachedPlayers()[event.getId()];
+			if (player == null)
+			{
+				return;
+			}
+			name = player.getName();
+		}
+		else if (event.getMenuAction() == MenuAction.CC_OP_LOW_PRIORITY)
+		{
+			name = event.getMenuTarget();
+		}
+		else
+		{
+			return;
+		}
+
+		onPredictClick(name);
 	}
 
 	@Subscribe
@@ -1200,11 +1250,21 @@ public class BotDetectorPlugin extends Plugin
 	 */
 	private String getMenuOption(String playerName, String option)
 	{
-		CaseInsensitiveString name = normalizeAndWrapPlayerName(playerName);
-		Color prepend = (feedbackedPlayers.containsKey(name) || flaggedPlayers.containsKey(name)) ?
+		Color prepend = isPlayerFeedbackedOrFlagged(playerName) ?
 			config.predictOptionFlaggedColor() : config.predictOptionDefaultColor();
 
 		return prepend != null ? ColorUtil.prependColorTag(option, prepend) : option;
+	}
+
+	/**
+	 * Checks whether the given {@code player} has been feedbacked or flagged.
+	 * @param playerName The player to check.
+	 * @return True if appears in memory as flagged or feedbacked, false otherwise.
+	 */
+	private boolean isPlayerFeedbackedOrFlagged(String playerName)
+	{
+		CaseInsensitiveString name = normalizeAndWrapPlayerName(playerName);
+		return feedbackedPlayers.containsKey(name) || flaggedPlayers.containsKey(name);
 	}
 
 	/**
