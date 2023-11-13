@@ -92,7 +92,9 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.events.WorldChanged;
 import net.runelite.api.kit.KitType;
-import net.runelite.api.widgets.WidgetInfo;
+import net.runelite.api.widgets.ComponentID;
+import net.runelite.api.widgets.InterfaceID;
+import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatCommandManager;
@@ -961,16 +963,16 @@ public class BotDetectorPlugin extends Plugin
 		}
 
 		final int componentId = event.getActionParam1();
-		int groupId = WidgetInfo.TO_GROUP(componentId);
-		String option = event.getOption();
+		final int groupId = WidgetUtil.componentToInterface(componentId);
+		final String option = event.getOption();
 
-		if (groupId == WidgetInfo.FRIENDS_LIST.getGroupId() || groupId == WidgetInfo.FRIENDS_CHAT.getGroupId() ||
-			groupId == WidgetInfo.CHATBOX.getGroupId() && !KICK_OPTION.equals(option) ||
-			groupId == WidgetInfo.RAIDING_PARTY.getGroupId() || groupId == WidgetInfo.PRIVATE_CHAT_MESSAGE.getGroupId() ||
-			groupId == WidgetInfo.IGNORE_LIST.getGroupId() ||
-			componentId == WidgetInfo.CLAN_MEMBER_LIST.getId() || componentId == WidgetInfo.CLAN_GUEST_MEMBER_LIST.getId())
+		if (groupId == InterfaceID.FRIEND_LIST || groupId == InterfaceID.FRIENDS_CHAT ||
+			groupId == InterfaceID.CHATBOX && !KICK_OPTION.equals(option) ||
+			groupId == InterfaceID.RAIDING_PARTY || groupId == InterfaceID.PRIVATE_CHAT ||
+			groupId == InterfaceID.IGNORE_LIST || groupId == InterfaceID.GROUP_IRON ||
+			componentId == ComponentID.CLAN_MEMBERS || componentId == ComponentID.CLAN_GUEST_MEMBERS)
 		{
-			if (!AFTER_OPTIONS.contains(option) || (option.equals(DELETE_OPTION) && groupId != WidgetInfo.IGNORE_LIST.getGroupId()))
+			if (!AFTER_OPTIONS.contains(option) || (option.equals(DELETE_OPTION) && groupId != InterfaceID.IGNORE_LIST))
 			{
 				return;
 			}
