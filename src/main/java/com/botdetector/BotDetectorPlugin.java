@@ -67,6 +67,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
@@ -300,6 +301,15 @@ public class BotDetectorPlugin extends Plugin
 	@Getter
 	private final Map<CaseInsensitiveString, Boolean> flaggedPlayers = new ConcurrentHashMap<>();
 
+	private final BufferedImage navButtonIcon = ImageUtil.loadImageResource(getClass(), "bot-icon.png");
+	private final Supplier<NavigationButton> navButtonSupplier = () ->
+		NavigationButton.builder()
+			.panel(panel)
+			.tooltip("Bot Detector")
+			.icon(navButtonIcon)
+			.priority(config.panelNavigationButtonPriority())
+			.build();
+
 	@Override
 	protected void startUp()
 	{
@@ -342,15 +352,7 @@ public class BotDetectorPlugin extends Plugin
 
 		processCurrentWorld();
 
-		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "bot-icon.png");
-
-		navButton = NavigationButton.builder()
-			.panel(panel)
-			.tooltip("Bot Detector")
-			.icon(icon)
-			.priority(90)
-			.build();
-
+		navButton = navButtonSupplier.get();
 		clientToolbar.addNavigation(navButton);
 
 		if (config.addPredictOption() && client != null)
@@ -626,6 +628,11 @@ public class BotDetectorPlugin extends Plugin
 			case BotDetectorConfig.AUTO_SEND_MINUTES_KEY:
 			case BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY:
 				updateTimeToAutoSend();
+				break;
+			case BotDetectorConfig.PANEL_NAVIGATION_BUTTON_PRIORITY_KEY:
+				clientToolbar.removeNavigation(navButton);
+				navButton = navButtonSupplier.get();
+				clientToolbar.addNavigation(navButton);
 				break;
 		}
 	}

@@ -49,6 +49,7 @@ public interface BotDetectorConfig extends Config
 	String SHOW_FEEDBACK_TEXTBOX = "showFeedbackTextbox";
 	String SHOW_DISCORD_VERIFICATION_ERRORS = "showDiscordVerificationErrors";
 	String ANONYMOUS_UUID_KEY = "anonymousUUID";
+	String PANEL_NAVIGATION_BUTTON_PRIORITY_KEY = "panelNavigationButtonPriority";
 
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
 	int AUTO_SEND_MAXIMUM_MINUTES = 360;
@@ -193,6 +194,20 @@ public interface BotDetectorConfig extends Config
 	default PanelFontType panelFontType()
 	{
 		return PanelFontType.NORMAL;
+	}
+
+	@ConfigItem(
+		position = 6,
+		keyName = PANEL_NAVIGATION_BUTTON_PRIORITY_KEY,
+		name = "Panel Button Priority",
+		description = "Sets the priority level of the panel navigation button, changing its placement in the sidebar." +
+			"<br>A higher number means the button will appear further down the list.",
+		section = panelSection
+	)
+	@Range(max = 10000)
+	default int panelNavigationButtonPriority()
+	{
+		return 90;
 	}
 
 	@ConfigItem(
