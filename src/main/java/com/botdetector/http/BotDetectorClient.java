@@ -85,22 +85,24 @@ public class BotDetectorClient
 	private static final String API_VERSION_FALLBACK_WORD = "latest";
 	private static final HttpUrl BASE_HTTP_URL = HttpUrl.parse(
 		System.getProperty("BotDetectorAPIPath", "https://api.prd.osrsbotdetector.com"));
+	private static final HttpUrl BASE_HTTP_URL_V2 = HttpUrl.parse(
+		System.getProperty("BotDetectorAPIPathV2", "https://api-v2.prd.osrsbotdetector.com"));
 	private static final Supplier<String> CURRENT_EPOCH_SUPPLIER = () -> String.valueOf(Instant.now().getEpochSecond());
 
 	@Getter
 	@AllArgsConstructor
 	private enum ApiPath
 	{
-		DETECTION("v1/report"),
-		PLAYER_STATS_PASSIVE("v1/report/count"),
-		PLAYER_STATS_MANUAL("v1/report/manual/count"),
-		PLAYER_STATS_FEEDBACK("v1/feedback/count"),
-		PREDICTION("v1/prediction"),
-		FEEDBACK("v1/feedback/"),
-		VERIFY_DISCORD("site/discord_user/")
+		DETECTION("v2/report", true),
+		PLAYER_STATS_REPORTS("v2/player/report/score", true),
+		PLAYER_STATS_FEEDBACK("v2/player/feedback/score", true),
+		PREDICTION("v2/player/prediction", true),
+		FEEDBACK("v1/feedback/", false),
+		VERIFY_DISCORD("site/discord_user/", false)
 		;
 
 		final String path;
+		final boolean v2;
 	}
 
 	public OkHttpClient okHttpClient;
@@ -123,7 +125,7 @@ public class BotDetectorClient
 	 */
 	private HttpUrl getUrl(ApiPath path, boolean addVersion)
 	{
-		HttpUrl.Builder builder = BASE_HTTP_URL.newBuilder();
+		HttpUrl.Builder builder = (path.isV2() ? BASE_HTTP_URL_V2 : BASE_HTTP_URL).newBuilder();
 
 		if (addVersion)
 		{
@@ -398,7 +400,15 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(processResponse(gson, response, Prediction.class));
+					Collection<Prediction> preds = processResponse(gson, response, new TypeToken<Collection<Prediction>>()
+					{
+					}.getType());
+					if (preds != null)
+					{
+						future.complete(preds.stream().findFirst().orElse(null));
+						return;
+					}
+					future.complete(null);
 				}
 				catch (IOException e)
 				{
@@ -422,18 +432,8 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Map<PlayerStatsType, PlayerStats>> requestPlayerStats(String playerName)
 	{
-		Gson bdGson = gson.newBuilder()
-			.registerTypeAdapter(boolean.class, new BooleanToZeroOneConverter())
-			.create();
-
-		Request requestP = new Request.Builder()
-			.url(getUrl(ApiPath.PLAYER_STATS_PASSIVE).newBuilder()
-				.addQueryParameter("name", playerName)
-				.build())
-			.build();
-
-		Request requestM = new Request.Builder()
-			.url(getUrl(ApiPath.PLAYER_STATS_MANUAL).newBuilder()
+		Request requestR = new Request.Builder()
+			.url(getUrl(ApiPath.PLAYER_STATS_REPORTS).newBuilder()
 				.addQueryParameter("name", playerName)
 				.build())
 			.build();
@@ -444,18 +444,16 @@ public class BotDetectorClient
 				.build())
 			.build();
 
-		CompletableFuture<Collection<PlayerStatsAPIItem>> passiveFuture = new CompletableFuture<>();
-		CompletableFuture<Collection<PlayerStatsAPIItem>> manualFuture = new CompletableFuture<>();
+		CompletableFuture<Collection<PlayerStatsAPIItem>> reportsFuture = new CompletableFuture<>();
 		CompletableFuture<Collection<PlayerStatsAPIItem>> feedbackFuture = new CompletableFuture<>();
 
-		okHttpClient.newCall(requestP).enqueue(new PlayerStatsCallback(passiveFuture, bdGson));
-		okHttpClient.newCall(requestM).enqueue(new PlayerStatsCallback(manualFuture, bdGson));
-		okHttpClient.newCall(requestF).enqueue(new PlayerStatsCallback(feedbackFuture, bdGson));
+		okHttpClient.newCall(requestR).enqueue(new PlayerStatsCallback(reportsFuture, gson));
+		okHttpClient.newCall(requestF).enqueue(new PlayerStatsCallback(feedbackFuture, gson));
 
 		CompletableFuture<Map<PlayerStatsType, PlayerStats>> finalFuture = new CompletableFuture<>();
 
-		// Doing this so we log only the first future failing, not all 3 within the callback.
-		CompletableFuture.allOf(passiveFuture, manualFuture, feedbackFuture).whenComplete((v, e) ->
+		// Doing this so we log only the first future failing, not all 2 within the callback.
+		CompletableFuture.allOf(reportsFuture, feedbackFuture).whenComplete((v, e) ->
 		{
 			if (e != null)
 			{
@@ -465,8 +463,7 @@ public class BotDetectorClient
 			}
 			else
 			{
-				finalFuture.complete(processPlayerStats(
-					passiveFuture.join(), manualFuture.join(), feedbackFuture.join()));
+				finalFuture.complete(processPlayerStats(reportsFuture.join(), feedbackFuture.join()));
 			}
 		});
 
@@ -592,20 +589,21 @@ public class BotDetectorClient
 
 	/**
 	 * Collects the given {@link PlayerStatsAPIItem} into a combined map that the plugin expects.
-	 * @param passive The passive usage stats from the API.
-	 * @param manual The manual flagging stats from the API.
+	 * @param reports The reports usage stats from the API.
 	 * @param feedback The feedback stats from the API.
 	 * @return The combined processed map expected by the plugin.
 	 */
-	private Map<PlayerStatsType, PlayerStats> processPlayerStats(Collection<PlayerStatsAPIItem> passive, Collection<PlayerStatsAPIItem> manual, Collection<PlayerStatsAPIItem> feedback)
+	private Map<PlayerStatsType, PlayerStats> processPlayerStats(Collection<PlayerStatsAPIItem> reports, Collection<PlayerStatsAPIItem> feedback)
 	{
-		if (passive == null || manual == null || feedback == null)
+		if (reports == null || feedback == null)
 		{
 			return null;
 		}
 
-		PlayerStats passiveStats = countStats(passive, false);
-		PlayerStats manualStats = countStats(manual, true);
+		PlayerStats passiveStats = countStats(reports.stream().filter(
+			r -> r.getManual() != null && !r.getManual()).collect(Collectors.toList()), false);
+		PlayerStats manualStats = countStats(reports.stream().filter(
+			r -> r.getManual() != null && r.getManual()).collect(Collectors.toList()), true);
 		PlayerStats feedbackStats = countStats(feedback, false);
 
 		PlayerStats totalStats = PlayerStats.builder()
@@ -623,7 +621,7 @@ public class BotDetectorClient
 	}
 
 	/**
-	 * Utility function for {@link BotDetectorClient#processPlayerStats(Collection, Collection, Collection)}.
+	 * Utility function for {@link BotDetectorClient#processPlayerStats(Collection, Collection)}.
 	 * Compile each element from the API into a {@link PlayerStats} object.
 	 * @param fromAPI The returned collections of player stats from the API to accumulate.
 	 * @param countIncorrect Intended for manual flagging stats. If true, count confirmed players into {@link PlayerStats#getIncorrectFlags()}.
@@ -711,7 +709,16 @@ public class BotDetectorClient
 		boolean banned;
 		@SerializedName("confirmed_player")
 		boolean player;
+		/**
+		 * Will be Null for feedbacks
+		 */
+		@SerializedName("manual_detect")
+		Boolean manual;
 		long count;
+		/**
+		 * Will be Null for report counts
+		 */
+		Long vote;
 	}
 
 	/**
