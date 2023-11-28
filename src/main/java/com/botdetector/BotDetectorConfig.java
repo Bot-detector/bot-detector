@@ -42,7 +42,8 @@ public interface BotDetectorConfig extends Config
 	String CONFIG_GROUP = "botdetector";
 	String ONLY_SEND_AT_LOGOUT_KEY = "sendAtLogout";
 	String AUTO_SEND_MINUTES_KEY = "autoSendMinutes";
-	String ADD_PREDICT_OPTION_KEY = "addDetectOption"; // I know it says detect, don't change it.
+	String ADD_PREDICT_PLAYER_OPTION_KEY = "addDetectOption"; // I know it says detect, don't change it.
+	String ADD_PREDICT_MENU_OPTION_KEY = "addPlayerMenuOption";
 	String ANONYMOUS_UPLOADING_KEY = "enableAnonymousReporting";
 	String PANEL_FONT_TYPE_KEY = "panelFontType";
 	String AUTH_FULL_TOKEN_KEY = "authToken";
@@ -197,18 +198,30 @@ public interface BotDetectorConfig extends Config
 
 	@ConfigItem(
 		position = 1,
-		keyName = ADD_PREDICT_OPTION_KEY,
+		keyName = ADD_PREDICT_PLAYER_OPTION_KEY,
 		name = "Right-click 'Predict' Players",
 		description = "Adds an entry to player menus to quickly check them in the prediction panel.",
 		section = predictSection
 	)
-	default boolean addPredictOption()
+	default boolean addPredictPlayerOption()
 	{
 		return false;
 	}
 
 	@ConfigItem(
 		position = 2,
+		keyName = ADD_PREDICT_MENU_OPTION_KEY,
+		name = "Right-click 'Predict' Menus",
+		description = "Adds an entry to player interface menus to quickly check them in the prediction panel.",
+		section = predictSection
+	)
+	default boolean addPredictMenuOption()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 3,
 		keyName = "predictOnReport",
 		name = "'Predict' on Right-click 'Report'",
 		description = "Makes the in-game right-click 'Report' option also open the prediction panel.",
@@ -220,7 +233,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 3,
+		position = 4,
 		keyName = "predictOptionCopyName",
 		name = "'Predict' Copy Name to Clipboard",
 		description = "Copies the player's name to the clipboard when right-click predicting a player.",
@@ -232,7 +245,7 @@ public interface BotDetectorConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 4,
+		position = 5,
 		keyName = "predictOptionDefaultColor",
 		name = "'Predict' Default Color",
 		description = "When right-clicking on a player, the predict option will be this color by default.",
@@ -241,7 +254,7 @@ public interface BotDetectorConfig extends Config
 	Color predictOptionDefaultColor();
 
 	@ConfigItem(
-		position = 5,
+		position = 6,
 		keyName = "predictOptionFlaggedColor",
 		name = "'Predict' Voted/Flagged Color",
 		description = "When right-clicking on a player that has been flagged or given feedback, the predict option will be this color instead.",
@@ -250,7 +263,7 @@ public interface BotDetectorConfig extends Config
 	Color predictOptionFlaggedColor();
 
 	@ConfigItem(
-		position = 6,
+		position = 7,
 		keyName = "applyPredictColorsOnReportOption",
 		name = "Apply Colors to 'Report'",
 		description = "Applies the above 'Predict' color options to the in-game 'Report' option as well.",
