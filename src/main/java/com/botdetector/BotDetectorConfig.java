@@ -200,7 +200,7 @@ public interface BotDetectorConfig extends Config
 		position = 1,
 		keyName = ADD_PREDICT_PLAYER_OPTION_KEY,
 		name = "Right-click 'Predict' Players",
-		description = "Adds an entry to player menus to quickly check them in the prediction panel.",
+		description = "Adds an entry to game world player menus to quickly check them in the prediction panel.",
 		section = predictSection
 	)
 	default boolean addPredictPlayerOption()
@@ -212,7 +212,7 @@ public interface BotDetectorConfig extends Config
 		position = 2,
 		keyName = ADD_PREDICT_MENU_OPTION_KEY,
 		name = "Right-click 'Predict' Menus",
-		description = "Adds an entry to player interface menus to quickly check them in the prediction panel.",
+		description = "Adds an entry to interface player menus to quickly check them in the prediction panel.",
 		section = predictSection
 	)
 	default boolean addPredictMenuOption()
