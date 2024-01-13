@@ -291,6 +291,13 @@ public class BotDetectorPanel extends PluginPanel
 	public void onActivate()
 	{
 		eventBus.post(new BotDetectorPanelActivated());
+		plugin.setNavButtonIsSelected(true);
+	}
+
+	@Override
+	public void onDeactivate()
+	{
+		plugin.setNavButtonIsSelected(false);
 	}
 
 	/**

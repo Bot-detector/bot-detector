@@ -73,6 +73,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.event.HyperlinkEvent;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -229,6 +230,10 @@ public class BotDetectorPlugin extends Plugin
 	private BotDetectorPanel panel;
 	private NavigationButton navButton;
 
+	@Getter
+	@Setter
+	private boolean navButtonIsSelected;
+
 	@Provides
 	BotDetectorConfig provideConfig(ConfigManager configManager)
 	{
@@ -344,6 +349,7 @@ public class BotDetectorPlugin extends Plugin
 
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "bot-icon.png");
 
+		this.navButtonIsSelected = false;
 		navButton = NavigationButton.builder()
 			.panel(panel)
 			.tooltip("Bot Detector")
@@ -517,7 +523,7 @@ public class BotDetectorPlugin extends Plugin
 		{
 			Instant now = Instant.now();
 			// Only perform non-manual refreshes when a player is not anon, logged in and the panel is open
-			if (config.enableAnonymousUploading() || loggedPlayerName == null || !navButton.isSelected()
+			if (config.enableAnonymousUploading() || loggedPlayerName == null || !navButtonIsSelected
 				|| now.isBefore(lastStatsRefresh.plusSeconds(AUTO_REFRESH_STATS_COOLDOWN_SECONDS))
 				|| now.isBefore(lastFlush.plusSeconds(AUTO_REFRESH_LAST_FLUSH_GRACE_PERIOD_SECONDS)))
 			{
@@ -1083,11 +1089,7 @@ public class BotDetectorPlugin extends Plugin
 	{
 		SwingUtilities.invokeLater(() ->
 		{
-			if (!navButton.isSelected())
-			{
-				navButton.getOnSelect().run();
-			}
-
+			clientToolbar.openPanel(navButton);
 			panel.predictPlayer(playerName);
 		});
 	}
