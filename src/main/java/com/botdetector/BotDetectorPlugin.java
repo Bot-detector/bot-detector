@@ -93,7 +93,9 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.events.WorldChanged;
 import net.runelite.api.kit.KitType;
-import net.runelite.api.widgets.WidgetInfo;
+import net.runelite.api.widgets.ComponentID;
+import net.runelite.api.widgets.InterfaceID;
+import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatCommandManager;
@@ -143,10 +145,6 @@ public class BotDetectorPlugin extends Plugin
 
 	private static final String PREDICT_OPTION = "Predict";
 	private static final String REPORT_OPTION = "Report";
-	private static final String KICK_OPTION = "Kick";
-	private static final String DELETE_OPTION = "Delete";
-	private static final ImmutableSet<String> AFTER_OPTIONS =
-		ImmutableSet.of("Message", "Add ignore", "Remove friend", DELETE_OPTION, KICK_OPTION);
 
 	private static final ImmutableSet<MenuAction> PLAYER_MENU_ACTIONS = ImmutableSet.of(
 		MenuAction.PLAYER_FIRST_OPTION, MenuAction.PLAYER_SECOND_OPTION, MenuAction.PLAYER_THIRD_OPTION, MenuAction.PLAYER_FOURTH_OPTION,
@@ -966,21 +964,23 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
-		final int componentId = event.getActionParam1();
-		int groupId = WidgetInfo.TO_GROUP(componentId);
-		String option = event.getOption();
-
-		if (groupId == WidgetInfo.FRIENDS_LIST.getGroupId() || groupId == WidgetInfo.FRIENDS_CHAT.getGroupId() ||
-			groupId == WidgetInfo.CHATBOX.getGroupId() && !KICK_OPTION.equals(option) ||
-			groupId == WidgetInfo.RAIDING_PARTY.getGroupId() || groupId == WidgetInfo.PRIVATE_CHAT_MESSAGE.getGroupId() ||
-			groupId == WidgetInfo.IGNORE_LIST.getGroupId() ||
-			componentId == WidgetInfo.CLAN_MEMBER_LIST.getId() || componentId == WidgetInfo.CLAN_GUEST_MEMBER_LIST.getId())
+		if (event.getType() != MenuAction.CC_OP.getId() && event.getType() != MenuAction.CC_OP_LOW_PRIORITY.getId())
 		{
-			if (!AFTER_OPTIONS.contains(option) || (option.equals(DELETE_OPTION) && groupId != WidgetInfo.IGNORE_LIST.getGroupId()))
-			{
-				return;
-			}
+			return;
+		}
 
+		final int componentId = event.getActionParam1();
+		final int groupId = WidgetUtil.componentToInterface(componentId);
+		final String option = event.getOption();
+
+		if (groupId == InterfaceID.FRIEND_LIST && option.equals("Delete")
+			|| groupId == InterfaceID.FRIENDS_CHAT && (option.equals("Add ignore") || option.equals("Remove friend"))
+			|| groupId == InterfaceID.CHATBOX && (option.equals("Add ignore") || option.equals("Message"))
+			|| groupId == InterfaceID.IGNORE_LIST && option.equals("Delete")
+			|| (componentId == ComponentID.CLAN_MEMBERS || componentId == ComponentID.CLAN_GUEST_MEMBERS) && (option.equals("Add ignore") || option.equals("Remove friend"))
+			|| groupId == InterfaceID.PRIVATE_CHAT && (option.equals("Add ignore") || option.equals("Message"))
+			|| groupId == InterfaceID.GROUP_IRON && (option.equals("Add friend") || option.equals("Remove friend") || option.equals("Remove ignore")))
+		{
 			// TODO: Properly use the new menu entry callbacks
 			client.createMenuEntry(-1)
 				.setOption(getPredictOption(event.getTarget()))
