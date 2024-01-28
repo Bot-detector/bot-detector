@@ -788,7 +788,6 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackSendButton.setToolTipText("<html>Tell us the correct label for <b>primary prediction</b>! Doing so will help us improve our model." +
 			"<br><span style='color:red'>Please</span>, do not vote against a prediction simply because the percentage is not high enough.</html>");
 		feedbackSendButton.setForeground(HEADER_COLOR);
-		feedbackSendButton.setFont(SMALL_FONT);
 		feedbackSendButton.addActionListener(l -> sendFeedbackToClient((FeedbackPredictionLabel)feedbackLabelComboBox.getSelectedItem()));
 		feedbackSendButton.setFocusable(false);
 		c.gridx = 2;
@@ -831,7 +830,6 @@ public class BotDetectorPanel extends PluginPanel
 			"<html>This is <span style='color:red'>NOT</span> the same as reporting the player in-game!" +
 			"<br>Flagging a player as a bot tells us to pay more attention to them when training our model.</html>");
 		flaggingYesButton.setForeground(HEADER_COLOR);
-		flaggingYesButton.setFont(SMALL_FONT);
 		flaggingYesButton.addActionListener(l -> sendFlagToClient(true));
 		flaggingYesButton.setFocusable(false);
 		c.gridy++;
@@ -841,7 +839,6 @@ public class BotDetectorPanel extends PluginPanel
 
 		flaggingNoButton = new JButton("No");
 		flaggingNoButton.setForeground(HEADER_COLOR);
-		flaggingNoButton.setFont(SMALL_FONT);
 		flaggingNoButton.addActionListener(l -> sendFlagToClient(false));
 		flaggingNoButton.setFocusable(false);
 		c.gridx++;
