@@ -1681,11 +1681,16 @@ public class BotDetectorPanel extends PluginPanel
 		return sb.append(closingTags).toString();
 	}
 
+	/**
+	 * Set background and disabledBackground values, the latter such that FlatLaf can catch it.
+	 * @param component
+	 * @param color
+	 */
 	private static void setBackgroundFlatLaf(JComponent component, Color color)
 	{
 		component.setBackground(color);
 		component.putClientProperty(FlatClientProperties.STYLE,
-			"disabledBackground: " + (color == null ? "null" : ColorUtil.toHexColor(color)));
+			color == null ? null : "disabledBackground: " + ColorUtil.toHexColor(color));
 	}
 
 	void addInputKeyListener(KeyListener l)
