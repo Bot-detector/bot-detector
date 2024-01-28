@@ -224,6 +224,9 @@ public class BotDetectorPanel extends PluginPanel
 	private PlayerSighting lastPredictionPlayerSighting;
 	private String lastPredictionUploaderName;
 
+	@Getter
+	private boolean isActive;
+
 	@Inject
 	public BotDetectorPanel(
 		BotDetectorPlugin plugin,
@@ -291,13 +294,13 @@ public class BotDetectorPanel extends PluginPanel
 	public void onActivate()
 	{
 		eventBus.post(new BotDetectorPanelActivated());
-		plugin.setNavButtonIsSelected(true);
+		isActive = true;
 	}
 
 	@Override
 	public void onDeactivate()
 	{
-		plugin.setNavButtonIsSelected(false);
+		isActive = false;
 	}
 
 	/**
