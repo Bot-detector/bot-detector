@@ -92,7 +92,7 @@ public class BotDetectorPanel extends PluginPanel
 	public enum WebLink
 	{
 		WEBSITE(Icons.WEB_ICON, "Our website", "https://www.osrsbotdetector.com/"),
-		TWITTER(Icons.TWITTER_ICON, "Follow us on Twitter!", "https://www.twitter.com/OSRSBotDetector"),
+		TWITTER(Icons.TWITTER_ICON, "Follow us on X!", "https://www.twitter.com/OSRSBotDetector"),
 		DISCORD(Icons.DISCORD_ICON, "Join our Discord!", "https://discord.com/invite/JCAGpcjbfP"),
 		GITHUB(Icons.GITHUB_ICON, "Check out the project's source code", "https://github.com/Bot-detector"),
 		PATREON(Icons.PATREON_ICON, "Help keep us going!", "https://www.patreon.com/Ferrariic")
