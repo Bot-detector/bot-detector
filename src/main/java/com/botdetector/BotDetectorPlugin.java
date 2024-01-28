@@ -357,7 +357,7 @@ public class BotDetectorPlugin extends Plugin
 
 		clientToolbar.addNavigation(navButton);
 
-		if (config.addPredictOption() && client != null)
+		if (config.addPredictPlayerOption() && client != null)
 		{
 			menuManager.addPlayerMenuItem(PREDICT_OPTION);
 		}
@@ -602,12 +602,12 @@ public class BotDetectorPlugin extends Plugin
 
 		switch (event.getKey())
 		{
-			case BotDetectorConfig.ADD_PREDICT_OPTION_KEY:
+			case BotDetectorConfig.ADD_PREDICT_PLAYER_OPTION_KEY:
 				if (client != null)
 				{
 					menuManager.removePlayerMenuItem(PREDICT_OPTION);
 
-					if (config.addPredictOption())
+					if (config.addPredictPlayerOption())
 					{
 						menuManager.addPlayerMenuItem(PREDICT_OPTION);
 					}
@@ -959,7 +959,7 @@ public class BotDetectorPlugin extends Plugin
 	@Subscribe
 	private void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		if (!config.addPredictOption())
+		if (!config.addPredictMenuOption())
 		{
 			return;
 		}
