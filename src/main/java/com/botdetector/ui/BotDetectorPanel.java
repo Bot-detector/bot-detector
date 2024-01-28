@@ -1680,8 +1680,8 @@ public class BotDetectorPanel extends PluginPanel
 
 	/**
 	 * Set background and disabledBackground values, the latter such that FlatLaf can catch it.
-	 * @param component
-	 * @param color
+	 * @param component The component to set the background colors.
+	 * @param color The color to set.
 	 */
 	private static void setBackgroundFlatLaf(JComponent component, Color color)
 	{
