@@ -40,6 +40,7 @@ import com.botdetector.model.PlayerStatsType;
 import com.botdetector.model.Prediction;
 import com.botdetector.ui.components.ComboBoxSelfTextTooltipListRenderer;
 import com.botdetector.ui.components.JLimitedTextArea;
+import com.formdev.flatlaf.FlatClientProperties;
 import com.google.common.primitives.Doubles;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -140,9 +141,9 @@ public class BotDetectorPanel extends PluginPanel
 	private static final Color TEXT_COLOR = ColorScheme.LIGHT_GRAY_COLOR;
 	private static final Color VALUE_COLOR = Color.WHITE;
 	private static final Color ERROR_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
-	private static final Color POSITIVE_BUTTON_COLOR = ColorScheme.PROGRESS_COMPLETE_COLOR;
-	private static final Color NEUTRAL_BUTTON_COLOR = ColorScheme.PROGRESS_INPROGRESS_COLOR;
-	private static final Color NEGATIVE_BUTTON_COLOR = ColorScheme.PROGRESS_ERROR_COLOR;
+	private static final Color POSITIVE_BUTTON_COLOR = ColorScheme.PROGRESS_COMPLETE_COLOR.darker().darker().darker();
+	private static final Color NEUTRAL_BUTTON_COLOR = ColorScheme.PROGRESS_INPROGRESS_COLOR.darker().darker().darker();
+	private static final Color NEGATIVE_BUTTON_COLOR = ColorScheme.PROGRESS_ERROR_COLOR.darker().darker().darker();
 
 	private static final String EMPTY_LABEL = "---";
 
@@ -224,6 +225,9 @@ public class BotDetectorPanel extends PluginPanel
 	private PlayerSighting lastPredictionPlayerSighting;
 	private String lastPredictionUploaderName;
 
+	@Getter
+	private boolean isActive;
+
 	@Inject
 	public BotDetectorPanel(
 		BotDetectorPlugin plugin,
@@ -291,13 +295,13 @@ public class BotDetectorPanel extends PluginPanel
 	public void onActivate()
 	{
 		eventBus.post(new BotDetectorPanelActivated());
-		plugin.setNavButtonIsSelected(true);
+		isActive = true;
 	}
 
 	@Override
 	public void onDeactivate()
 	{
-		plugin.setNavButtonIsSelected(false);
+		isActive = false;
 	}
 
 	/**
@@ -784,7 +788,6 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackSendButton.setToolTipText("<html>Tell us the correct label for <b>primary prediction</b>! Doing so will help us improve our model." +
 			"<br><span style='color:red'>Please</span>, do not vote against a prediction simply because the percentage is not high enough.</html>");
 		feedbackSendButton.setForeground(HEADER_COLOR);
-		feedbackSendButton.setFont(SMALL_FONT);
 		feedbackSendButton.addActionListener(l -> sendFeedbackToClient((FeedbackPredictionLabel)feedbackLabelComboBox.getSelectedItem()));
 		feedbackSendButton.setFocusable(false);
 		c.gridx = 2;
@@ -827,7 +830,6 @@ public class BotDetectorPanel extends PluginPanel
 			"<html>This is <span style='color:red'>NOT</span> the same as reporting the player in-game!" +
 			"<br>Flagging a player as a bot tells us to pay more attention to them when training our model.</html>");
 		flaggingYesButton.setForeground(HEADER_COLOR);
-		flaggingYesButton.setFont(SMALL_FONT);
 		flaggingYesButton.addActionListener(l -> sendFlagToClient(true));
 		flaggingYesButton.setFocusable(false);
 		c.gridy++;
@@ -837,7 +839,6 @@ public class BotDetectorPanel extends PluginPanel
 
 		flaggingNoButton = new JButton("No");
 		flaggingNoButton.setForeground(HEADER_COLOR);
-		flaggingNoButton.setFont(SMALL_FONT);
 		flaggingNoButton.addActionListener(l -> sendFlagToClient(false));
 		flaggingNoButton.setFocusable(false);
 		c.gridx++;
@@ -1463,7 +1464,7 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		feedbackHeaderLabel.setIcon(null);
 		feedbackHeaderLabel.setToolTipText(null);
-		feedbackSendButton.setBackground(null);
+		setBackgroundFlatLaf(feedbackSendButton, null);
 		feedbackSendButton.setEnabled(true);
 		feedbackTextbox.setEnabled(true);
 		feedbackLabelComboBox.setEnabled(true);
@@ -1495,13 +1496,13 @@ public class BotDetectorPanel extends PluginPanel
 		switch (label.getFeedbackValue())
 		{
 			case POSITIVE:
-				feedbackSendButton.setBackground(POSITIVE_BUTTON_COLOR);
+				setBackgroundFlatLaf(feedbackSendButton, POSITIVE_BUTTON_COLOR);
 				break;
 			case NEUTRAL:
-				feedbackSendButton.setBackground(NEUTRAL_BUTTON_COLOR);
+				setBackgroundFlatLaf(feedbackSendButton, NEUTRAL_BUTTON_COLOR);
 				break;
 			case NEGATIVE:
-				feedbackSendButton.setBackground(NEGATIVE_BUTTON_COLOR);
+				setBackgroundFlatLaf(feedbackSendButton, NEGATIVE_BUTTON_COLOR);
 				break;
 		}
 	}
@@ -1513,9 +1514,9 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		flaggingHeaderLabel.setIcon(null);
 		flaggingHeaderLabel.setToolTipText(null);
-		flaggingYesButton.setBackground(null);
+		setBackgroundFlatLaf(flaggingYesButton, null);
 		flaggingYesButton.setEnabled(true);
-		flaggingNoButton.setBackground(null);
+		setBackgroundFlatLaf(flaggingNoButton, null);
 		flaggingNoButton.setEnabled(true);
 	}
 
@@ -1529,11 +1530,11 @@ public class BotDetectorPanel extends PluginPanel
 		flaggingNoButton.setEnabled(false);
 		if (flagged)
 		{
-			flaggingYesButton.setBackground(POSITIVE_BUTTON_COLOR);
+			setBackgroundFlatLaf(flaggingYesButton, POSITIVE_BUTTON_COLOR);
 		}
 		else
 		{
-			flaggingNoButton.setBackground(NEGATIVE_BUTTON_COLOR);
+			setBackgroundFlatLaf(flaggingNoButton, NEGATIVE_BUTTON_COLOR);
 		}
 	}
 
@@ -1675,6 +1676,18 @@ public class BotDetectorPanel extends PluginPanel
 				toPercentString(e.getValue()))));
 
 		return sb.append(closingTags).toString();
+	}
+
+	/**
+	 * Set background and disabledBackground values, the latter such that FlatLaf can catch it.
+	 * @param component The component to set the background colors.
+	 * @param color The color to set.
+	 */
+	private static void setBackgroundFlatLaf(JComponent component, Color color)
+	{
+		component.setBackground(color);
+		component.putClientProperty(FlatClientProperties.STYLE,
+			color == null ? null : "disabledBackground: " + ColorUtil.toHexColor(color));
 	}
 
 	void addInputKeyListener(KeyListener l)
