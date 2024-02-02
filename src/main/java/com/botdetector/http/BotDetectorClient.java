@@ -85,24 +85,21 @@ public class BotDetectorClient
 	private static final String API_VERSION_FALLBACK_WORD = "latest";
 	private static final HttpUrl BASE_HTTP_URL = HttpUrl.parse(
 		System.getProperty("BotDetectorAPIPath", "https://api.prd.osrsbotdetector.com"));
-	private static final HttpUrl BASE_HTTP_URL_V2 = HttpUrl.parse(
-		System.getProperty("BotDetectorAPIPathV2", "https://api-v2.prd.osrsbotdetector.com"));
 	private static final Supplier<String> CURRENT_EPOCH_SUPPLIER = () -> String.valueOf(Instant.now().getEpochSecond());
 
 	@Getter
 	@AllArgsConstructor
 	private enum ApiPath
 	{
-		DETECTION("v2/report", true),
-		PLAYER_STATS_REPORTS("v2/player/report/score", true),
-		PLAYER_STATS_FEEDBACK("v2/player/feedback/score", true),
-		PREDICTION("v2/player/prediction", true),
-		FEEDBACK("v1/feedback/", false),
-		VERIFY_DISCORD("site/discord_user/", false)
+		DETECTION("v2/report"),
+		PLAYER_STATS_REPORTS("v2/player/report/score"),
+		PLAYER_STATS_FEEDBACK("v2/player/feedback/score"),
+		PREDICTION("v2/player/prediction"),
+		FEEDBACK("v2/feedback"),
+		VERIFY_DISCORD("site/discord_user")
 		;
 
 		final String path;
-		final boolean v2;
 	}
 
 	public OkHttpClient okHttpClient;
@@ -125,7 +122,7 @@ public class BotDetectorClient
 	 */
 	private HttpUrl getUrl(ApiPath path, boolean addVersion)
 	{
-		HttpUrl.Builder builder = (path.isV2() ? BASE_HTTP_URL_V2 : BASE_HTTP_URL).newBuilder();
+		HttpUrl.Builder builder = BASE_HTTP_URL.newBuilder();
 
 		if (addVersion)
 		{
