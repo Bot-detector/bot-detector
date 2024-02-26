@@ -95,7 +95,7 @@ public class BotDetectorClient
 		PLAYER_STATS_REPORTS("v2/player/report/score"),
 		PLAYER_STATS_FEEDBACK("v2/player/feedback/score"),
 		PREDICTION("v2/player/prediction"),
-		FEEDBACK("v2/feedback"),
+		FEEDBACK("v1/feedback/"), // Remove last forward slash when using v2!
 		VERIFY_DISCORD("site/discord_user")
 		;
 
