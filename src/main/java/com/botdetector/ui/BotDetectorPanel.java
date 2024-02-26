@@ -157,9 +157,9 @@ public class BotDetectorPanel extends PluginPanel
 	private static final int MAX_FEEDBACK_TEXT_CHARS = 250;
 	private static final Dimension FEEDBACK_TEXTBOX_PREFERRED_SIZE = new Dimension(0, 75);
 
-	private static final FeedbackPredictionLabel UNSURE_PREDICTION_LABEL = new FeedbackPredictionLabel("Unsure", null, FeedbackValue.NEUTRAL);
-	private static final FeedbackPredictionLabel SOMETHING_ELSE_PREDICTION_LABEL = new FeedbackPredictionLabel("Something_else", null, FeedbackValue.NEGATIVE);
-	private static final FeedbackPredictionLabel CORRECT_FALLBACK_PREDICTION_LABEL = new FeedbackPredictionLabel("Correct", null, FeedbackValue.POSITIVE);
+	private static final FeedbackPredictionLabel UNSURE_PREDICTION_LABEL = new FeedbackPredictionLabel("unsure", null, FeedbackValue.NEUTRAL);
+	private static final FeedbackPredictionLabel SOMETHING_ELSE_PREDICTION_LABEL = new FeedbackPredictionLabel("something_else", null, FeedbackValue.NEGATIVE);
+	private static final FeedbackPredictionLabel CORRECT_FALLBACK_PREDICTION_LABEL = new FeedbackPredictionLabel("correct", null, FeedbackValue.POSITIVE);
 
 	private static final PlayerStatsType[] PLAYER_STAT_TYPES = {
 		PlayerStatsType.TOTAL, PlayerStatsType.PASSIVE, PlayerStatsType.MANUAL
