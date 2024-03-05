@@ -398,7 +398,17 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(processResponse(gson, response, Prediction.class));
+					Prediction p = processResponse(gson, response, Prediction.class);
+					// Sanity check
+					if (p != null && p.getPredictionBreakdown() != null && !p.getPredictionBreakdown().isEmpty())
+					{
+						if (p.getPredictionBreakdown().keySet().stream()
+							.noneMatch(x -> p.getPredictionLabel().equalsIgnoreCase(x)))
+						{
+							p.getPredictionBreakdown().put(p.getPredictionLabel(), p.getConfidence());
+						}
+					}
+					future.complete(p);
 				}
 				catch (IOException e)
 				{

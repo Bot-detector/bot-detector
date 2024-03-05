@@ -1107,7 +1107,7 @@ public class BotDetectorPanel extends PluginPanel
 			feedbackLabelComboBox.setSelectedItem(UNSURE_PREDICTION_LABEL);
 			feedbackLabelComboBox.addItem(SOMETHING_ELSE_PREDICTION_LABEL);
 
-			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
+			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().isEmpty())
 			{
 				predictionBreakdownLabel.setText(EMPTY_LABEL);
 				predictionBreakdownPanel.setVisible(false);
@@ -1133,7 +1133,7 @@ public class BotDetectorPanel extends PluginPanel
 					entry ->
 					{
 						FeedbackPredictionLabel pLabel = new FeedbackPredictionLabel(entry.getKey(), entry.getValue(),
-							entry.getKey().equals(primaryLabel) ? FeedbackValue.POSITIVE : FeedbackValue.NEGATIVE);
+							entry.getKey().equalsIgnoreCase(primaryLabel) ? FeedbackValue.POSITIVE : FeedbackValue.NEGATIVE);
 						feedbackLabelComboBox.addItem(pLabel);
 						if (pLabel.getFeedbackValue() == FeedbackValue.POSITIVE)
 						{
