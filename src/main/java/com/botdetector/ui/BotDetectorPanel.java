@@ -1253,7 +1253,7 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		String target = sanitize(searchBar.getText());
 
-		if (target.length() <= 0)
+		if (target.isEmpty())
 		{
 			return;
 		}
@@ -1654,7 +1654,7 @@ public class BotDetectorPanel extends PluginPanel
 	 */
 	private static String toPredictionBreakdownString(Map<String, Double> predictionMap)
 	{
-		if (predictionMap == null || predictionMap.size() == 0)
+		if (predictionMap == null || predictionMap.isEmpty())
 		{
 			return null;
 		}
