@@ -404,7 +404,7 @@ public class BotDetectorClient
 						&& p.getConfidence() != null // Some 'debug' labels such as 'Stats_Too_Low' will have null confidence, ignore these!
 						&& p.getPredictionBreakdown() != null
 						&& !p.getPredictionBreakdown().isEmpty()
-						&& p.getPredictionBreakdown().keySet().stream().noneMatch(x -> p.getPredictionLabel().equalsIgnoreCase(x)))
+						&& p.getPredictionBreakdown().keySet().stream().noneMatch(x -> x.equalsIgnoreCase(p.getPredictionLabel())))
 					{
 						p.getPredictionBreakdown().put(p.getPredictionLabel(), p.getConfidence());
 						log.warn(String.format("Primary prediction label missing from breakdown! Added missing label. (pl:'%s', id:'%d', lb:'%s', cf:'%.4f')",
