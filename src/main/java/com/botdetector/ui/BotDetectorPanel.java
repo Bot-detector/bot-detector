@@ -120,7 +120,10 @@ public class BotDetectorPanel extends PluginPanel
 		NAME_ERROR(Icons.ERROR_ICON, " Invalid Player Name",
 			"<html>Your player name could not be loaded correctly."
 				+ "<br>Most likely you spawned on Tutorial Island or your name was forcibly reset by Jagex."
-				+ "<br>Try relogging after setting a name.</html>")
+				+ "<br>Try relogging after setting a name.</html>"),
+		HARASSMENT_WARNING(Icons.STRONG_WARNING_ICON, " DO NOT HARASS OTHER PLAYERS",
+			"<html>We have received reports of legitimate players being harassed by users of this plugin." +
+				"<br>Turn off this warning in the plugin's config.</html>")
 		;
 
 		private final Icon image;
