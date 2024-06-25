@@ -332,6 +332,7 @@ public class BotDetectorPlugin extends Plugin
 		SwingUtilities.invokeLater(() ->
 		{
 			panel.setWarningVisible(BotDetectorPanel.WarningLabel.ANONYMOUS, config.enableAnonymousUploading());
+			panel.setWarningVisible(BotDetectorPanel.WarningLabel.HARASSMENT_WARNING, !config.acknowledgedHarassmentWarning());
 			panel.setPluginVersion(detectorClient.getPluginVersion());
 			panel.setNamesUploaded(0, false);
 			panel.setNamesUploaded(0, true);
@@ -614,6 +615,12 @@ public class BotDetectorPlugin extends Plugin
 					panel.forceHideFeedbackPanel();
 					panel.forceHideFlaggingPanel();
 				});
+				break;
+			case BotDetectorConfig.ACKNOWLEDGED_HARASSMENT_WARNING_KEY:
+				SwingUtilities.invokeLater(() ->
+					panel.setWarningVisible(
+						BotDetectorPanel.WarningLabel.HARASSMENT_WARNING,
+						!config.acknowledgedHarassmentWarning()));
 				break;
 			case BotDetectorConfig.PANEL_FONT_TYPE_KEY:
 				SwingUtilities.invokeLater(() -> panel.setFontType(config.panelFontType()));

@@ -39,6 +39,7 @@ public class Icons
 	public static final ImageIcon WEB_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "web.png"));
 	public static final ImageIcon TWITTER_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "twitter.png"));
 	public static final ImageIcon WARNING_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "warning.png"));
+	public static final ImageIcon STRONG_WARNING_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "strong_warning.png"));
 	public static final ImageIcon ERROR_ICON = new ImageIcon(ImageUtil.loadImageResource(PLUGIN_CLASS, "error.png"));
 
 	// Must not be ImageUtil.loadImageResource as it produces a static image
