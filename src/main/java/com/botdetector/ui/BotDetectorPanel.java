@@ -123,7 +123,7 @@ public class BotDetectorPanel extends PluginPanel
 				+ "<br>Try relogging after setting a name.</html>"),
 		HARASSMENT_WARNING(Icons.STRONG_WARNING_ICON, " Please Don't Harass Players",
 			"<html>We have received reports of legitimate players being harassed by users of this plugin." +
-				"<br>Turn off this warning in the plugin's config.</html>")
+				"<br>You may remove this message by acknowledging and reading more about it in the plugin's config.</html>")
 		;
 
 		private final Icon image;

@@ -91,12 +91,14 @@ public interface BotDetectorConfig extends Config
 		warning = "<html>We have received reports of legitimate players being harassed by users of this plugin." +
 			"<br>" +
 			"<br>Bot predictions from this plugin are not to be taken at face value, as players with lower" +
-			"<br>total XP or account builds that generally deviate from the expected average may throw off" +
-			"<br>our Machine Learning models, resulting in reductions in 'Real Player' confidence." +
+			"<br>total XP or account builds that generally deviate from the expected average may throw" +
+			"<br>off our Machine Learning models, resulting in reductions in 'Real Player' confidence." +
 			"<br>" +
-			"<br>We ask that you <b>do not harass players based on a misunderstanding of our predictions</b>." +
-			"<br>For more context, please read the plugin's FAQ, available on both the plugin's GitHub page" +
-			"<br>and our Discord server before you continue using the plugin." +
+			"<br>We ask that you <b>do not harass other players based on our predictions</b>." +
+			"<br>Harassment never helps, as bots do not care and legitimate players suffer unnecessarily." +
+			"<br>" +
+			"<br>For more context, please read the plugin's FAQ, available on both the plugin's GitHub" +
+			"<br>page and our Discord server before you continue using the plugin." +
 			"<br>" +
 			"<br>Thank you," +
 			"<br>- The Bot Detector team.</html>"
