@@ -101,7 +101,7 @@ public interface BotDetectorConfig extends Config
 			"<br>page and our Discord server before you continue using the plugin." +
 			"<br>" +
 			"<br>Thank you," +
-			"<br>- The Bot Detector team.</html>"
+			"<br>- The Bot Detector Team.</html>"
 	)
 	default boolean acknowledgedHarassmentWarning()
 	{
