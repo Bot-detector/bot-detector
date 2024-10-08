@@ -1,9 +1,10 @@
 # Bot Detector Plugin
-![GitHub](https://img.shields.io/github/license/Bot-Detector/bot-detector)
-[![](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/rank/plugin/bot-detector)](https://runelite.net/plugin-hub) [![](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/bot-detector)](https://runelite.net/plugin-hub) 
-![Website](https://img.shields.io/website?down_color=lightgrey&down_message=down&up_color=green&up_message=up&url=https%3A%2F%2Fosrsbotdetector.com%2F)
-![Discord](https://img.shields.io/discord/817916789668708384?label=discord)
-![Twitter Follow](https://img.shields.io/twitter/follow/osrsbotdetector?style=social)
+[![GitHub](https://img.shields.io/github/license/Bot-Detector/bot-detector)](https://github.com/Bot-detector/bot-detector)
+[![Plugin Rank](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/rank/plugin/bot-detector)](https://runelite.net/plugin-hub)
+[![Plugin Installs](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/bot-detector)](https://runelite.net/plugin-hub) 
+[![Website](https://img.shields.io/website?down_color=lightgrey&down_message=down&up_color=green&up_message=up&url=https%3A%2F%2Fosrsbotdetector.com%2F)](https://osrsbotdetector.com)
+[![Discord](https://img.shields.io/discord/817916789668708384?label=discord)](https://discord.com/invite/JCAGpcjbfP)
+[![Twitter Follow](https://img.shields.io/twitter/follow/osrsbotdetector?style=social)](https://x.com/osrsbotdetector)
 
 Identifies bots by sending nearby players' information to a third-party machine learning algorithm, trained with data provided by Jagex Moderators.
 
@@ -160,7 +161,7 @@ The model's ability to evaluate a prediction must take into account a variety of
 No, as said before, all we do is send over lists of suspicious accounts as you would through tipoff@jagex.com.
 
 ## Can you unban accounts?
-No, for that you will have to file an appeal with [Jagex](http://jgx.game/Ban).
+No, for that you will have to file an appeal with [Jagex](https://support.runescape.com/hc/en-gb/articles/115002238729-Appeal-an-offence).
 
 ## I've seen some of these cool heatmaps, how can I generate more of them?
 Generating a heatmap is currently only available to our Patrons. You could ask one to generate a map for you, but we do ask for your consideration in supporting us on our Patreon. If you do, you will have access to an exclusive channel on our Discord server where you can execute the heatmap command at any time. Our Patrons are what make this all possible! 
