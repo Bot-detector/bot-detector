@@ -1,5 +1,5 @@
 # Bot Detector Plugin
-[![GitHub](https://img.shields.io/github/license/Bot-Detector/bot-detector)](https://github.com/Bot-detector/bot-detector)
+[![GitHub](https://img.shields.io/github/license/Bot-Detector/bot-detector)](https://github.com/Bot-detector)
 [![Plugin Rank](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/rank/plugin/bot-detector)](https://runelite.net/plugin-hub)
 [![Plugin Installs](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/bot-detector)](https://runelite.net/plugin-hub) 
 [![Website](https://img.shields.io/website?down_color=lightgrey&down_message=down&up_color=green&up_message=up&url=https%3A%2F%2Fosrsbotdetector.com%2F)](https://osrsbotdetector.com)
