@@ -229,7 +229,8 @@ public interface BotDetectorConfig extends Config
 		keyName = HIDE_PANEL_NAVIGATION_BUTTON_KEY,
 		name = "Hide Panel Navigation Button",
 		description = "Hides the panel navigation button on the Runelite sidebar when not in use.",
-		warning = "<html>If the panel navigation button is hidden, the only way to use the plugin side panel is to use some variation" +
+		warning = "<html><span style='color:red'>WARNING:</span> This feature is experimental, please report any issues on our github!" +
+			"<br><br>If the panel navigation button is hidden, the only way to use the plugin side panel is to use some variation" +
 			"<br>of the right-click 'Predict' option or to input the <b>::BDOpenPanel</b> or <b>::BDOpen</b> command in chat.</html>",
 		section = panelSection
 	)
