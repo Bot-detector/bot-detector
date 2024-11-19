@@ -298,19 +298,14 @@ public class BotDetectorPanel extends PluginPanel
 	@Override
 	public void onActivate()
 	{
-		eventBus.post(new BotDetectorPanelActivated());
 		isActive = true;
+		eventBus.post(new BotDetectorPanelActivated());
 	}
 
 	@Override
 	public void onDeactivate()
 	{
 		isActive = false;
-	}
-
-	@Override
-	public void onDeactivate()
-	{
 		eventBus.post(new BotDetectorPanelDeactivated());
 	}
 

@@ -168,6 +168,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
 	private static final String TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND = COMMAND_PREFIX + "ToggleShowDiscordVerificationErrors";
 	private static final String TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND_ALIAS = COMMAND_PREFIX + "ToggleDVE";
+	private static final String OPEN_PANEL_COMMAND = COMMAND_PREFIX + "OpenPanel";
+	private static final String OPEN_PANEL_COMMAND_ALIAS = COMMAND_PREFIX + "Open";
 
 	/** Command to method map to be used in {@link #onCommandExecuted(CommandExecuted)}. **/
 	private final ImmutableMap<CaseInsensitiveString, Consumer<String[]>> commandConsumerMap =
@@ -181,6 +183,8 @@ public class BotDetectorPlugin extends Plugin
 			.put(wrap(CLEAR_AUTH_TOKEN_COMMAND), s -> clearAuthTokenCommand())
 			.put(wrap(TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND), s -> toggleShowDiscordVerificationErrors())
 			.put(wrap(TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND_ALIAS), s -> toggleShowDiscordVerificationErrors())
+			.put(wrap(OPEN_PANEL_COMMAND), s -> openSidePanel())
+			.put(wrap(OPEN_PANEL_COMMAND_ALIAS), s -> openSidePanel())
 			.build();
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
