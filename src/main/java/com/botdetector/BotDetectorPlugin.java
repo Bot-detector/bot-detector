@@ -1418,10 +1418,15 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	/**
-	 * Forces the side panel to open
+	 * Opens the side panel if it's not already open
 	 */
 	private void openSidePanel()
 	{
+		if (panel.isActive())
+		{
+			return;
+		}
+
 		if (config.hidePanelNavigationButton())
 		{
 			clientToolbar.addNavigation(navButton);
