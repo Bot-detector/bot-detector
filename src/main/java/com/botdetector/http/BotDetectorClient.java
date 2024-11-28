@@ -398,7 +398,19 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(processResponse(gson, response, Prediction.class));
+					Prediction p = processResponse(gson, response, Prediction.class);
+					// Sanity check for if the primary label does not appear in the breakdown
+					if (p != null
+						&& p.getConfidence() != null // Some 'debug' labels such as 'Stats_Too_Low' will have null confidence, ignore these!
+						&& p.getPredictionBreakdown() != null
+						&& !p.getPredictionBreakdown().isEmpty()
+						&& p.getPredictionBreakdown().keySet().stream().noneMatch(x -> x.equalsIgnoreCase(p.getPredictionLabel())))
+					{
+						p.getPredictionBreakdown().put(p.getPredictionLabel(), p.getConfidence());
+						log.warn(String.format("Primary prediction label missing from breakdown! Added missing label. (pl:'%s', id:'%d', lb:'%s', cf:'%.4f')",
+							p.getPlayerName(), p.getPlayerId(), p.getPredictionLabel(), p.getConfidence()));
+					}
+					future.complete(p);
 				}
 				catch (IOException e)
 				{
