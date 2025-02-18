@@ -49,6 +49,7 @@ import net.runelite.api.Friend;
 import net.runelite.api.Nameable;
 import net.runelite.api.NameableContainer;
 import net.runelite.api.Player;
+import net.runelite.api.WorldView;
 
 @Slf4j
 @Singleton
@@ -241,13 +242,16 @@ public class NameAutocompleter implements KeyListener
 		// Search cached players if a friend wasn't found
 		if (!autocompleteName.isPresent())
 		{
-			final Player[] cachedPlayers = client.getCachedPlayers();
-			autocompleteName = Arrays.stream(cachedPlayers)
-				.filter(Objects::nonNull)
-				.map(Player::getName)
-				.filter(Objects::nonNull)
-				.filter(n -> pattern.matcher(n).matches())
-				.findFirst();
+			final WorldView wv = client.getTopLevelWorldView();
+			if (wv != null)
+			{
+				autocompleteName = wv.players().stream()
+					.filter(Objects::nonNull)
+					.map(Player::getName)
+					.filter(Objects::nonNull)
+					.filter(n -> pattern.matcher(n).matches())
+					.findFirst();
+			}
 		}
 
 		if (autocompleteName.isPresent())
