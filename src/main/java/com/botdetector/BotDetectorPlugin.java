@@ -82,6 +82,7 @@ import net.runelite.api.MenuEntry;
 import net.runelite.api.MessageNode;
 import net.runelite.api.Player;
 import net.runelite.api.WorldType;
+import net.runelite.api.WorldView;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.CommandExecuted;
@@ -1002,6 +1003,12 @@ public class BotDetectorPlugin extends Plugin
 			return;
 		}
 
+		final WorldView wv = client.getTopLevelWorldView();
+		if (wv == null)
+		{
+			return;
+		}
+
 		boolean changeReportOption = config.applyPredictColorsOnReportOption();
 		// Do this once when the menu opens
 		// Avoids having to loop the menu entries on every 'added' event
@@ -1017,7 +1024,7 @@ public class BotDetectorPlugin extends Plugin
 			if (type == MenuAction.RUNELITE_PLAYER.getId()
 				&& entry.getOption().equals(PREDICT_OPTION))
 			{
-				Player player = client.getCachedPlayers()[entry.getIdentifier()];
+				Player player = wv.players().byIndex(entry.getIdentifier());
 				if (player != null)
 				{
 					entry.setOption(getPredictOption(player.getName()));
@@ -1028,7 +1035,7 @@ public class BotDetectorPlugin extends Plugin
 			if (changeReportOption && entry.getOption().equals(REPORT_OPTION)
 				&& (PLAYER_MENU_ACTIONS.contains(entry.getType()) || entry.getType() == MenuAction.CC_OP_LOW_PRIORITY))
 			{
-				Player player = client.getCachedPlayers()[entry.getIdentifier()];
+				Player player = wv.players().byIndex(entry.getIdentifier());
 				if (player != null)
 				{
 					entry.setOption(getReportOption(player.getName()));
@@ -1050,8 +1057,13 @@ public class BotDetectorPlugin extends Plugin
 			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER
 				|| PLAYER_MENU_ACTIONS.contains(event.getMenuAction()))
 			{
-				Player player = client.getCachedPlayers()[event.getId()];
+				WorldView wv = client.getTopLevelWorldView();
+				if (wv == null)
+				{
+					return;
+				}
 
+				Player player = wv.players().byIndex(event.getId());
 				if (player == null)
 				{
 					return;
