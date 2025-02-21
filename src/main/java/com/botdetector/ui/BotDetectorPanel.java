@@ -29,6 +29,7 @@ import com.botdetector.BotDetectorConfig;
 import com.botdetector.BotDetectorPlugin;
 import static com.botdetector.BotDetectorPlugin.normalizeAndWrapPlayerName;
 import com.botdetector.events.BotDetectorPanelActivated;
+import com.botdetector.events.BotDetectorPanelDeactivated;
 import com.botdetector.http.BotDetectorClient;
 import com.botdetector.model.CaseInsensitiveString;
 import com.botdetector.model.FeedbackValue;
@@ -297,14 +298,15 @@ public class BotDetectorPanel extends PluginPanel
 	@Override
 	public void onActivate()
 	{
-		eventBus.post(new BotDetectorPanelActivated());
 		isActive = true;
+		eventBus.post(new BotDetectorPanelActivated());
 	}
 
 	@Override
 	public void onDeactivate()
 	{
 		isActive = false;
+		eventBus.post(new BotDetectorPanelDeactivated());
 	}
 
 	/**
