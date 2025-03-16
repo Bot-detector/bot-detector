@@ -1110,7 +1110,7 @@ public class BotDetectorPanel extends PluginPanel
 			feedbackLabelComboBox.setSelectedItem(UNSURE_PREDICTION_LABEL);
 			feedbackLabelComboBox.addItem(SOMETHING_ELSE_PREDICTION_LABEL);
 
-			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().size() == 0)
+			if (pred.getPredictionBreakdown() == null || pred.getPredictionBreakdown().isEmpty())
 			{
 				predictionBreakdownLabel.setText(EMPTY_LABEL);
 				predictionBreakdownPanel.setVisible(false);
@@ -1136,7 +1136,7 @@ public class BotDetectorPanel extends PluginPanel
 					entry ->
 					{
 						FeedbackPredictionLabel pLabel = new FeedbackPredictionLabel(entry.getKey(), entry.getValue(),
-							entry.getKey().equals(primaryLabel) ? FeedbackValue.POSITIVE : FeedbackValue.NEGATIVE);
+							entry.getKey().equalsIgnoreCase(primaryLabel) ? FeedbackValue.POSITIVE : FeedbackValue.NEGATIVE);
 						feedbackLabelComboBox.addItem(pLabel);
 						if (pLabel.getFeedbackValue() == FeedbackValue.POSITIVE)
 						{
@@ -1256,7 +1256,7 @@ public class BotDetectorPanel extends PluginPanel
 	{
 		String target = sanitize(searchBar.getText());
 
-		if (target.length() <= 0)
+		if (target.isEmpty())
 		{
 			return;
 		}
@@ -1657,7 +1657,7 @@ public class BotDetectorPanel extends PluginPanel
 	 */
 	private static String toPredictionBreakdownString(Map<String, Double> predictionMap)
 	{
-		if (predictionMap == null || predictionMap.size() == 0)
+		if (predictionMap == null || predictionMap.isEmpty())
 		{
 			return null;
 		}

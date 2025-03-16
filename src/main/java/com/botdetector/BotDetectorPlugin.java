@@ -688,7 +688,7 @@ public class BotDetectorPlugin extends Plugin
 
 		String rawName = player.getName();
 
-		boolean invalidName = rawName == null || rawName.length() == 0 || rawName.charAt(0) == '#' || rawName.charAt(0) == '[';
+		boolean invalidName = rawName == null || rawName.isEmpty() || rawName.charAt(0) == '#' || rawName.charAt(0) == '[';
 
 		if (player == client.getLocalPlayer())
 		{
