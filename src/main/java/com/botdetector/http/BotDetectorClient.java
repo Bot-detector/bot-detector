@@ -65,6 +65,7 @@ import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.kit.KitType;
+import okhttp3.Cache;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -95,7 +96,7 @@ public class BotDetectorClient
 		PLAYER_STATS_REPORTS("v2/player/report/score"),
 		PLAYER_STATS_FEEDBACK("v2/player/feedback/score"),
 		PREDICTION("v2/player/prediction"),
-		FEEDBACK("v1/feedback/"), // Remove last forward slash when using v2!
+		FEEDBACK("v2/feedback"),
 		VERIFY_DISCORD("site/discord_user")
 		;
 
