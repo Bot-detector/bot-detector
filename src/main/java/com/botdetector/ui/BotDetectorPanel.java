@@ -1358,19 +1358,32 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackHeaderLabel.setIcon(Icons.LOADING_SPINNER);
 		feedbackHeaderLabel.setToolTipText(null);
 		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, proposedLabel, feedbackText)
-			.whenComplete((b, ex) ->
+			.whenComplete((successful, ex) ->
 			{
 				boolean stillSame = lastPrediction != null &&
 					wrappedName.equals(normalizeAndWrapPlayerName(lastPrediction.getPlayerName()));
 
 				String message;
-				if (ex == null && b)
+				if (ex == null)
 				{
-					message = "Thank you for your prediction feedback for '%s'!";
-					if (stillSame)
+					if (successful)
 					{
-						feedbackHeaderLabel.setIcon(null);
-						feedbackHeaderLabel.setToolTipText(null);
+						message = "Thank you for your prediction feedback for '%s'!";
+						if (stillSame)
+						{
+							feedbackHeaderLabel.setIcon(null);
+							feedbackHeaderLabel.setToolTipText(null);
+						}
+					}
+					// Failure is due to duplicate record on server side
+					else
+					{
+						message = "Sorry, but your feedback for '%s' was rejected as it already exists on the server.";
+						if (stillSame)
+						{
+							feedbackHeaderLabel.setIcon(Icons.WARNING_ICON);
+							feedbackHeaderLabel.setToolTipText("The server rejected your feedback as it already exists for this player");
+						}
 					}
 				}
 				else
@@ -1382,7 +1395,7 @@ public class BotDetectorPanel extends PluginPanel
 					{
 						resetFeedbackPanel(false);
 						feedbackHeaderLabel.setIcon(Icons.ERROR_ICON);
-						feedbackHeaderLabel.setToolTipText(ex != null ? ex.getMessage() : "Unknown error");
+						feedbackHeaderLabel.setToolTipText(ex.getMessage());
 					}
 				}
 

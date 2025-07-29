@@ -306,7 +306,7 @@ public class BotDetectorClient
 	}
 
 	/**
-	 * Sends a feedback to the API for the given prediction.
+	 * Sends a feedback to the API for the given prediction. If a feedback is duplicated, the future will return false.
 	 * @param pred The prediction object to give a feedback for.
 	 * @param uploaderName The user's player name (See {@link BotDetectorPlugin#getUploaderName()}).
 	 * @param proposedLabel The user's proposed label and feedback.
@@ -343,12 +343,21 @@ public class BotDetectorClient
 			{
 				try
 				{
+					boolean duplicated = false;
+
 					if (!response.isSuccessful())
 					{
-						throw getIOException(response);
+						IOException ioe = getIOException(response);
+						// If the error is because of being a duplicate record, do not throw
+						// Instead return false and let the caller handle it
+						if (!ioe.getMessage().contains("duplicate_record"))
+						{
+							throw ioe;
+						}
+						duplicated = true;
 					}
 
-					future.complete(true);
+					future.complete(!duplicated);
 				}
 				catch (IOException e)
 				{
