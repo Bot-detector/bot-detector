@@ -783,7 +783,7 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackLabelComboBox.setRenderer(new ComboBoxSelfTextTooltipListRenderer<>());
 		c.gridy++;
 		c.gridx = 0;
-		c.weightx = 2.0 / 3;
+		c.weightx = 1;
 		c.gridwidth = 2;
 		panel.add(feedbackLabelComboBox, c);
 
@@ -794,7 +794,7 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackSendButton.addActionListener(l -> sendFeedbackToClient((FeedbackPredictionLabel)feedbackLabelComboBox.getSelectedItem()));
 		feedbackSendButton.setFocusable(false);
 		c.gridx = 2;
-		c.weightx = 1.0 / 3;
+		c.weightx = 0;
 		c.gridwidth = 1;
 		panel.add(feedbackSendButton, c);
 
