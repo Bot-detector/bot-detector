@@ -50,8 +50,10 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -88,6 +90,8 @@ public class BotDetectorClient
 		System.getProperty("BotDetectorAPIPath", "https://api.prd.osrsbotdetector.com"));
 	private static final Supplier<String> CURRENT_EPOCH_SUPPLIER = () -> String.valueOf(Instant.now().getEpochSecond());
 
+	private static final long LABELS_CACHE_SECONDS = 60 * 60; // One hour
+
 	@Getter
 	@AllArgsConstructor
 	private enum ApiPath
@@ -97,6 +101,7 @@ public class BotDetectorClient
 		PLAYER_STATS_FEEDBACK("v2/player/feedback/score"),
 		PREDICTION("v2/player/prediction"),
 		FEEDBACK("v2/feedback"),
+		LABELS("v2/labels"),
 		VERIFY_DISCORD("site/discord_user")
 		;
 
@@ -114,6 +119,9 @@ public class BotDetectorClient
 
 	private final Supplier<String> pluginVersionSupplier = () ->
 		(pluginVersion != null && !pluginVersion.isEmpty()) ? pluginVersion : API_VERSION_FALLBACK_WORD;
+
+	private Collection<LabelAPIItem> cachedLabels = null;
+	private Instant lastTimeCachedLabels = Instant.MIN;
 
 	/**
 	 * Constructs a base URL for the given {@code path}.
@@ -376,21 +384,21 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Prediction> requestPrediction(String playerName, boolean receiveBreakdownOnSpecialCases)
 	{
-		Request request = new Request.Builder()
+		Request request_pred = new Request.Builder()
 			.url(getUrl(ApiPath.PREDICTION).newBuilder()
 				.addQueryParameter("name", playerName)
 				.addQueryParameter("breakdown", Boolean.toString(receiveBreakdownOnSpecialCases))
 				.build())
 			.build();
 
-		CompletableFuture<Prediction> future = new CompletableFuture<>();
-		okHttpClient.newCall(request).enqueue(new Callback()
+		CompletableFuture<Prediction> predFuture = new CompletableFuture<>();
+		okHttpClient.newCall(request_pred).enqueue(new Callback()
 		{
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
 				log.warn("Error obtaining player prediction data", e);
-				future.completeExceptionally(e);
+				predFuture.completeExceptionally(e);
 			}
 
 			@Override
@@ -403,15 +411,15 @@ public class BotDetectorClient
 					}.getType());
 					if (preds != null)
 					{
-						future.complete(preds.stream().findFirst().orElse(null));
+						predFuture.complete(preds.stream().findFirst().orElse(null));
 						return;
 					}
-					future.complete(null);
+					predFuture.complete(null);
 				}
 				catch (IOException e)
 				{
 					log.warn("Error obtaining player prediction data", e);
-					future.completeExceptionally(e);
+					predFuture.completeExceptionally(e);
 				}
 				finally
 				{
@@ -420,7 +428,105 @@ public class BotDetectorClient
 			}
 		});
 
-		return future;
+		CompletableFuture<Collection<LabelAPIItem>> labelsFuture = new CompletableFuture<>();
+
+		Instant now = Instant.now();
+		if (Duration.between(lastTimeCachedLabels, now).getSeconds() <= LABELS_CACHE_SECONDS)
+		{
+			labelsFuture.complete(cachedLabels);
+		}
+		else
+		{
+			Request request_labels = new Request.Builder()
+				.url(getUrl(ApiPath.LABELS).newBuilder()
+					.build())
+				.build();
+
+			okHttpClient.newCall(request_labels).enqueue(new Callback()
+			{
+				@Override
+				public void onFailure(Call call, IOException e)
+				{
+					log.warn("Error obtaining labels data", e);
+					labelsFuture.completeExceptionally(e);
+				}
+
+				@Override
+				public void onResponse(Call call, Response response)
+				{
+					try
+					{
+						Collection<LabelAPIItem> labels = processResponse(gson, response, new TypeToken<Collection<LabelAPIItem>>()
+						{
+						}.getType());
+						if (labels != null)
+						{
+							cachedLabels = labels;
+							lastTimeCachedLabels = now;
+						}
+						labelsFuture.complete(labels);
+					}
+					catch (IOException e)
+					{
+						log.warn("Error obtaining player labels data", e);
+						labelsFuture.completeExceptionally(e);
+					}
+					finally
+					{
+						response.close();
+					}
+				}
+			});
+		}
+
+		CompletableFuture<Prediction> finalFuture = new CompletableFuture<>();
+
+		// Doing this so we log only the first future failing, not all 2 within the callback.
+		CompletableFuture.allOf(predFuture, labelsFuture).whenComplete((v, e) ->
+		{
+			if (e != null)
+			{
+				// allOf will send a CompletionException when one of the futures fail, just get the cause.
+				log.warn("Error obtaining player prediction data", e.getCause());
+				finalFuture.completeExceptionally(e.getCause());
+			}
+			else
+			{
+				Prediction pred = predFuture.join();
+				Collection<LabelAPIItem> labels = labelsFuture.join();
+
+				// Re-add predictions as lowercase
+				Map<String, Double> newBreakdown = new HashMap<>();
+				if (pred.getPredictionBreakdown() != null)
+				{
+					for (Map.Entry<String, Double> entry : pred.getPredictionBreakdown().entrySet()) {
+						newBreakdown.put(entry.getKey().toLowerCase(), entry.getValue());
+					}
+				}
+
+				// Add labels that may not be in the breakdown
+				if (labels != null)
+				{
+					for (LabelAPIItem label : labels)
+					{
+						newBreakdown.putIfAbsent(label.getLabel().toLowerCase(), 0.0);
+					}
+				}
+
+				// Build a new copy of the prediction object with normalized labels
+				finalFuture.complete(
+					Prediction.builder()
+						.playerName(pred.getPlayerName())
+						.playerId(pred.getPlayerId())
+						.confidence(pred.getConfidence())
+						.predictionBreakdown(newBreakdown)
+						.predictionLabel(pred.getPredictionLabel().toLowerCase())
+						.build()
+				);
+			}
+		});
+
+		return finalFuture;
 	}
 
 	/**
@@ -717,6 +823,13 @@ public class BotDetectorClient
 		 * Will be Null for report counts
 		 */
 		Long vote;
+	}
+
+	@Value
+	private static class LabelAPIItem
+	{
+		int id;
+		String label;
 	}
 
 	/**
