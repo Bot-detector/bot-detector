@@ -497,41 +497,46 @@ public class BotDetectorClient
 				// allOf will send a CompletionException when one of the futures fail, just get the cause.
 				log.warn("Error obtaining player prediction data", e.getCause());
 				finalFuture.completeExceptionally(e.getCause());
+				return;
 			}
-			else
+
+			Prediction pred = predFuture.join();
+			if (pred == null)
 			{
-				Prediction pred = predFuture.join();
-				Collection<LabelAPIItem> labels = labelsFuture.join();
-
-				// Re-add predictions as lowercase
-				Map<String, Double> newBreakdown = new HashMap<>();
-				if (pred.getPredictionBreakdown() != null)
-				{
-					for (Map.Entry<String, Double> entry : pred.getPredictionBreakdown().entrySet()) {
-						newBreakdown.put(entry.getKey().toLowerCase(), entry.getValue());
-					}
-				}
-
-				// Add labels that may not be in the breakdown
-				if (labels != null)
-				{
-					for (LabelAPIItem label : labels)
-					{
-						newBreakdown.putIfAbsent(label.getLabel().toLowerCase(), 0.0);
-					}
-				}
-
-				// Build a new copy of the prediction object with normalized labels
-				finalFuture.complete(
-					Prediction.builder()
-						.playerName(pred.getPlayerName())
-						.playerId(pred.getPlayerId())
-						.confidence(pred.getConfidence())
-						.predictionBreakdown(newBreakdown)
-						.predictionLabel(pred.getPredictionLabel().toLowerCase())
-						.build()
-				);
+				finalFuture.complete(null);
+				return;
 			}
+
+			Collection<LabelAPIItem> labels = labelsFuture.join();
+
+			// Re-add predictions as lowercase
+			Map<String, Double> newBreakdown = new HashMap<>();
+			if (pred.getPredictionBreakdown() != null)
+			{
+				for (Map.Entry<String, Double> entry : pred.getPredictionBreakdown().entrySet()) {
+					newBreakdown.put(entry.getKey().toLowerCase(), entry.getValue());
+				}
+			}
+
+			// Add labels that may not be in the breakdown
+			if (labels != null)
+			{
+				for (LabelAPIItem label : labels)
+				{
+					newBreakdown.putIfAbsent(label.getLabel().toLowerCase(), 0.0);
+				}
+			}
+
+			// Build a new copy of the prediction object with normalized labels
+			finalFuture.complete(
+				Prediction.builder()
+					.playerName(pred.getPlayerName())
+					.playerId(pred.getPlayerId())
+					.confidence(pred.getConfidence())
+					.predictionBreakdown(newBreakdown)
+					.predictionLabel(pred.getPredictionLabel().toLowerCase())
+					.build()
+			);
 		});
 
 		return finalFuture;
