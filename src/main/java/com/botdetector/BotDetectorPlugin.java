@@ -93,8 +93,7 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PlayerSpawned;
 import net.runelite.api.events.WorldChanged;
 import net.runelite.api.kit.KitType;
-import net.runelite.api.widgets.ComponentID;
-import net.runelite.api.widgets.InterfaceID;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatColorType;
@@ -981,13 +980,13 @@ public class BotDetectorPlugin extends Plugin
 		final int groupId = WidgetUtil.componentToInterface(componentId);
 		final String option = event.getOption();
 
-		if (groupId == InterfaceID.FRIEND_LIST && option.equals("Delete")
-			|| groupId == InterfaceID.FRIENDS_CHAT && (option.equals("Add ignore") || option.equals("Remove friend"))
+		if (groupId == InterfaceID.FRIENDS && option.equals("Delete")
+			|| groupId == InterfaceID.CHATCHANNEL_CURRENT && (option.equals("Add ignore") || option.equals("Remove friend"))
 			|| groupId == InterfaceID.CHATBOX && (option.equals("Add ignore") || option.equals("Message"))
-			|| groupId == InterfaceID.IGNORE_LIST && option.equals("Delete")
-			|| (componentId == ComponentID.CLAN_MEMBERS || componentId == ComponentID.CLAN_GUEST_MEMBERS) && (option.equals("Add ignore") || option.equals("Remove friend"))
-			|| groupId == InterfaceID.PRIVATE_CHAT && (option.equals("Add ignore") || option.equals("Message"))
-			|| groupId == InterfaceID.GROUP_IRON && (option.equals("Add friend") || option.equals("Remove friend") || option.equals("Remove ignore")))
+			|| groupId == InterfaceID.IGNORE && option.equals("Delete")
+			|| (componentId == InterfaceID.ClansSidepanel.PLAYERLIST || componentId == InterfaceID.ClansGuestSidepanel.PLAYERLIST) && (option.equals("Add ignore") || option.equals("Remove friend"))
+			|| groupId == InterfaceID.PM_CHAT && (option.equals("Add ignore") || option.equals("Message"))
+			|| groupId == InterfaceID.GIM_SIDEPANEL && (option.equals("Add friend") || option.equals("Remove friend") || option.equals("Remove ignore")))
 		{
 			// TODO: Properly use the new menu entry callbacks
 			client.getMenu().createMenuEntry(-1)
