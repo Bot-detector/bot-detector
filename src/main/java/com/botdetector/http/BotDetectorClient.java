@@ -50,8 +50,10 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,17 +89,19 @@ public class BotDetectorClient
 		System.getProperty("BotDetectorAPIPath", "https://api.prd.osrsbotdetector.com"));
 	private static final Supplier<String> CURRENT_EPOCH_SUPPLIER = () -> String.valueOf(Instant.now().getEpochSecond());
 
+	private static final long LABELS_CACHE_SECONDS = 60 * 60; // One hour
+
 	@Getter
 	@AllArgsConstructor
 	private enum ApiPath
 	{
-		DETECTION("v1/report"),
-		PLAYER_STATS_PASSIVE("v1/report/count"),
-		PLAYER_STATS_MANUAL("v1/report/manual/count"),
-		PLAYER_STATS_FEEDBACK("v1/feedback/count"),
-		PREDICTION("v1/prediction"),
-		FEEDBACK("v1/feedback/"),
-		VERIFY_DISCORD("site/discord_user/")
+		DETECTION("v2/report"),
+		PLAYER_STATS_REPORTS("v2/player/report/score"),
+		PLAYER_STATS_FEEDBACK("v2/player/feedback/score"),
+		PREDICTION("v2/player/prediction"),
+		FEEDBACK("v2/feedback"),
+		LABELS("v2/labels"),
+		VERIFY_DISCORD("site/discord_user")
 		;
 
 		final String path;
@@ -114,6 +118,9 @@ public class BotDetectorClient
 
 	private final Supplier<String> pluginVersionSupplier = () ->
 		(pluginVersion != null && !pluginVersion.isEmpty()) ? pluginVersion : API_VERSION_FALLBACK_WORD;
+
+	private Collection<LabelAPIItem> cachedLabels = null;
+	private Instant lastTimeCachedLabels = Instant.MIN;
 
 	/**
 	 * Constructs a base URL for the given {@code path}.
@@ -298,7 +305,7 @@ public class BotDetectorClient
 	}
 
 	/**
-	 * Sends a feedback to the API for the given prediction.
+	 * Sends a feedback to the API for the given prediction. If a feedback is duplicated, the future will return false.
 	 * @param pred The prediction object to give a feedback for.
 	 * @param uploaderName The user's player name (See {@link BotDetectorPlugin#getUploaderName()}).
 	 * @param proposedLabel The user's proposed label and feedback.
@@ -335,12 +342,21 @@ public class BotDetectorClient
 			{
 				try
 				{
+					boolean duplicated = false;
+
 					if (!response.isSuccessful())
 					{
-						throw getIOException(response);
+						IOException ioe = getIOException(response);
+						// If the error is because of being a duplicate record, do not throw
+						// Instead return false and let the caller handle it
+						if (!ioe.getMessage().contains("duplicate_record"))
+						{
+							throw ioe;
+						}
+						duplicated = true;
 					}
 
-					future.complete(true);
+					future.complete(!duplicated);
 				}
 				catch (IOException e)
 				{
@@ -376,21 +392,21 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Prediction> requestPrediction(String playerName, boolean receiveBreakdownOnSpecialCases)
 	{
-		Request request = new Request.Builder()
+		Request request_pred = new Request.Builder()
 			.url(getUrl(ApiPath.PREDICTION).newBuilder()
 				.addQueryParameter("name", playerName)
 				.addQueryParameter("breakdown", Boolean.toString(receiveBreakdownOnSpecialCases))
 				.build())
 			.build();
 
-		CompletableFuture<Prediction> future = new CompletableFuture<>();
-		okHttpClient.newCall(request).enqueue(new Callback()
+		CompletableFuture<Prediction> predFuture = new CompletableFuture<>();
+		okHttpClient.newCall(request_pred).enqueue(new Callback()
 		{
 			@Override
 			public void onFailure(Call call, IOException e)
 			{
 				log.warn("Error obtaining player prediction data", e);
-				future.completeExceptionally(e);
+				predFuture.completeExceptionally(e);
 			}
 
 			@Override
@@ -398,12 +414,20 @@ public class BotDetectorClient
 			{
 				try
 				{
-					future.complete(processResponse(gson, response, Prediction.class));
+					Collection<Prediction> preds = processResponse(gson, response, new TypeToken<Collection<Prediction>>()
+					{
+					}.getType());
+					if (preds != null)
+					{
+						predFuture.complete(preds.stream().findFirst().orElse(null));
+						return;
+					}
+					predFuture.complete(null);
 				}
 				catch (IOException e)
 				{
 					log.warn("Error obtaining player prediction data", e);
-					future.completeExceptionally(e);
+					predFuture.completeExceptionally(e);
 				}
 				finally
 				{
@@ -412,7 +436,110 @@ public class BotDetectorClient
 			}
 		});
 
-		return future;
+		CompletableFuture<Collection<LabelAPIItem>> labelsFuture = new CompletableFuture<>();
+
+		Instant now = Instant.now();
+		if (Duration.between(lastTimeCachedLabels, now).getSeconds() <= LABELS_CACHE_SECONDS)
+		{
+			labelsFuture.complete(cachedLabels);
+		}
+		else
+		{
+			Request request_labels = new Request.Builder()
+				.url(getUrl(ApiPath.LABELS).newBuilder()
+					.build())
+				.build();
+
+			okHttpClient.newCall(request_labels).enqueue(new Callback()
+			{
+				@Override
+				public void onFailure(Call call, IOException e)
+				{
+					log.warn("Error obtaining labels data", e);
+					labelsFuture.completeExceptionally(e);
+				}
+
+				@Override
+				public void onResponse(Call call, Response response)
+				{
+					try
+					{
+						Collection<LabelAPIItem> labels = processResponse(gson, response, new TypeToken<Collection<LabelAPIItem>>()
+						{
+						}.getType());
+						if (labels != null)
+						{
+							cachedLabels = labels;
+							lastTimeCachedLabels = now;
+						}
+						labelsFuture.complete(labels);
+					}
+					catch (IOException e)
+					{
+						log.warn("Error obtaining player labels data", e);
+						labelsFuture.completeExceptionally(e);
+					}
+					finally
+					{
+						response.close();
+					}
+				}
+			});
+		}
+
+		CompletableFuture<Prediction> finalFuture = new CompletableFuture<>();
+
+		// Doing this so we log only the first future failing, not all 2 within the callback.
+		CompletableFuture.allOf(predFuture, labelsFuture).whenComplete((v, e) ->
+		{
+			if (e != null)
+			{
+				// allOf will send a CompletionException when one of the futures fail, just get the cause.
+				log.warn("Error obtaining player prediction data", e.getCause());
+				finalFuture.completeExceptionally(e.getCause());
+				return;
+			}
+
+			Prediction pred = predFuture.join();
+			if (pred == null)
+			{
+				finalFuture.complete(null);
+				return;
+			}
+
+			Collection<LabelAPIItem> labels = labelsFuture.join();
+
+			// Re-add predictions as lowercase
+			Map<String, Double> newBreakdown = new HashMap<>();
+			if (pred.getPredictionBreakdown() != null)
+			{
+				for (Map.Entry<String, Double> entry : pred.getPredictionBreakdown().entrySet()) {
+					newBreakdown.put(entry.getKey().toLowerCase(), entry.getValue());
+				}
+			}
+
+			// Add labels that may not be in the breakdown
+			if (labels != null)
+			{
+				for (LabelAPIItem label : labels)
+				{
+					newBreakdown.putIfAbsent(label.getLabel().toLowerCase(), 0.0);
+				}
+			}
+
+			// Build a new copy of the prediction object with normalized labels
+			finalFuture.complete(
+				Prediction.builder()
+					.playerName(pred.getPlayerName())
+					.playerId(pred.getPlayerId())
+					.confidence(pred.getConfidence())
+					.predictionBreakdown(newBreakdown)
+					.predictionLabel(pred.getPredictionLabel().toLowerCase())
+					.build()
+			);
+		});
+
+		return finalFuture;
 	}
 
 	/**
@@ -422,18 +549,8 @@ public class BotDetectorClient
 	 */
 	public CompletableFuture<Map<PlayerStatsType, PlayerStats>> requestPlayerStats(String playerName)
 	{
-		Gson bdGson = gson.newBuilder()
-			.registerTypeAdapter(boolean.class, new BooleanToZeroOneConverter())
-			.create();
-
-		Request requestP = new Request.Builder()
-			.url(getUrl(ApiPath.PLAYER_STATS_PASSIVE).newBuilder()
-				.addQueryParameter("name", playerName)
-				.build())
-			.build();
-
-		Request requestM = new Request.Builder()
-			.url(getUrl(ApiPath.PLAYER_STATS_MANUAL).newBuilder()
+		Request requestR = new Request.Builder()
+			.url(getUrl(ApiPath.PLAYER_STATS_REPORTS).newBuilder()
 				.addQueryParameter("name", playerName)
 				.build())
 			.build();
@@ -444,18 +561,16 @@ public class BotDetectorClient
 				.build())
 			.build();
 
-		CompletableFuture<Collection<PlayerStatsAPIItem>> passiveFuture = new CompletableFuture<>();
-		CompletableFuture<Collection<PlayerStatsAPIItem>> manualFuture = new CompletableFuture<>();
+		CompletableFuture<Collection<PlayerStatsAPIItem>> reportsFuture = new CompletableFuture<>();
 		CompletableFuture<Collection<PlayerStatsAPIItem>> feedbackFuture = new CompletableFuture<>();
 
-		okHttpClient.newCall(requestP).enqueue(new PlayerStatsCallback(passiveFuture, bdGson));
-		okHttpClient.newCall(requestM).enqueue(new PlayerStatsCallback(manualFuture, bdGson));
-		okHttpClient.newCall(requestF).enqueue(new PlayerStatsCallback(feedbackFuture, bdGson));
+		okHttpClient.newCall(requestR).enqueue(new PlayerStatsCallback(reportsFuture, gson));
+		okHttpClient.newCall(requestF).enqueue(new PlayerStatsCallback(feedbackFuture, gson));
 
 		CompletableFuture<Map<PlayerStatsType, PlayerStats>> finalFuture = new CompletableFuture<>();
 
-		// Doing this so we log only the first future failing, not all 3 within the callback.
-		CompletableFuture.allOf(passiveFuture, manualFuture, feedbackFuture).whenComplete((v, e) ->
+		// Doing this so we log only the first future failing, not all 2 within the callback.
+		CompletableFuture.allOf(reportsFuture, feedbackFuture).whenComplete((v, e) ->
 		{
 			if (e != null)
 			{
@@ -465,8 +580,7 @@ public class BotDetectorClient
 			}
 			else
 			{
-				finalFuture.complete(processPlayerStats(
-					passiveFuture.join(), manualFuture.join(), feedbackFuture.join()));
+				finalFuture.complete(processPlayerStats(reportsFuture.join(), feedbackFuture.join()));
 			}
 		});
 
@@ -592,20 +706,21 @@ public class BotDetectorClient
 
 	/**
 	 * Collects the given {@link PlayerStatsAPIItem} into a combined map that the plugin expects.
-	 * @param passive The passive usage stats from the API.
-	 * @param manual The manual flagging stats from the API.
+	 * @param reports The reports usage stats from the API.
 	 * @param feedback The feedback stats from the API.
 	 * @return The combined processed map expected by the plugin.
 	 */
-	private Map<PlayerStatsType, PlayerStats> processPlayerStats(Collection<PlayerStatsAPIItem> passive, Collection<PlayerStatsAPIItem> manual, Collection<PlayerStatsAPIItem> feedback)
+	private Map<PlayerStatsType, PlayerStats> processPlayerStats(Collection<PlayerStatsAPIItem> reports, Collection<PlayerStatsAPIItem> feedback)
 	{
-		if (passive == null || manual == null || feedback == null)
+		if (reports == null || feedback == null)
 		{
 			return null;
 		}
 
-		PlayerStats passiveStats = countStats(passive, false);
-		PlayerStats manualStats = countStats(manual, true);
+		PlayerStats passiveStats = countStats(reports.stream().filter(
+			r -> r.getManual() != null && !r.getManual()).collect(Collectors.toList()), false);
+		PlayerStats manualStats = countStats(reports.stream().filter(
+			r -> r.getManual() != null && r.getManual()).collect(Collectors.toList()), true);
 		PlayerStats feedbackStats = countStats(feedback, false);
 
 		PlayerStats totalStats = PlayerStats.builder()
@@ -623,7 +738,7 @@ public class BotDetectorClient
 	}
 
 	/**
-	 * Utility function for {@link BotDetectorClient#processPlayerStats(Collection, Collection, Collection)}.
+	 * Utility function for {@link BotDetectorClient#processPlayerStats(Collection, Collection)}.
 	 * Compile each element from the API into a {@link PlayerStats} object.
 	 * @param fromAPI The returned collections of player stats from the API to accumulate.
 	 * @param countIncorrect Intended for manual flagging stats. If true, count confirmed players into {@link PlayerStats#getIncorrectFlags()}.
@@ -711,7 +826,23 @@ public class BotDetectorClient
 		boolean banned;
 		@SerializedName("confirmed_player")
 		boolean player;
+		/**
+		 * Will be Null for feedbacks
+		 */
+		@SerializedName("manual_detect")
+		Boolean manual;
 		long count;
+		/**
+		 * Will be Null for report counts
+		 */
+		Long vote;
+	}
+
+	@Value
+	private static class LabelAPIItem
+	{
+		int id;
+		String label;
 	}
 
 	/**

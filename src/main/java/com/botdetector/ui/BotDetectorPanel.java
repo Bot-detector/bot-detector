@@ -160,9 +160,9 @@ public class BotDetectorPanel extends PluginPanel
 	private static final int MAX_FEEDBACK_TEXT_CHARS = 250;
 	private static final Dimension FEEDBACK_TEXTBOX_PREFERRED_SIZE = new Dimension(0, 75);
 
-	private static final FeedbackPredictionLabel UNSURE_PREDICTION_LABEL = new FeedbackPredictionLabel("Unsure", null, FeedbackValue.NEUTRAL);
-	private static final FeedbackPredictionLabel SOMETHING_ELSE_PREDICTION_LABEL = new FeedbackPredictionLabel("Something_else", null, FeedbackValue.NEGATIVE);
-	private static final FeedbackPredictionLabel CORRECT_FALLBACK_PREDICTION_LABEL = new FeedbackPredictionLabel("Correct", null, FeedbackValue.POSITIVE);
+	private static final FeedbackPredictionLabel UNSURE_PREDICTION_LABEL = new FeedbackPredictionLabel("unsure", null, FeedbackValue.NEUTRAL);
+	private static final FeedbackPredictionLabel SOMETHING_ELSE_PREDICTION_LABEL = new FeedbackPredictionLabel("something_else", null, FeedbackValue.NEGATIVE);
+	private static final FeedbackPredictionLabel CORRECT_FALLBACK_PREDICTION_LABEL = new FeedbackPredictionLabel("correct", null, FeedbackValue.POSITIVE);
 
 	private static final PlayerStatsType[] PLAYER_STAT_TYPES = {
 		PlayerStatsType.TOTAL, PlayerStatsType.PASSIVE, PlayerStatsType.MANUAL
@@ -783,7 +783,7 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackLabelComboBox.setRenderer(new ComboBoxSelfTextTooltipListRenderer<>());
 		c.gridy++;
 		c.gridx = 0;
-		c.weightx = 2.0 / 3;
+		c.weightx = 1;
 		c.gridwidth = 2;
 		panel.add(feedbackLabelComboBox, c);
 
@@ -794,7 +794,7 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackSendButton.addActionListener(l -> sendFeedbackToClient((FeedbackPredictionLabel)feedbackLabelComboBox.getSelectedItem()));
 		feedbackSendButton.setFocusable(false);
 		c.gridx = 2;
-		c.weightx = 1.0 / 3;
+		c.weightx = 0;
 		c.gridwidth = 1;
 		panel.add(feedbackSendButton, c);
 
@@ -1358,19 +1358,32 @@ public class BotDetectorPanel extends PluginPanel
 		feedbackHeaderLabel.setIcon(Icons.LOADING_SPINNER);
 		feedbackHeaderLabel.setToolTipText(null);
 		detectorClient.sendFeedback(lastPrediction, lastPredictionUploaderName, proposedLabel, feedbackText)
-			.whenComplete((b, ex) ->
+			.whenComplete((successful, ex) ->
 			{
 				boolean stillSame = lastPrediction != null &&
 					wrappedName.equals(normalizeAndWrapPlayerName(lastPrediction.getPlayerName()));
 
 				String message;
-				if (ex == null && b)
+				if (ex == null)
 				{
-					message = "Thank you for your prediction feedback for '%s'!";
-					if (stillSame)
+					if (successful)
 					{
-						feedbackHeaderLabel.setIcon(null);
-						feedbackHeaderLabel.setToolTipText(null);
+						message = "Thank you for your prediction feedback for '%s'!";
+						if (stillSame)
+						{
+							feedbackHeaderLabel.setIcon(null);
+							feedbackHeaderLabel.setToolTipText(null);
+						}
+					}
+					// Failure is due to duplicate record on server side
+					else
+					{
+						message = "Sorry, but your feedback for '%s' was rejected as it already exists on the server.";
+						if (stillSame)
+						{
+							feedbackHeaderLabel.setIcon(Icons.WARNING_ICON);
+							feedbackHeaderLabel.setToolTipText("The server rejected your feedback as it already exists for this player");
+						}
 					}
 				}
 				else
@@ -1382,7 +1395,7 @@ public class BotDetectorPanel extends PluginPanel
 					{
 						resetFeedbackPanel(false);
 						feedbackHeaderLabel.setIcon(Icons.ERROR_ICON);
-						feedbackHeaderLabel.setToolTipText(ex != null ? ex.getMessage() : "Unknown error");
+						feedbackHeaderLabel.setToolTipText(ex.getMessage());
 					}
 				}
 
