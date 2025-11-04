@@ -513,7 +513,8 @@ public class BotDetectorClient
 			Map<String, Double> newBreakdown = new HashMap<>();
 			if (pred.getPredictionBreakdown() != null)
 			{
-				for (Map.Entry<String, Double> entry : pred.getPredictionBreakdown().entrySet()) {
+				for (Map.Entry<String, Double> entry : pred.getPredictionBreakdown().entrySet())
+				{
 					newBreakdown.put(entry.getKey().toLowerCase(), entry.getValue());
 				}
 			}
