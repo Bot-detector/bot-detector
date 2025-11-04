@@ -254,7 +254,7 @@ public class BotDetectorPlugin extends Plugin
 	/** A blocked world should not log {@link PlayerSighting}s (see {@link #processCurrentWorld()} and {@link #ALLOWED_PROFILE_TYPES}). **/
 	private boolean isCurrentWorldBlocked;
 	/** A queue containing the last two {@link GameState}s from {@link #onGameStateChanged(GameStateChanged)}. **/
-	private EvictingQueue<GameState> previousTwoGameStates = EvictingQueue.create(2);
+	private final EvictingQueue<GameState> previousTwoGameStates = EvictingQueue.create(2);
 
 	/** The currently loaded token or {@link AuthToken#EMPTY_TOKEN} if no valid token is loaded. **/
 	@Getter
@@ -662,7 +662,11 @@ public class BotDetectorPlugin extends Plugin
 					&& previousTwoGameStates.contains(GameState.LOGGED_IN)
 					&& previousTwoGameStates.contains(GameState.LOADING))
 				{
-					client.getPlayers().forEach(this::processPlayer);
+					WorldView wv = client.getTopLevelWorldView();
+					if (wv != null)
+					{
+						wv.players().forEach(this::processPlayer);
+					}
 				}
 				break;
 		}
@@ -724,16 +728,18 @@ public class BotDetectorPlugin extends Plugin
 		// IDK man I can't ever seem to be able to repro this...
 		clientThread.invoke(() ->
 			{
-				boolean instanced = client.isInInstancedRegion();
+				WorldView wv = client.getTopLevelWorldView();
+				boolean instanced = wv != null && wv.isInstance();
 
 				WorldPoint wp = !instanced ? player.getWorldLocation()
 					: WorldPoint.fromLocalInstance(client, player.getLocalLocation());
 
 				if (wp.getRegionID() > MAX_ALLOWED_REGION_ID)
 				{
+					WorldView wv2 = client.getTopLevelWorldView();
 					log.warn(String.format("Player sighting with invalid region ID. (name:'%s' x:%d y:%d z:%d r:%d s:%d)",
 						playerName, wp.getX(), wp.getY(), wp.getPlane(), wp.getRegionID(),
-						(instanced ? 1 : 0) + (client.isInInstancedRegion() ? 2 : 0))); // Sanity check
+						(instanced ? 1 : 0) + (wv2 != null && wv2.isInstance() ? 2 : 0))); // Sanity check
 					return;
 				}
 
@@ -984,7 +990,7 @@ public class BotDetectorPlugin extends Plugin
 			|| groupId == InterfaceID.GROUP_IRON && (option.equals("Add friend") || option.equals("Remove friend") || option.equals("Remove ignore")))
 		{
 			// TODO: Properly use the new menu entry callbacks
-			client.createMenuEntry(-1)
+			client.getMenu().createMenuEntry(-1)
 				.setOption(getPredictOption(event.getTarget()))
 				.setTarget(event.getTarget())
 				.setType(MenuAction.RUNELITE)
@@ -999,12 +1005,6 @@ public class BotDetectorPlugin extends Plugin
 	{
 		// If neither color changing options are set, this is unnecessary
 		if (config.predictOptionDefaultColor() == null && config.predictOptionFlaggedColor() == null)
-		{
-			return;
-		}
-
-		final WorldView wv = client.getTopLevelWorldView();
-		if (wv == null)
 		{
 			return;
 		}
@@ -1024,7 +1024,7 @@ public class BotDetectorPlugin extends Plugin
 			if (type == MenuAction.RUNELITE_PLAYER.getId()
 				&& entry.getOption().equals(PREDICT_OPTION))
 			{
-				Player player = wv.players().byIndex(entry.getIdentifier());
+				Player player = entry.getPlayer();
 				if (player != null)
 				{
 					entry.setOption(getPredictOption(player.getName()));
@@ -1035,7 +1035,7 @@ public class BotDetectorPlugin extends Plugin
 			if (changeReportOption && entry.getOption().equals(REPORT_OPTION)
 				&& (PLAYER_MENU_ACTIONS.contains(entry.getType()) || entry.getType() == MenuAction.CC_OP_LOW_PRIORITY))
 			{
-				Player player = wv.players().byIndex(entry.getIdentifier());
+				Player player = entry.getPlayer();
 				if (player != null)
 				{
 					entry.setOption(getReportOption(player.getName()));
@@ -1057,18 +1057,11 @@ public class BotDetectorPlugin extends Plugin
 			if (event.getMenuAction() == MenuAction.RUNELITE_PLAYER
 				|| PLAYER_MENU_ACTIONS.contains(event.getMenuAction()))
 			{
-				WorldView wv = client.getTopLevelWorldView();
-				if (wv == null)
-				{
-					return;
-				}
-
-				Player player = wv.players().byIndex(event.getId());
+				Player player = event.getMenuEntry().getPlayer();
 				if (player == null)
 				{
 					return;
 				}
-
 				name = player.getName();
 			}
 			else
@@ -1274,7 +1267,7 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	/**
-	 * Manually force a full rescan of all players in {@link Client#getPlayers()} using {@link #processPlayer(Player)}.
+	 * Manually force a full rescan of all players in {@link WorldView#players()} using {@link #processPlayer(Player)}.
 	 */
 	private void manualSightCommand()
 	{
@@ -1289,8 +1282,16 @@ public class BotDetectorPlugin extends Plugin
 		}
 		else
 		{
-			client.getPlayers().forEach(this::processPlayer);
-			sendChatStatusMessage("Player sightings refreshed.", true);
+			WorldView wv = client.getTopLevelWorldView();
+			if (wv != null)
+			{
+				wv.players().forEach(this::processPlayer);
+				sendChatStatusMessage("Player sightings refreshed.", true);
+			}
+			else
+			{
+				sendChatStatusMessage("Could not refresh player sightings for an unknown reason.", true);
+			}
 		}
 	}
 
