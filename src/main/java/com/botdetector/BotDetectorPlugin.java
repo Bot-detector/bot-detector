@@ -25,6 +25,7 @@
  */
 package com.botdetector;
 
+import com.botdetector.events.BotDetectorPanelDeactivated;
 import com.botdetector.http.BotDetectorClient;
 import com.botdetector.http.UnauthorizedTokenException;
 import com.botdetector.http.ValidationException;
@@ -167,6 +168,8 @@ public class BotDetectorPlugin extends Plugin
 	private static final String CLEAR_AUTH_TOKEN_COMMAND = COMMAND_PREFIX + "ClearToken";
 	private static final String TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND = COMMAND_PREFIX + "ToggleShowDiscordVerificationErrors";
 	private static final String TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND_ALIAS = COMMAND_PREFIX + "ToggleDVE";
+	private static final String OPEN_PANEL_COMMAND = COMMAND_PREFIX + "OpenPanel";
+	private static final String OPEN_PANEL_COMMAND_ALIAS = COMMAND_PREFIX + "Open";
 
 	/** Command to method map to be used in {@link #onCommandExecuted(CommandExecuted)}. **/
 	private final ImmutableMap<CaseInsensitiveString, Consumer<String[]>> commandConsumerMap =
@@ -180,6 +183,8 @@ public class BotDetectorPlugin extends Plugin
 			.put(wrap(CLEAR_AUTH_TOKEN_COMMAND), s -> clearAuthTokenCommand())
 			.put(wrap(TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND), s -> toggleShowDiscordVerificationErrors())
 			.put(wrap(TOGGLE_SHOW_DISCORD_VERIFICATION_ERRORS_COMMAND_ALIAS), s -> toggleShowDiscordVerificationErrors())
+			.put(wrap(OPEN_PANEL_COMMAND), s -> openSidePanel())
+			.put(wrap(OPEN_PANEL_COMMAND_ALIAS), s -> openSidePanel())
 			.build();
 
 	private static final int MANUAL_FLUSH_COOLDOWN_SECONDS = 60;
@@ -350,7 +355,10 @@ public class BotDetectorPlugin extends Plugin
 			.priority(90)
 			.build();
 
-		clientToolbar.addNavigation(navButton);
+		if (!config.hidePanelNavigationButton())
+		{
+			clientToolbar.addNavigation(navButton);
+		}
 
 		if (config.addPredictPlayerOption() && client != null)
 		{
@@ -588,6 +596,15 @@ public class BotDetectorPlugin extends Plugin
 	}
 
 	@Subscribe
+	private void onBotDetectorPanelDeactivated(BotDetectorPanelDeactivated event)
+	{
+		if (config.hidePanelNavigationButton())
+		{
+			clientToolbar.removeNavigation(navButton);
+		}
+	}
+
+	@Subscribe
 	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals(BotDetectorConfig.CONFIG_GROUP) || event.getKey() == null)
@@ -631,6 +648,16 @@ public class BotDetectorPlugin extends Plugin
 			case BotDetectorConfig.AUTO_SEND_MINUTES_KEY:
 			case BotDetectorConfig.ONLY_SEND_AT_LOGOUT_KEY:
 				updateTimeToAutoSend();
+				break;
+			case BotDetectorConfig.HIDE_PANEL_NAVIGATION_BUTTON_KEY:
+				if (config.hidePanelNavigationButton())
+				{
+					clientToolbar.removeNavigation(navButton);
+				}
+				else
+				{
+					clientToolbar.addNavigation(navButton);
+				}
 				break;
 		}
 	}
@@ -1092,11 +1119,8 @@ public class BotDetectorPlugin extends Plugin
 	 */
 	public void predictPlayer(String playerName)
 	{
-		SwingUtilities.invokeLater(() ->
-		{
-			clientToolbar.openPanel(navButton);
-			panel.predictPlayer(playerName);
-		});
+		openSidePanel();
+		SwingUtilities.invokeLater(() -> panel.predictPlayer(playerName));
 	}
 
 	/**
@@ -1403,6 +1427,24 @@ public class BotDetectorPlugin extends Plugin
 		{
 			sendChatStatusMessage("Discord verification errors will no longer be shown in the chat", true);
 		}
+	}
+
+	/**
+	 * Opens the side panel if it's not already open
+	 */
+	private void openSidePanel()
+	{
+		if (panel.isActive())
+		{
+			return;
+		}
+
+		if (config.hidePanelNavigationButton())
+		{
+			clientToolbar.addNavigation(navButton);
+		}
+
+		SwingUtilities.invokeLater(() -> clientToolbar.openPanel(navButton));
 	}
 
 	//endregion
