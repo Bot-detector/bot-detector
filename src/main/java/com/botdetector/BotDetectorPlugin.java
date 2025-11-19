@@ -737,6 +737,7 @@ public class BotDetectorPlugin extends Plugin
 				WorldPoint wp = player.getWorldLocation();
 				if (isBoat)
 				{
+					// Appears to give us the center of the boat, good enough for now
 					WorldEntity we = client.getTopLevelWorldView().worldEntities().byIndex(wv.getId());
 					wp = WorldPoint.fromLocalInstance(client, we.getLocalLocation());
 				}
