@@ -61,8 +61,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,6 +83,7 @@ import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.MessageNode;
 import net.runelite.api.Player;
+import net.runelite.api.WorldEntity;
 import net.runelite.api.WorldType;
 import net.runelite.api.WorldView;
 import net.runelite.api.coords.WorldPoint;
@@ -661,10 +664,10 @@ public class BotDetectorPlugin extends Plugin
 					&& previousTwoGameStates.contains(GameState.LOGGED_IN)
 					&& previousTwoGameStates.contains(GameState.LOADING))
 				{
-					WorldView wv = client.getTopLevelWorldView();
-					if (wv != null)
+					Set<Player> allPlayers = getAllPlayers();
+					if (allPlayers != null)
 					{
-						wv.players().forEach(this::processPlayer);
+						allPlayers.forEach(this::processPlayer);
 					}
 				}
 				break;
@@ -727,19 +730,19 @@ public class BotDetectorPlugin extends Plugin
 		// IDK man I can't ever seem to be able to repro this...
 		clientThread.invoke(() ->
 			{
-				WorldView wv = client.getTopLevelWorldView();
+				WorldView wv = player.getWorldView();
 				boolean instanced = wv != null && wv.isInstance();
+				boolean isBoat = wv != null && wv.getId() != WorldView.TOPLEVEL && client != null && client.getTopLevelWorldView() != null;
 
-				WorldPoint wp = !instanced ? player.getWorldLocation()
-					: WorldPoint.fromLocalInstance(client, player.getLocalLocation());
-
-				if (wp.getRegionID() > MAX_ALLOWED_REGION_ID)
+				WorldPoint wp = player.getWorldLocation();
+				if (isBoat)
 				{
-					WorldView wv2 = client.getTopLevelWorldView();
-					log.warn(String.format("Player sighting with invalid region ID. (name:'%s' x:%d y:%d z:%d r:%d s:%d)",
-						playerName, wp.getX(), wp.getY(), wp.getPlane(), wp.getRegionID(),
-						(instanced ? 1 : 0) + (wv2 != null && wv2.isInstance() ? 2 : 0))); // Sanity check
-					return;
+					WorldEntity we = client.getTopLevelWorldView().worldEntities().byIndex(wv.getId());
+					wp = WorldPoint.fromLocalInstance(client, we.getLocalLocation());
+				}
+				else if (instanced)
+				{
+					wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
 				}
 
 				// Get player's equipment item ids (botanicvelious/Equipment-Inspector)
@@ -761,7 +764,9 @@ public class BotDetectorPlugin extends Plugin
 					.regionID(wp.getRegionID())
 					.worldX(wp.getX())
 					.worldY(wp.getY())
-					.plane(wp.getPlane())
+					// If coordinate comes from a boat, add 64 to the plane (z) coordinate
+					// We'll handle it on the server later
+					.plane(wp.getPlane() + (isBoat ? 64 : 0))
 					.equipment(equipment)
 					.equipmentGEValue(geValue)
 					.timestamp(Instant.now())
@@ -1214,6 +1219,33 @@ public class BotDetectorPlugin extends Plugin
 		return prepend != null ? ColorUtil.prependColorTag(option, prepend) : option;
 	}
 
+	private Set<Player> getAllPlayers()
+	{
+		WorldView top = client.getTopLevelWorldView();
+		if (top == null)
+		{
+			return null;
+		}
+
+		HashSet<Player> pSet = new HashSet<>();
+		getAllPlayersRecurse(top, pSet);
+
+		return pSet;
+	}
+
+	private void getAllPlayersRecurse(WorldView wv, HashSet<Player> pSet)
+	{
+		if (wv == null)
+		{
+			return;
+		}
+		wv.players().stream().forEach(pSet::add);
+		for (WorldView sub : wv.worldViews())
+		{
+			getAllPlayersRecurse(sub, pSet);
+		}
+	}
+
 	/**
 	 * Normalizes the given {@code playerName} by sanitizing the player name string,
 	 * removing any Jagex tags and replacing any {@code _} or {@code -} with spaces.
@@ -1281,10 +1313,10 @@ public class BotDetectorPlugin extends Plugin
 		}
 		else
 		{
-			WorldView wv = client.getTopLevelWorldView();
-			if (wv != null)
+			Set<Player> allPlayers = getAllPlayers();
+			if (allPlayers != null)
 			{
-				wv.players().forEach(this::processPlayer);
+				allPlayers.forEach(this::processPlayer);
 				sendChatStatusMessage("Player sightings refreshed.", true);
 			}
 			else
