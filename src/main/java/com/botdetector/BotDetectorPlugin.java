@@ -746,6 +746,13 @@ public class BotDetectorPlugin extends Plugin
 					wp = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
 				}
 
+				if (wp.getRegionID() > MAX_ALLOWED_REGION_ID)
+				{
+					log.warn(String.format("Player sighting with invalid region ID. (name:'%s' x:%d y:%d z:%d r:%d)",
+						playerName, wp.getX(), wp.getY(), wp.getPlane(), wp.getRegionID()));
+					return;
+				}
+
 				// Get player's equipment item ids (botanicvelious/Equipment-Inspector)
 				Map<KitType, Integer> equipment = new HashMap<>();
 				long geValue = 0;
