@@ -715,6 +715,12 @@ public class BotDetectorPlugin extends Plugin
 			}
 			return;
 		}
+		// Check for and ignore fake duplicate of the localplayer held in top level view during sailing
+		// In other words, if a player object shares the same ID as the localplayer, but isn't localplayer, drop it
+		else if (player.getId() == client.getLocalPlayer().getId())
+		{
+			return;
+		}
 
 		// Block processing AFTER local player check
 		if (isCurrentWorldBlocked || invalidName)
