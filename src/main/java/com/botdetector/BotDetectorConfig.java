@@ -52,6 +52,8 @@ public interface BotDetectorConfig extends Config
 	String ANONYMOUS_UUID_KEY = "anonymousUUID";
 	String ACKNOWLEDGED_HARASSMENT_WARNING_KEY = "acknowledgedHarassmentWarning";
 
+	String HIDE_PANEL_NAVIGATION_BUTTON_KEY = "hidePanelNavigationButton";
+
 	int AUTO_SEND_MINIMUM_MINUTES = 5;
 	int AUTO_SEND_MAXIMUM_MINUTES = 360;
 
@@ -220,6 +222,21 @@ public interface BotDetectorConfig extends Config
 	default PanelFontType panelFontType()
 	{
 		return PanelFontType.NORMAL;
+	}
+
+	@ConfigItem(
+		position = 6,
+		keyName = HIDE_PANEL_NAVIGATION_BUTTON_KEY,
+		name = "Hide Panel Navigation Button",
+		description = "Hides the panel navigation button on the Runelite sidebar when not in use.",
+		warning = "<html><span style='color:red'>WARNING:</span> This feature is experimental, please report any issues on our github!" +
+			"<br><br>If the panel navigation button is hidden, the only way to use the plugin side panel is to use some variation" +
+			"<br>of the right-click 'Predict' option or to input the <b>::BDOpenPanel</b> or <b>::BDOpen</b> command in chat.</html>",
+		section = panelSection
+	)
+	default boolean hidePanelNavigationButton()
+	{
+		return false;
 	}
 
 	@ConfigItem(
